@@ -1,15 +1,20 @@
+import { secureMutation } from "@/lib/security";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { fail, reply } from "@/lib/http";
 import { tokenHash } from "@/lib/password-reset";
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   try {
     const parsed = z
       .object({
         token: z.string().regex(/^[a-f0-9]{64}$/),
-        password: z.string().min(10).max(128),
+        password: z
+          .string()
+          .min(10)
+          .max(128)
+          .refine((value) => Buffer.byteLength(value, "utf8") <= 72),
       })
       .safeParse(await req.json());
     if (!parsed.success)
@@ -47,3 +52,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = secureMutation(handlePOST);

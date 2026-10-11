@@ -33,7 +33,9 @@ export async function getUser() {
   try {
     const raw = (await cookies()).get(cookieName)?.value;
     if (!raw) return null;
-    const { payload } = await jwtVerify(raw, secret());
+    const { payload } = await jwtVerify(raw, secret(), {
+      algorithms: ["HS256"],
+    });
     if (typeof payload.uid !== "string") return null;
     const user = await db.user.findUnique({
       where: { id: payload.uid },

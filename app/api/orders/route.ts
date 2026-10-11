@@ -1,4 +1,96 @@
-import {getUser} from "@/lib/auth";import {db} from "@/lib/db";import {reply,fail} from "@/lib/http";import {z} from "zod";
-const schema=z.object({items:z.array(z.object({id:z.string(),qty:z.number().int().min(1).max(50)})).min(1).max(50)});
-export async function GET(){const u=await getUser();if(!u)return fail("Inicia sesión.",401);return reply({orders:await db.order.findMany({where:{userId:u.id},include:{items:true},orderBy:{createdAt:"desc"},take:50})})}
-export async function POST(req:Request){const u=await getUser();if(!u)return fail("Inicia sesión.",401);const v=schema.safeParse(await req.json().catch(()=>null));if(!v.success)return fail("Carrito inválido.");if(new Set(v.data.items.map(i=>i.id)).size!==v.data.items.length)return fail("No dupliques productos en el pedido.");try{const order=await db.$transaction(async tx=>{const ids=v.data.items.map(i=>i.id);const products=await tx.product.findMany({where:{id:{in:ids},active:true}});if(products.length!==ids.length)throw new Error("Hay productos no disponibles.");const total=v.data.items.reduce((sum,i)=>sum+(products.find(p=>p.id===i.id)?.price??0)*i.qty,0);if(!Number.isSafeInteger(total)||total<1)throw new Error("Total inválido.");const debit=await tx.user.updateMany({where:{id:u.id,balance:{gte:total}},data:{balance:{decrement:total}}});if(debit.count!==1)throw new Error("Saldo insuficiente.");const order=await tx.order.create({data:{userId:u.id,total,items:{create:v.data.items.map(i=>{const p=products.find(p=>p.id===i.id)!;return {productId:p.id,name:p.name,unitPrice:p.price,quantity:i.qty}})}}});await tx.walletEvent.create({data:{userId:u.id,amount:-total,type:"COMPRA",note:`Pedido ${order.id}`}});return order},{isolationLevel:"Serializable"});return reply({orderId:order.id,total:order.total},201)}catch(e){return fail(e instanceof Error?e.message:"No se pudo realizar la compra.",400)}}
+import { secureMutation } from "@/lib/security";
+import { getUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { reply, fail } from "@/lib/http";
+import { z } from "zod";
+const schema = z.object({
+  items: z
+    .array(z.object({ id: z.string(), qty: z.number().int().min(1).max(50) }))
+    .min(1)
+    .max(50),
+});
+export async function GET() {
+  const u = await getUser();
+  if (!u) return fail("Inicia sesión.", 401);
+  return reply({
+    orders: await db.order.findMany({
+      where: { userId: u.id },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+  });
+}
+async function handlePOST(req: Request) {
+  const u = await getUser();
+  if (!u) return fail("Inicia sesión.", 401);
+  const v = schema.safeParse(await req.json().catch(() => null));
+  if (!v.success) return fail("Carrito inválido.");
+  if (new Set(v.data.items.map((i) => i.id)).size !== v.data.items.length)
+    return fail("No dupliques productos en el pedido.");
+  try {
+    const order = await db.$transaction(
+      async (tx) => {
+        const ids = v.data.items.map((i) => i.id);
+        const products = await tx.product.findMany({
+          where: { id: { in: ids }, active: true },
+        });
+        if (products.length !== ids.length)
+          throw new Error("Hay productos no disponibles.");
+        const total = v.data.items.reduce(
+          (sum, i) =>
+            sum + (products.find((p) => p.id === i.id)?.price ?? 0) * i.qty,
+          0,
+        );
+        if (!Number.isSafeInteger(total) || total < 1 || total > 2147483647)
+          throw new Error("Total inválido.");
+        const debit = await tx.user.updateMany({
+          where: { id: u.id, balance: { gte: total } },
+          data: { balance: { decrement: total } },
+        });
+        if (debit.count !== 1) throw new Error("Saldo insuficiente.");
+        const order = await tx.order.create({
+          data: {
+            userId: u.id,
+            total,
+            items: {
+              create: v.data.items.map((i) => {
+                const p = products.find((p) => p.id === i.id)!;
+                return {
+                  productId: p.id,
+                  name: p.name,
+                  unitPrice: p.price,
+                  quantity: i.qty,
+                };
+              }),
+            },
+          },
+        });
+        await tx.walletEvent.create({
+          data: {
+            userId: u.id,
+            amount: -total,
+            type: "COMPRA",
+            note: `Pedido ${order.id}`,
+          },
+        });
+        return order;
+      },
+      { isolationLevel: "Serializable" },
+    );
+    return reply({ orderId: order.id, total: order.total }, 201);
+  } catch (e) {
+    const message =
+      e instanceof Error &&
+      [
+        "Hay productos no disponibles.",
+        "Total inválido.",
+        "Saldo insuficiente.",
+      ].includes(e.message)
+        ? e.message
+        : "No se pudo realizar la compra. Inténtalo nuevamente.";
+    return fail(message, 400);
+  }
+}
+
+export const POST = secureMutation(handlePOST);

@@ -1,3 +1,40 @@
-import {getUser} from "@/lib/auth";import {db} from "@/lib/db";import {reply,fail} from "@/lib/http";import {productSchema} from "@/lib/product-schema";
-export async function PATCH(req:Request,ctx:{params:Promise<{id:string}>}){const u=await getUser();if(!u)return fail("Inicia sesión.",401);const {id}=await ctx.params;const p=await db.product.findUnique({where:{id}});if(!p)return fail("Producto no encontrado.",404);if(u.role!=="ADMIN"&&(u.role!=="VENDEDOR"||p.ownerId!==u.id))return fail("No puedes modificar este producto.",403);const v=productSchema.safeParse(await req.json());if(!v.success)return fail("Datos inválidos.");return reply({product:await db.product.update({where:{id},data:v.data})})}
-export async function DELETE(_req:Request,ctx:{params:Promise<{id:string}>}){const u=await getUser();if(!u)return fail("Inicia sesión.",401);const {id}=await ctx.params;const p=await db.product.findUnique({where:{id}});if(!p)return fail("Producto no encontrado.",404);if(u.role!=="ADMIN"&&(u.role!=="VENDEDOR"||p.ownerId!==u.id))return fail("No autorizado.",403);await db.product.update({where:{id},data:{active:false}});return reply({ok:true})}
+import { secureMutation } from "@/lib/security";
+import { getUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { reply, fail } from "@/lib/http";
+import { productSchema } from "@/lib/product-schema";
+async function handlePATCH(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const u = await getUser();
+  if (!u) return fail("Inicia sesión.", 401);
+  const { id } = await ctx.params;
+  const p = await db.product.findUnique({ where: { id } });
+  if (!p) return fail("Producto no encontrado.", 404);
+  if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
+    return fail("No puedes modificar este producto.", 403);
+  const v = productSchema.safeParse(await req.json());
+  if (!v.success) return fail("Datos inválidos.");
+  return reply({
+    product: await db.product.update({ where: { id }, data: v.data }),
+  });
+}
+async function handleDELETE(
+  _req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const u = await getUser();
+  if (!u) return fail("Inicia sesión.", 401);
+  const { id } = await ctx.params;
+  const p = await db.product.findUnique({ where: { id } });
+  if (!p) return fail("Producto no encontrado.", 404);
+  if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
+    return fail("No autorizado.", 403);
+  await db.product.update({ where: { id }, data: { active: false } });
+  return reply({ ok: true });
+}
+
+export const PATCH = secureMutation(handlePATCH);
+
+export const DELETE = secureMutation(handleDELETE);

@@ -29,7 +29,12 @@ const rows: [string, string, number][] = [
 async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase(),
     password = process.env.ADMIN_PASSWORD;
-  if (!email || !password || password.length < 12)
+  if (
+    !email ||
+    !password ||
+    password.length < 12 ||
+    Buffer.byteLength(password, "utf8") > 72
+  )
     throw Error(
       "Configura ADMIN_EMAIL y ADMIN_PASSWORD (12+ caracteres) en .env antes de ejecutar seed",
     );
@@ -40,19 +45,19 @@ async function main() {
     );
   const passwordHash = await hash(password, 12);
 
-const user = previous
-  ? await db.user.update({
-      where: { email },
-      data: { passwordHash }
-    })
-  : await db.user.create({
-      data: {
-        email,
-        name: "Administrador Goat",
-        role: "ADMIN",
-        passwordHash
-      }
-    });
+  const user = previous
+    ? await db.user.update({
+        where: { email },
+        data: { passwordHash, sessionVersion: { increment: 1 } },
+      })
+    : await db.user.create({
+        data: {
+          email,
+          name: "Administrador Goat",
+          role: "ADMIN",
+          passwordHash,
+        },
+      });
   console.log("Cuenta administrador:", user.email);
   for (const [name, category, price] of rows) {
     const found = await db.product.findFirst({

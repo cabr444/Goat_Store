@@ -1,3 +1,4 @@
+import { secureMutation } from "@/lib/security";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { fail, reply } from "@/lib/http";
@@ -9,7 +10,7 @@ import {
   tokenHash,
 } from "@/lib/password-reset";
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
   try {
     const parsed = z
       .object({ email: z.email().max(190) })
@@ -59,3 +60,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = secureMutation(handlePOST);

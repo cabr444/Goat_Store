@@ -82,3 +82,10 @@ model PasswordReset {
   createdAt DateTime @default(now())
   @@index([userId, createdAt])
 }
+
+model RateLimit {
+  key String @id
+  count Int @default(0)
+  expiresAt DateTime
+  @@index([expiresAt])
+}

@@ -44,3 +44,15 @@ Configura en el servidor:
 Ejecuta `npm test` para validar la construcción del correo y el manejo de errores del proveedor con una API simulada.
 
 Ejecuta `npm run db:push` antes de usar la función para crear `PasswordReset` y añadir `User.sessionVersion`, y vuelve a desplegar. Los tokens se guardan únicamente como hashes. Las solicitudes para cuentas inexistentes y las solicitudes repetidas durante un minuto muestran el mismo mensaje. Verifica la entrega con una cuenta de prueba y un remitente autorizado; sin las variables de correo el servidor devuelve un error de configuración. Los fallos del proveedor se registran sin exponer el correo ni el token al cliente.
+
+## Protecciones de seguridad
+- Todas las operaciones de escritura rechazan solicitudes de otro origen, formatos no JSON (salvo logout y DELETE) y cuerpos mayores de 16 KiB.
+- Autenticación: límites persistentes en PostgreSQL por operación/correo (20 intentos de login, 5 registros, 5 solicitudes de recuperación por ventana de 15 minutos); límite global de 1000 solicitudes por ventana para evitar ataques con correos distintos. No dependen de cabeceras IP manipulables. Las ventanas son fijas; un límite devuelve HTTP 429. Los contadores vencidos se eliminan automáticamente. El límite global puede afectar a otros clientes bajo un ataque; añade protección adicional en tu proveedor de hosting para producción.
+- JWT: solo HS256; cookies httpOnly y SameSite, con Secure en producción. Cambiar una contraseña o volver a ejecutar seed del administrador invalida sus sesiones previas.
+- Contraseñas nuevas limitadas a 72 bytes UTF-8 para evitar truncamiento de bcrypt.
+- Cabeceras contra framing, MIME sniffing y filtrado de referencias; CSP limita objetos, formularios y framing. No es una CSP completa con nonces para scripts.
+- Los errores internos de compras no se exponen al cliente. Los precios y permisos se comprueban en servidor.
+
+Tras actualizar: `npm install`, `npm run db:push` y reinicia el servidor. Configura `APP_URL` con el origen exacto de tu web y usa HTTPS en producción. La tabla `RateLimit` es necesaria para iniciar sesión o registrarse. Ejecuta `npm test`, `npx tsc --noEmit`, `npm run build` y `npm audit --omit=dev` para validar.
+
+La revisión incluye código y pruebas automatizadas; no reemplaza una prueba de penetración. No se ha validado aquí una base de datos real ni entrega de emails. El registro de vendedores sigue abierto por diseño: para una tienda pública, define aprobación de vendedores, verificación de email y MFA para el administrador. Usa credenciales de base de datos con privilegios mínimos, copias de seguridad y protección antiabuso del hosting.
