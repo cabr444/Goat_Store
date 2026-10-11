@@ -83,6 +83,13 @@ model PasswordReset {
   @@index([userId, createdAt])
 }
 
+model BannerImage {
+  slot Int @id
+  data Bytes
+  contentType String
+  updatedAt DateTime @updatedAt
+}
+
 model RateLimit {
   key String @id
   count Int @default(0)

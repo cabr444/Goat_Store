@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { BannerBackground, BannerEditor } from "@/components/BannerImages";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -367,7 +368,13 @@ export default function Storefront({
         </div>
       </header>
       <main id="inicio">
-        <section className="container hero">
+        <section
+          className={
+            "container hero " +
+            (!technology && !secondhand ? "hero-slideshow" : "")
+          }
+        >
+          {!technology && !secondhand && <BannerBackground />}
           <div className="hero-copy">
             <span className="eyebrow">
               <Sparkles size={16} />{" "}
@@ -651,6 +658,9 @@ export default function Storefront({
           </div>
           <p>Configura tu canal de soporte antes de publicar la tienda.</p>
         </section>
+        {user?.role === "ADMIN" && !technology && !secondhand && (
+          <BannerEditor />
+        )}
         <section className="container account-section">
           <div className="section-heading">
             <div>

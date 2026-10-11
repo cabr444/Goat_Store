@@ -70,3 +70,10 @@ El comando carga `DATABASE_URL` desde `.env` (Node.js 20.6+), añade 10 producto
 **Tienda** es el nuevo nombre del enlace de tecnología (`/store`). A su lado, **Segunda** abre `/segunda`: catálogo separado con 50 artículos de ejemplo (20 de tecnología usada, 15 de ropa usada y 15 de calzado usado). Las fichas muestran estado de uso, tallas cuando corresponden, descripción y precio COP. Se comparte el carrito y los permisos de gestión.
 
 Carga los productos con `npm run db:seed:secondhand`. Es seguro repetir el comando: no duplica artículos ni sobrescribe ediciones existentes, y no modifica la cuenta administradora. Los estados, especificaciones y precios son ejemplos; actualízalos para reflejar los artículos reales antes de venderlos. La disponibilidad de piezas únicas y el seguimiento de inventario todavía deben gestionarse manualmente.
+
+## Seis imágenes en el banner de Inicio
+El fondo del banner de Inicio cambia cada 7 segundos mediante un fundido; el texto y los botones permanecen fijos. Hay seis imágenes de ejemplo, controles para elegir una imagen y un botón para pausar. Si el usuario prefiere movimiento reducido, la reproducción automática empieza pausada.
+
+Ejecuta npm run db:push para crear BannerImage. Inicia sesión como administrador, abre Inicio y baja a **Imágenes del banner de Inicio**. Usa **Cambiar imagen 1** hasta **Cambiar imagen 6** para subir tus imágenes. Formatos: JPG, PNG o WebP, máximo 2 MB por archivo; tamaño recomendado: 1600 × 700 px. Las imágenes se guardan en PostgreSQL, por lo que permanecen después de reiniciar o desplegar la aplicación. **Restaurar imagen** vuelve al fondo de ejemplo de esa posición. El almacenamiento máximo de los seis archivos es 12 MB; incluye la tabla en las copias de seguridad.
+
+Solo el administrador puede modificar imágenes. El servidor valida origen, tamaño real y firma del archivo; no acepta SVG subidos. Tienda y Segunda mantienen sus propios banners.
