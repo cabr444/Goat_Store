@@ -1,0 +1,1 @@
+import {getUser} from "@/lib/auth";import {reply,fail} from "@/lib/http";export async function GET(){return reply({user:await getUser()})}

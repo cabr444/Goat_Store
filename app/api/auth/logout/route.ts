@@ -1,0 +1,1 @@
+import {clearSession} from "@/lib/auth";import {reply} from "@/lib/http";export async function POST(){await clearSession();return reply({ok:true})}

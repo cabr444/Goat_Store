@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENTE
+  VENDEDOR
+  ADMIN
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         Role          @default(CLIENTE)
+  balance      Int           @default(0)
+  createdAt    DateTime      @default(now())
+  products     Product[]
+  orders       Order[]
+  walletEvents WalletEvent[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  category    String
+  price       Int
+  description String      @default("")
+  mark        String      @default("✦")
+  gradient    String      @default("linear-gradient(135deg,#7446ed,#ff79bf)")
+  active      Boolean     @default(true)
+  ownerId     String?
+  owner       User?       @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime    @default(now())
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  total     Int
+  status    String      @default("PENDIENTE_ENTREGA")
+  createdAt DateTime    @default(now())
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  unitPrice Int
+  quantity  Int
+}
+
+model WalletEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  type      String
+  note      String
+  createdAt DateTime @default(now())
+}
