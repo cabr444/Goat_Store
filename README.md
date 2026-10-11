@@ -56,3 +56,12 @@ Ejecuta `npm run db:push` antes de usar la función para crear `PasswordReset` y
 Tras actualizar: `npm install`, `npm run db:push` y reinicia el servidor. Configura `APP_URL` con el origen exacto de tu web y usa HTTPS en producción. La tabla `RateLimit` es necesaria para iniciar sesión o registrarse. Ejecuta `npm test`, `npx tsc --noEmit`, `npm run build` y `npm audit --omit=dev` para validar.
 
 La revisión incluye código y pruebas automatizadas; no reemplaza una prueba de penetración. No se ha validado aquí una base de datos real ni entrega de emails. El registro de vendedores sigue abierto por diseño: para una tienda pública, define aprobación de vendedores, verificación de email y MFA para el administrador. Usa credenciales de base de datos con privilegios mínimos, copias de seguridad y protección antiabuso del hosting.
+
+## Store de tecnología
+El enlace **Store**, después de Combos, abre `/store`. La página mantiene el acceso obligatorio y comparte carrito, saldo, pedidos y permisos con el catálogo digital. Añade búsqueda y filtros para Computadores, Periféricos, Audio, Accesorios y Redes.
+
+Para cargar los 50 productos de ejemplo en tu PostgreSQL:
+```sh
+npm run db:seed:technology
+```
+El comando carga `DATABASE_URL` desde `.env` (Node.js 20.6+), añade 10 productos por categoría y se puede repetir sin duplicarlos ni sobrescribir ediciones. No modifica la cuenta administradora. Los artículos, especificaciones y precios COP son ejemplos: verifica productos reales, disponibilidad, garantías, impuestos y entrega antes de aceptar compras. Edita el catálogo desde la cuenta administradora.
