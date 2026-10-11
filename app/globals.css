@@ -7,3 +7,5 @@
 .auth-link{display:block;color:var(--violet,#7446ed);font-size:14px;margin:14px 0;text-align:right;text-decoration:underline;text-underline-offset:3px}
 
 .navlinks a[aria-current=page]{color:#7446ed;font-weight:800}.tech-product-icon{color:#382460;filter:drop-shadow(0 10px 12px #56389530)}.tech-categories{grid-template-columns:repeat(5,minmax(0,1fr))}@media(min-width:721px) and (max-width:1150px){.navlinks{gap:12px}.navlinks a{font-size:12px}.balance-chip{font-size:11px;padding:7px}}@media(max-width:1000px){.tech-categories{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:720px){.tech-categories{grid-template-columns:repeat(2,minmax(0,1fr))}.tech-product-icon{width:62px;height:62px}}
+
+.secondhand-categories{grid-template-columns:repeat(3,minmax(0,1fr))}@media(min-width:721px) and (max-width:1150px){.navlinks{gap:9px}.navlinks a{font-size:11px}.nav{gap:10px}}@media(max-width:720px){.secondhand-categories{grid-template-columns:repeat(2,minmax(0,1fr))}}

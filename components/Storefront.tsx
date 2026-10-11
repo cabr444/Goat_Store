@@ -19,13 +19,19 @@ import {
   Headphones,
   Cable,
   Router,
+  Shirt,
+  Footprints,
 } from "lucide-react";
 import {
   technologyCategories,
   digitalCategories,
   allCategories,
 } from "@/lib/technology-products";
+import { secondhandCategories } from "@/lib/secondhand-products";
 const techIcons = {
+  "Tecnología usada": Laptop,
+  "Ropa usada": Shirt,
+  "Calzado usado": Footprints,
   Computadores: Laptop,
   Periféricos: Keyboard,
   Audio: Headphones,
@@ -81,12 +87,16 @@ async function request(url: string, method = "GET", body?: unknown) {
 }
 export default function Storefront({
   technology = false,
+  secondhand = false,
 }: {
   technology?: boolean;
+  secondhand?: boolean;
 }) {
-  const catalogCategories: readonly string[] = technology
-    ? technologyCategories
-    : digitalCategories;
+  const catalogCategories: readonly string[] = secondhand
+    ? secondhandCategories
+    : technology
+      ? technologyCategories
+      : digitalCategories;
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
@@ -148,7 +158,7 @@ export default function Storefront({
             .toLocaleLowerCase("es")
             .includes(query.toLocaleLowerCase("es")),
       ),
-    [products, filter, query, technology],
+    [products, filter, query, technology, secondhand],
   );
   const total = cart.reduce(
     (s, i) => s + (products.find((p) => p.id === i.id)?.price || 0) * i.qty,
@@ -194,7 +204,14 @@ export default function Storefront({
             mark: p.mark,
             active: true,
           }
-        : { ...fresh(), category: technology ? "Computadores" : "Streaming" },
+        : {
+            ...fresh(),
+            category: secondhand
+              ? "Tecnología usada"
+              : technology
+                ? "Computadores"
+                : "Streaming",
+          },
     );
     setEditor(true);
   }
@@ -263,37 +280,39 @@ export default function Storefront({
   return (
     <>
       <div className="announcement">
-        {technology
-          ? "✦ GOAT STORE — Tecnología para tu día a día"
-          : "✦ Bienvenido a GOAT — Streaming, música, productividad y combos"}
+        {secondhand
+          ? "✦ GOAT SEGUNDA — Una nueva vida para tus favoritos"
+          : technology
+            ? "✦ GOAT TIENDA — Tecnología para tu día a día"
+            : "✦ Bienvenido a GOAT — Streaming, música, productividad y combos"}
       </div>
       <header className="header">
         <div className="container nav">
-          <a className="logo" href={technology ? "/" : "#inicio"}>
+          <a className="logo" href={technology || secondhand ? "/" : "#inicio"}>
             Goat<span>.</span>
           </a>
           <nav className={`navlinks ${menu ? "expanded" : ""}`}>
             <a
-              href={technology ? "/#inicio" : "#inicio"}
+              href={technology || secondhand ? "/#inicio" : "#inicio"}
               onClick={() => setMenu(false)}
             >
               Inicio
             </a>
             <a
-              href={technology ? "/#streaming" : "#streaming"}
-              onClick={() => !technology && jump("Streaming")}
+              href={technology || secondhand ? "/#streaming" : "#streaming"}
+              onClick={() => !technology && !secondhand && jump("Streaming")}
             >
               Streaming
             </a>
             <a
-              href={technology ? "/#productos" : "#productos"}
-              onClick={() => !technology && jump("Todos")}
+              href={technology || secondhand ? "/#productos" : "#productos"}
+              onClick={() => !technology && !secondhand && jump("Todos")}
             >
               Productos
             </a>
             <a
-              href={technology ? "/#combos" : "#combos"}
-              onClick={() => !technology && jump("Combos")}
+              href={technology || secondhand ? "/#combos" : "#combos"}
+              onClick={() => !technology && !secondhand && jump("Combos")}
             >
               Combos
             </a>
@@ -302,7 +321,14 @@ export default function Storefront({
               aria-current={technology ? "page" : undefined}
               onClick={() => setMenu(false)}
             >
-              Store
+              Tienda
+            </a>
+            <a
+              href="/segunda"
+              aria-current={secondhand ? "page" : undefined}
+              onClick={() => setMenu(false)}
+            >
+              Segunda
             </a>
             <a href="#beneficios" onClick={() => setMenu(false)}>
               Beneficios
@@ -345,17 +371,33 @@ export default function Storefront({
           <div className="hero-copy">
             <span className="eyebrow">
               <Sparkles size={16} />{" "}
-              {technology ? "GOAT STORE / TECNOLOGÍA" : "BIENVENIDO A GOAT"}
+              {secondhand
+                ? "GOAT SEGUNDA / SEGUNDA MANO"
+                : technology
+                  ? "GOAT TIENDA / TECNOLOGÍA"
+                  : "BIENVENIDO A GOAT"}
             </span>
             <h1>
-              {technology ? "Conecta con" : "Tu mundo"}
+              {secondhand
+                ? "Otra vida."
+                : technology
+                  ? "Conecta con"
+                  : "Tu mundo"}
               <br />
-              <em>{technology ? "lo que sigue." : "digital."}</em>
+              <em>
+                {secondhand
+                  ? "Más historias."
+                  : technology
+                    ? "lo que sigue."
+                    : "digital."}
+              </em>
             </h1>
             <p>
-              {technology
-                ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goat Store."
-                : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goat de forma fácil y rápida."}
+              {secondhand
+                ? "Tecnología, ropa y calzado de segunda mano. Encuentra piezas con historia y dales una nueva oportunidad."
+                : technology
+                  ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goat Tienda."
+                  : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goat de forma fácil y rápida."}
             </p>
             <div className="hero-buttons">
               <button className="button dark" onClick={() => jump("Todos")}>
@@ -363,9 +405,21 @@ export default function Storefront({
               </button>
               <button
                 className="button outline"
-                onClick={() => jump(technology ? "Computadores" : "Combos")}
+                onClick={() =>
+                  jump(
+                    secondhand
+                      ? "Tecnología usada"
+                      : technology
+                        ? "Computadores"
+                        : "Combos",
+                  )
+                }
               >
-                {technology ? "Explorar computadores" : "Explorar combos"}
+                {secondhand
+                  ? "Explorar segunda mano"
+                  : technology
+                    ? "Explorar computadores"
+                    : "Explorar combos"}
               </button>
             </div>
             <p>
@@ -379,17 +433,29 @@ export default function Storefront({
             <div className="hero-center">
               <span>GOAT</span>
               <strong>
-                {technology ? "TU PRÓXIMA CONEXIÓN" : "TODO TU ENTRETENIMIENTO"}
+                {secondhand
+                  ? "DALES UNA NUEVA VIDA"
+                  : technology
+                    ? "TU PRÓXIMA CONEXIÓN"
+                    : "TODO TU ENTRETENIMIENTO"}
               </strong>
             </div>
             <div className="hero-feature one">
-              {technology ? "⌘ Computadores" : "▶ Streaming"}
+              {secondhand
+                ? "⌘ Tecnología"
+                : technology
+                  ? "⌘ Computadores"
+                  : "▶ Streaming"}
             </div>
             <div className="hero-feature two">
-              {technology ? "♫ Audio" : "♫ Música"}
+              {secondhand ? "✦ Ropa" : technology ? "♫ Audio" : "♫ Música"}
             </div>
             <div className="hero-feature three">
-              {technology ? "✦ Accesorios" : "✦ Combos"}
+              {secondhand
+                ? "↗ Calzado"
+                : technology
+                  ? "✦ Accesorios"
+                  : "✦ Combos"}
             </div>
           </div>
         </section>
@@ -411,7 +477,11 @@ export default function Storefront({
           <div>
             <ShoppingBag />
             <span>
-              <strong>Compra digital</strong>
+              <strong>
+                {technology || secondhand
+                  ? "Compra con saldo"
+                  : "Compra digital"}
+              </strong>
               <small>Registro de pedidos</small>
             </span>
           </div>
@@ -433,7 +503,7 @@ export default function Storefront({
             </div>
           </div>
           <div
-            className={`category-grid ${technology ? "tech-categories" : ""}`}
+            className={`category-grid ${secondhand ? "secondhand-categories" : technology ? "tech-categories" : ""}`}
           >
             {[...catalogCategories].map((c, i) => (
               <button
@@ -454,13 +524,19 @@ export default function Storefront({
           <div className="section-heading">
             <div>
               <span className="overline">
-                {technology ? "CATÁLOGO DE TECNOLOGÍA" : "CATÁLOGO DIGITAL"}
+                {secondhand
+                  ? "CATÁLOGO DE SEGUNDA MANO"
+                  : technology
+                    ? "CATÁLOGO DE TECNOLOGÍA"
+                    : "CATÁLOGO DIGITAL"}
               </span>
               <h2>
                 {filter === "Todos"
-                  ? technology
-                    ? "Tecnología para ti"
-                    : "Todos los productos"
+                  ? secondhand
+                    ? "Encuentra tu próxima historia"
+                    : technology
+                      ? "Tecnología para ti"
+                      : "Todos los productos"
                   : filter}
                 <span> ✳</span>
               </h2>
@@ -508,9 +584,7 @@ export default function Storefront({
                   style={{ background: p.gradient }}
                 >
                   <div className="photo-click">
-                    {technologyCategories.includes(
-                      p.category as (typeof technologyCategories)[number],
-                    ) ? (
+                    {p.category in techIcons ? (
                       (() => {
                         const Icon =
                           techIcons[p.category as keyof typeof techIcons];
@@ -527,7 +601,9 @@ export default function Storefront({
                       <span className="brand-mark long">{p.mark}</span>
                     )}
                   </div>
-                  <span className="tag">{p.category}</span>
+                  <span className="tag">
+                    {secondhand ? "Segunda mano" : p.category}
+                  </span>
                 </div>
                 <div className="product-info">
                   <span className="category-label">{p.category}</span>

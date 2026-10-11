@@ -1,3 +1,4 @@
+import { secondhandCategories } from "./secondhand-products";
 export const technologyCategories = [
   "Computadores",
   "Periféricos",
@@ -14,6 +15,7 @@ export const digitalCategories = [
 export const allCategories = [
   ...digitalCategories,
   ...technologyCategories,
+  ...secondhandCategories,
 ] as const;
 const groups: {
   category: (typeof technologyCategories)[number];

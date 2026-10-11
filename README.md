@@ -65,3 +65,8 @@ Para cargar los 50 productos de ejemplo en tu PostgreSQL:
 npm run db:seed:technology
 ```
 El comando carga `DATABASE_URL` desde `.env` (Node.js 20.6+), añade 10 productos por categoría y se puede repetir sin duplicarlos ni sobrescribir ediciones. No modifica la cuenta administradora. Los artículos, especificaciones y precios COP son ejemplos: verifica productos reales, disponibilidad, garantías, impuestos y entrega antes de aceptar compras. Edita el catálogo desde la cuenta administradora.
+
+## Segunda: artículos de segunda mano
+**Tienda** es el nuevo nombre del enlace de tecnología (`/store`). A su lado, **Segunda** abre `/segunda`: catálogo separado con 50 artículos de ejemplo (20 de tecnología usada, 15 de ropa usada y 15 de calzado usado). Las fichas muestran estado de uso, tallas cuando corresponden, descripción y precio COP. Se comparte el carrito y los permisos de gestión.
+
+Carga los productos con `npm run db:seed:secondhand`. Es seguro repetir el comando: no duplica artículos ni sobrescribe ediciones existentes, y no modifica la cuenta administradora. Los estados, especificaciones y precios son ejemplos; actualízalos para reflejar los artículos reales antes de venderlos. La disponibilidad de piezas únicas y el seguimiento de inventario todavía deben gestionarse manualmente.
