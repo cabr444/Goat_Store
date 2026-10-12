@@ -541,7 +541,6 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {(home || (digitalCatalog && filter === "Streaming")) && <StreamingHighlights />}
         {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
@@ -638,7 +637,10 @@ export default function Storefront({
               ))}
             </div>}
           </div>
-          <p className="result-count">{visible.length} productos</p>
+          <div className="catalog-results-heading">
+            <p className="result-count">{visible.length} productos</p>
+            {(home || (digitalCatalog && filter === "Streaming")) && query && <button type="button" className="button outline catalog-show-all" onClick={() => { setQuery(""); setFilter("Streaming"); }}>Ver todo Streaming</button>}
+          </div>
           <div className="product-grid">
             {visible.map((p) => (
               <article key={p.id} className="product-card" {...dragProps("products", p.id)}>
@@ -702,6 +704,7 @@ export default function Storefront({
             <div className="empty">No hay productos para mostrar.</div>
           )}
         </section>
+        {(home || (digitalCatalog && filter === "Streaming")) && <StreamingHighlights />}
         <section className="container contact" id="contacto">
           <div>
             <span className="overline">GOAT DIGITAL</span>
