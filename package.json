@@ -11,7 +11,8 @@
     "db:studio": "prisma studio",
     "test": "node --import tsx --test tests/*.test.ts",
     "db:seed:technology": "node --env-file=.env --import tsx prisma/seed-technology.ts",
-    "db:seed:secondhand": "node --env-file=.env --import tsx prisma/seed-secondhand.ts"
+    "db:seed:secondhand": "node --env-file=.env --import tsx prisma/seed-secondhand.ts",
+    "test:inventory": "node --import tsx tests/inventory.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

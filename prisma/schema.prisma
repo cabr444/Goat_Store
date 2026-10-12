@@ -29,6 +29,8 @@ model User {
 }
 
 model Product {
+  stock Int @default(0)
+  deliveryCipher String?
   id          String      @id @default(cuid())
   name        String
   category    String
@@ -54,6 +56,7 @@ model Order {
 }
 
 model OrderItem {
+  receiptCipher String?
   category String @default("")
   sellerId String?
   @@index([sellerId])
@@ -98,4 +101,11 @@ model RateLimit {
   count Int @default(0)
   expiresAt DateTime
   @@index([expiresAt])
+}
+
+model CatalogImageAsset {
+  key String @id
+  data Bytes
+  contentType String
+  updatedAt DateTime @updatedAt
 }

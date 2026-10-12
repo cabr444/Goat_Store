@@ -38,6 +38,7 @@ export default async function Page() {
             {items.map((item) => (
               <div key={item.id} className="account-product-row">
                 <CatalogImage
+                  productId={item.productId}
                   name={item.name}
                   category={item.category || item.product.category}
                 />
@@ -89,6 +90,11 @@ export default async function Page() {
             Recargar saldo <ArrowUpRight size={17} />
           </a>
         </div>
+        {profile.role === "ADMIN" && (
+          <a className="button violet" href="/administracion">
+            Administrar productos, stock e imágenes
+          </a>
+        )}
         <section className="account-stats" aria-label="Resumen de cuenta">
           <article>
             <Wallet />

@@ -8,7 +8,7 @@
 - Vendedores: pueden publicar y modificar **sus propios productos**; administradores: cualquier producto.
 - Solo el administrador puede **recargar saldo** a cualquier usuario; operación auditada.
 - Compras con saldo: precio calculado en servidor, débito condicionado por saldo suficiente, pedido y movimiento creados en una transacción.
-- Pedidos registrados como **PENDIENTE_ENTREGA**; entrega manual, sin generación de accesos a servicios.
+- Pedidos de artículos físicos pendientes de entrega manual; accesos digitales configurados se entregan como comprobantes privados guardados con la compra.
 
 ## Requisitos
 - Node.js 20+ y una base PostgreSQL accesible.
@@ -28,7 +28,7 @@ Configura PostgreSQL gestionado y variables del entorno en el proveedor de hosti
 - Registro de vendedor es abierto por solicitud; **antes de lanzar** es recomendable aprobar vendedores manualmente, añadir verificación de correo, rate limit, protección antiabuso, auditoría con panel, política de privacidad y términos.
 - La cookie de sesión es httpOnly, sameSite=Lax, firmada y expira en 7 días; la contraseña se guarda con bcrypt. Todos los endpoints protegidos verifican identidad/rol en servidor.
 - Recargas y compras exigen conexión PostgreSQL real. Las recargas se registran en `WalletEvent`; no están conectadas a un depósito bancario.
-- **Las compras debitadas crean pedidos pendientes de entrega manual**; no implican activación instantánea de plataformas. Se recomienda agregar panel de gestión de pedidos/reembolsos antes de operar comercialmente.
+- **Las compras físicas debitadas crean pedidos pendientes de entrega manual**; no implican activación instantánea de plataformas. Se recomienda agregar panel de gestión de pedidos/reembolsos antes de operar comercialmente.
 - Debes comprobar licencias, permisos de reventa y términos de los proveedores de streaming/software.
 - Los productos y precios son información proporcionada por el comerciante.
 - Los nombres de servicios no implican afiliación con las marcas.
@@ -94,3 +94,27 @@ El círculo de perfil junto al saldo abre un menú al pasar el mouse; también f
 - Recargas: abre el mismo número con "quiero recargar saldo.".
 
 Ejecuta npm run db:push después de actualizar. Los nuevos pedidos guardan la categoría y el vendedor de cada producto al comprar. Los pedidos históricos usan la categoría y el propietario actuales del producto cuando no tienen esos datos guardados. El gasto corresponde al total debitado por pedidos; no implementa reembolsos. Las páginas verifican la sesión y solo consultan compras del usuario; las listas de ventas respetan el vendedor o el rol administrador. El enlace de WhatsApp prepara el mensaje; el usuario decide enviarlo.
+
+## Stock, imágenes administrables y comprobantes privados
+Todos los productos permanecen en el catálogo, incluso con stock cero. Cero unidades muestra **Agotado** y bloquea añadir al carrito; stock positivo muestra el número de unidades en verde. La disponibilidad se actualiza cada 15 segundos. El servidor comprueba y descuenta stock junto con el saldo y crea el pedido y su movimiento de billetera en una sola transacción. Una compra rechazada no cambia el saldo ni el stock. Si el stock cambia mientras un administrador tiene el formulario abierto, guardar devuelve un aviso de conflicto: cierra y reabre el producto para evitar restaurar unidades ya vendidas.
+
+Después de actualizar, ejecuta npm run db:push. Los productos anteriores empiezan con stock 0: ingresa sus cantidades reales.
+
+### Administración desde Perfil
+Inicia sesión como ADMIN, abre Perfil y pulsa **Administrar productos, stock e imágenes**:
+- Las categorías tienen **Cambiar imagen** y **Restaurar imagen**. Los banners mantienen sus seis espacios de carga.
+- Busca un producto y pulsa **Editar** para cambiar precio, descripción, cantidad e imagen. **Agotar** pone su stock a cero sin ocultarlo.
+- Para productos digitales existentes, configura encabezado, correo de plataforma, clave, perfil y PIN; pulsa **Guardar acceso privado**. Después ajusta stock y pulsa **Guardar producto**. Un producto nuevo debe guardarse primero para obtener su ID.
+- Un producto de Streaming sin acceso configurado no se puede comprar. Cada unidad recibe el mismo acceso configurado en ese producto; para perfiles únicos, usa stock 1 y un producto por perfil.
+
+Las imágenes de productos y categorías se guardan en PostgreSQL y permanecen después de reiniciar. Se admiten JPG, PNG y WebP hasta 2 MB por archivo; solo ADMIN puede modificarlas.
+
+### Comprobantes de compras
+Al comprar un acceso configurado, el usuario va directamente a Pedidos y ve el comprobante con encabezado, plataforma, correo, clave, perfil, PIN, ID, fecha, cantidad, precio y el aviso solicitado. Puede copiarlo. Se guarda una copia cifrada de los datos usados al pagar: editar después el producto no cambia comprobantes anteriores. Las compras completamente digitales con accesos configurados quedan ENTREGADO; las mixtas o físicas quedan PENDIENTE_ENTREGA. Las compras anteriores a esta función conservan su historial pero no reciben accesos retrospectivamente.
+
+Los accesos y comprobantes se cifran con AES-256-GCM; no se envían en el catálogo. Solo ADMIN puede consultar la configuración y cada comprador puede abrir sus propios comprobantes. La clave usa DELIVERY_SECRET si está configurada; en caso contrario usa AUTH_SECRET. Conserva esa clave y sus copias de seguridad: cambiarla impide descifrar datos anteriores. Si quieres separar las claves, configura DELIVERY_SECRET de 32+ caracteres **antes de guardar el primer acceso**.
+
+### Verificación
+Se validó con una base PostgreSQL temporal y la aplicación en producción local: dos compradores compitiendo por la última unidad crean un solo pedido y un solo débito; el stock cero sigue visible; las compras sin acceso no hacen cargos; los comprobantes se mantienen después de editar credenciales y no son accesibles a otro comprador. Se probaron las pantallas de administrador y cliente en escritorio y móvil con PostgreSQL real.
+
+La prueba reproducible npm run test:inventory requiere un PostgreSQL desechable local llamado goat_inventory_test, su esquema aplicado y el servidor local de prueba activo (puerto 3103 por defecto). Usa DATABASE_URL, AUTH_SECRET y DELIVERY_SECRET idénticos en servidor y prueba; INVENTORY_TEST_URL permite elegir otro puerto local. La prueba rechaza bases remotas o con otro nombre, crea datos sintéticos con IDs únicos y elimina sus propios registros al terminar. No la ejecutes contra la base de clientes.

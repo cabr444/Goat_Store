@@ -6,5 +6,6 @@ export const productSchema = z.object({
   price: z.number().int().min(1).max(100000000),
   description: z.string().max(1000).default(""),
   mark: z.string().max(25).default("✦"),
+  stock: z.number().int().min(0).max(1000000).default(0),
   active: z.boolean().default(true),
 });

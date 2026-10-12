@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import {supportLink} from "@/lib/account-links";
+import { supportLink } from "@/lib/account-links";
+import CategoryImageManager from "@/components/CategoryImageManager";
+import DeliveryEditor from "@/components/DeliveryEditor";
+import ImageUploadButton from "@/components/ImageUploadButton";
 import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
@@ -39,6 +42,7 @@ type Product = {
   name: string;
   category: string;
   price: number;
+  stock: number;
   description: string;
   mark: string;
   gradient: string;
@@ -46,9 +50,11 @@ type Product = {
 };
 type CartItem = { id: string; qty: number };
 type Entry = {
+  expectedStock?: number;
   name: string;
   category: string;
   price: number;
+  stock: number;
   description: string;
   mark: string;
   active: boolean;
@@ -57,6 +63,7 @@ const fresh = (): Entry => ({
   name: "",
   category: "Streaming",
   price: 0,
+  stock: 0,
   description: "",
   mark: "✦",
   active: true,
@@ -76,15 +83,19 @@ async function request(url: string, method = "GET", body?: unknown) {
 export default function Storefront({
   technology = false,
   secondhand = false,
+  management = false,
 }: {
   technology?: boolean;
   secondhand?: boolean;
+  management?: boolean;
 }) {
-  const catalogCategories: readonly string[] = secondhand
-    ? secondhandCategories
-    : technology
-      ? technologyCategories
-      : digitalCategories;
+  const catalogCategories: readonly string[] = management
+    ? allCategories
+    : secondhand
+      ? secondhandCategories
+      : technology
+        ? technologyCategories
+        : digitalCategories;
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
@@ -136,6 +147,14 @@ export default function Storefront({
   useEffect(() => {
     if (cartReady) localStorage.setItem("goat-cart-v3", JSON.stringify(cart));
   }, [cart, cartReady]);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void request("/api/products")
+        .then((data) => setProducts(data.products))
+        .catch(() => {});
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, []);
   const visible = useMemo(
     () =>
       products.filter(
@@ -146,7 +165,7 @@ export default function Storefront({
             .toLocaleLowerCase("es")
             .includes(query.toLocaleLowerCase("es")),
       ),
-    [products, filter, query, technology, secondhand],
+    [products, filter, query, technology, secondhand, management],
   );
   const total = cart.reduce(
     (s, i) => s + (products.find((p) => p.id === i.id)?.price || 0) * i.qty,
@@ -161,6 +180,18 @@ export default function Storefront({
         .filter((i) => i.qty > 0),
     );
   const add = (id: string) => {
+    const product = products.find((p) => p.id === id);
+    if (!product || product.stock === 0) {
+      setNotice("Producto agotado.");
+      return;
+    }
+    if (
+      (cart.find((item) => item.id === id)?.qty || 0) >=
+      Math.min(50, product.stock)
+    ) {
+      setNotice("No hay más unidades disponibles.");
+      return;
+    }
     setCart((old) =>
       old.some((i) => i.id === id)
         ? old.map((i) => (i.id === id ? { ...i, qty: i.qty + 1 } : i))
@@ -188,6 +219,8 @@ export default function Storefront({
             name: p.name,
             category: p.category,
             price: p.price,
+            stock: p.stock,
+            expectedStock: p.stock,
             description: p.description,
             mark: p.mark,
             active: true,
@@ -222,10 +255,10 @@ export default function Storefront({
     }
   }
   async function remove(p: Product) {
-    if (!confirm(`¿Desactivar ${p.name}?`)) return;
+    if (!confirm(`¿Marcar ${p.name} como agotado?`)) return;
     try {
       await request(`/api/products/${p.id}`, "DELETE");
-      setNotice("Producto desactivado");
+      setNotice("Producto marcado como agotado");
       await load();
     } catch (e) {
       setNotice((e as Error).message);
@@ -256,9 +289,9 @@ export default function Storefront({
       setCart([]);
       setCartOpen(false);
       setNotice(
-        `Pedido ${result.orderId} registrado. Entrega pendiente de gestión.`,
+        `Pedido ${result.orderId} registrado. Consulta el comprobante en Pedidos.`,
       );
-      await load();
+      router.push("/pedidos?pedido=" + encodeURIComponent(result.orderId));
     } catch (e) {
       setNotice((e as Error).message);
     } finally {
@@ -288,19 +321,25 @@ export default function Storefront({
             </a>
             <a
               href={technology || secondhand ? "/#streaming" : "#streaming"}
-              onClick={() => !technology && !secondhand && jump("Streaming")}
+              onClick={() =>
+                !technology && !secondhand && !management && jump("Streaming")
+              }
             >
               Streaming
             </a>
             <a
               href={technology || secondhand ? "/#productos" : "#productos"}
-              onClick={() => !technology && !secondhand && jump("Todos")}
+              onClick={() =>
+                !technology && !secondhand && !management && jump("Todos")
+              }
             >
               Productos
             </a>
             <a
               href={technology || secondhand ? "/#combos" : "#combos"}
-              onClick={() => !technology && !secondhand && jump("Combos")}
+              onClick={() =>
+                !technology && !secondhand && !management && jump("Combos")
+              }
             >
               Combos
             </a>
@@ -359,10 +398,10 @@ export default function Storefront({
         <section
           className={
             "container hero " +
-            (!technology && !secondhand ? "hero-slideshow" : "")
+            (!technology && !secondhand && !management ? "hero-slideshow" : "")
           }
         >
-          {!technology && !secondhand && <BannerBackground />}
+          {!technology && !secondhand && !management && <BannerBackground />}
           <div className="hero-copy">
             <span className="eyebrow">
               <Sparkles size={16} />{" "}
@@ -373,26 +412,32 @@ export default function Storefront({
                   : "BIENVENIDO A GOAT"}
             </span>
             <h1>
-              {secondhand
-                ? "Otra vida."
-                : technology
-                  ? "Conecta con"
-                  : "Tu mundo"}
+              {management
+                ? "Administra"
+                : secondhand
+                  ? "Otra vida."
+                  : technology
+                    ? "Conecta con"
+                    : "Tu mundo"}
               <br />
               <em>
-                {secondhand
-                  ? "Más historias."
-                  : technology
-                    ? "lo que sigue."
-                    : "digital."}
+                {management
+                  ? "tu catálogo."
+                  : secondhand
+                    ? "Más historias."
+                    : technology
+                      ? "lo que sigue."
+                      : "digital."}
               </em>
             </h1>
             <p>
-              {secondhand
-                ? "Tecnología, ropa y calzado de segunda mano. Encuentra piezas con historia y dales una nueva oportunidad."
-                : technology
-                  ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goat Tienda."
-                  : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goat de forma fácil y rápida."}
+              {management
+                ? "Gestiona stock, imágenes y accesos privados de todos tus productos."
+                : secondhand
+                  ? "Tecnología, ropa y calzado de segunda mano. Encuentra piezas con historia y dales una nueva oportunidad."
+                  : technology
+                    ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goat Tienda."
+                    : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goat de forma fácil y rápida."}
             </p>
             <div className="hero-buttons">
               <button className="button dark" onClick={() => jump("Todos")}>
@@ -454,6 +499,8 @@ export default function Storefront({
             </div>
           </div>
         </section>
+        {management && user?.role === "ADMIN" && <CategoryImageManager />}
+        {management && user?.role === "ADMIN" && <BannerEditor />}
         <section className="container benefits" id="beneficios">
           <div>
             <ShieldCheck />
@@ -585,8 +632,19 @@ export default function Storefront({
                   style={{ background: p.gradient }}
                 >
                   <div className="photo-click">
-                    <CatalogImage name={p.name} category={p.category} />
+                    <CatalogImage
+                      productId={p.id}
+                      name={p.name}
+                      category={p.category}
+                    />
                   </div>
+                  <span
+                    className={
+                      p.stock > 0 ? "stock-badge" : "stock-badge sold-out"
+                    }
+                  >
+                    {p.stock > 0 ? p.stock + " disponibles" : "Agotado"}
+                  </span>
                   <span className="tag">
                     {secondhand ? "Segunda mano" : p.category}
                   </span>
@@ -601,7 +659,8 @@ export default function Storefront({
                     </strong>
                     <button
                       className="add-mini"
-                      title="Agregar al carrito"
+                      title={p.stock > 0 ? "Agregar al carrito" : "Agotado"}
+                      disabled={p.stock === 0}
                       onClick={() => add(p.id)}
                     >
                       <Plus />
@@ -614,7 +673,7 @@ export default function Storefront({
                           <Pencil size={14} /> Editar
                         </button>
                         <button onClick={() => remove(p)}>
-                          <Trash2 size={14} /> Desactivar
+                          <Trash2 size={14} /> Agotar
                         </button>
                       </div>
                     )}
@@ -635,11 +694,19 @@ export default function Storefront({
               modalidades de acceso y entrega.
             </p>
           </div>
-          <a className="button violet" href={supportLink} target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>
+          <a
+            className="button violet"
+            href={supportLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Escríbenos por WhatsApp
+          </a>
         </section>
-        {user?.role === "ADMIN" && !technology && !secondhand && (
-          <BannerEditor />
-        )}
+        {user?.role === "ADMIN" &&
+          !technology &&
+          !secondhand &&
+          !management && <BannerEditor />}
         <section className="container account-section">
           <div className="section-heading">
             <div>
@@ -754,6 +821,7 @@ export default function Storefront({
                   return p ? (
                     <div key={i.id} className="cart-row">
                       <CatalogImage
+                        productId={p.id}
                         name={p.name}
                         category={p.category}
                         className="cart-product-image"
@@ -767,7 +835,12 @@ export default function Storefront({
                       <div className="qty-controls">
                         <button onClick={() => updateQty(i.id, -1)}>−</button>
                         {i.qty}
-                        <button onClick={() => updateQty(i.id, 1)}>+</button>
+                        <button
+                          disabled={i.qty >= Math.min(50, p.stock)}
+                          onClick={() => updateQty(i.id, 1)}
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
                   ) : null;
@@ -782,7 +855,16 @@ export default function Storefront({
               <p>Tu saldo: {cop(user?.balance || 0)}</p>
               <button
                 className="button violet full"
-                disabled={busy || !cart.length || total > (user?.balance || 0)}
+                disabled={
+                  busy ||
+                  !cart.length ||
+                  total > (user?.balance || 0) ||
+                  cart.some(
+                    (i) =>
+                      !products.find((p) => p.id === i.id) ||
+                      i.qty > (products.find((p) => p.id === i.id)?.stock || 0),
+                  )
+                }
                 onClick={checkout}
               >
                 Comprar con saldo Goat
@@ -792,9 +874,17 @@ export default function Storefront({
                   Saldo insuficiente: solicita una recarga al administrador.
                 </small>
               )}
+              {cart.some(
+                (i) =>
+                  i.qty > (products.find((p) => p.id === i.id)?.stock || 0),
+              ) && (
+                <p role="status">
+                  Hay productos sin stock suficiente. Ajusta las cantidades.
+                </p>
+              )}
               <small>
-                La compra debita tu saldo y crea un pedido pendiente de entrega
-                manual.
+                La compra debita tu saldo y crea un pedido con stock reservado.
+                Los accesos digitales configurados se muestran en Pedidos.
               </small>
             </div>
           </aside>
@@ -851,6 +941,27 @@ export default function Storefront({
                     }
                   />
                 </label>
+                <label>
+                  Unidades disponibles
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000000}
+                    required
+                    value={form.stock}
+                    onChange={(e) =>
+                      setForm({ ...form, stock: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                {user?.role === "ADMIN" && editId && (
+                  <>
+                    <ImageUploadButton kind="product" imageKey={editId} />
+                    {digitalCategories.some((c) => c === form.category) && (
+                      <DeliveryEditor productId={editId} />
+                    )}
+                  </>
+                )}
                 <label>
                   Texto corto o marca
                   <input

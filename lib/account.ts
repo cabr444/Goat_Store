@@ -1,3 +1,4 @@
+import { decryptPrivate } from "@/lib/private-delivery";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
@@ -58,6 +59,7 @@ export function userOrdersWhere(
 }
 const recentSelect = {
   id: true,
+  productId: true,
   name: true,
   category: true,
   unitPrice: true,
@@ -112,12 +114,23 @@ export async function getProfileData(userId: string, role: string) {
     sold,
   };
 }
+function readReceipt(cipher: string) {
+  try {
+    return decryptPrivate(cipher);
+  } catch {
+    return "No fue posible abrir el acceso guardado. Contacta con soporte.";
+  }
+}
 export async function getOrderHistory(
   userId: string,
   section: OrderSection,
   requestedPage: number,
+  orderId?: string,
 ) {
-  const where = userOrdersWhere(userId, section);
+  const where = {
+    ...userOrdersWhere(userId, section),
+    ...(orderId ? { id: orderId } : {}),
+  };
   const total = await db.order.count({ where });
   const pages = Math.max(1, Math.ceil(total / 20));
   const page = Math.max(1, Math.min(requestedPage, pages));
@@ -130,5 +143,12 @@ export async function getOrderHistory(
     skip: (page - 1) * 20,
     take: 20,
   });
-  return { orders, total, page, pages };
+  const safeOrders = orders.map((order) => ({
+    ...order,
+    items: order.items.map(({ receiptCipher, ...item }) => ({
+      ...item,
+      receipt: receiptCipher ? readReceipt(receiptCipher) : null,
+    })),
+  }));
+  return { orders: safeOrders, total, page, pages };
 }

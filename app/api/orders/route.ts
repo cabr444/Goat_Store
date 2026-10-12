@@ -1,3 +1,10 @@
+import { randomUUID } from "node:crypto";
+import {
+  encryptPrivate,
+  decryptPrivate,
+  deliverySchema,
+  receiptText,
+} from "@/lib/private-delivery";
 import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -15,7 +22,18 @@ export async function GET() {
   return reply({
     orders: await db.order.findMany({
       where: { userId: u.id },
-      include: { items: true },
+      include: {
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            name: true,
+            category: true,
+            quantity: true,
+            unitPrice: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
@@ -33,7 +51,7 @@ async function handlePOST(req: Request) {
       async (tx) => {
         const ids = v.data.items.map((i) => i.id);
         const products = await tx.product.findMany({
-          where: { id: { in: ids }, active: true },
+          where: { id: { in: ids } },
         });
         if (products.length !== ids.length)
           throw new Error("Hay productos no disponibles.");
@@ -44,6 +62,43 @@ async function handlePOST(req: Request) {
         );
         if (!Number.isSafeInteger(total) || total < 1 || total > 2147483647)
           throw new Error("Total inválido.");
+        const orderId = randomUUID(),
+          date = new Date();
+        const delivered = new Map<string, string>();
+        for (const item of v.data.items) {
+          const product = products.find((p) => p.id === item.id)!;
+          if (product.stock < item.qty) throw Error("Stock insuficiente.");
+          if (product.category === "Streaming" && !product.deliveryCipher)
+            throw Error("El acceso de streaming aún no está configurado.");
+          if (
+            product.deliveryCipher &&
+            ["Streaming", "Música", "Productividad", "Combos"].includes(
+              product.category,
+            )
+          ) {
+            const access = deliverySchema.parse(
+              JSON.parse(decryptPrivate(product.deliveryCipher)),
+            );
+            delivered.set(
+              product.id,
+              encryptPrivate(
+                receiptText(
+                  access,
+                  product.name,
+                  orderId,
+                  date,
+                  item.qty,
+                  product.price * item.qty,
+                ),
+              ),
+            );
+          }
+          const reserved = await tx.product.updateMany({
+            where: { id: item.id, stock: { gte: item.qty } },
+            data: { stock: { decrement: item.qty } },
+          });
+          if (reserved.count !== 1) throw Error("Stock insuficiente.");
+        }
         const debit = await tx.user.updateMany({
           where: { id: u.id, balance: { gte: total } },
           data: { balance: { decrement: total } },
@@ -51,12 +106,19 @@ async function handlePOST(req: Request) {
         if (debit.count !== 1) throw new Error("Saldo insuficiente.");
         const order = await tx.order.create({
           data: {
+            id: orderId,
+            createdAt: date,
+            status:
+              delivered.size === v.data.items.length
+                ? "ENTREGADO"
+                : "PENDIENTE_ENTREGA",
             userId: u.id,
             total,
             items: {
               create: v.data.items.map((i) => {
                 const p = products.find((p) => p.id === i.id)!;
                 return {
+                  receiptCipher: delivered.get(p.id) || null,
                   productId: p.id,
                   category: p.category,
                   sellerId: p.ownerId,
@@ -78,7 +140,7 @@ async function handlePOST(req: Request) {
         });
         return order;
       },
-      { isolationLevel: "Serializable" },
+      { isolationLevel: "Serializable", maxWait: 10000, timeout: 30000 },
     );
     return reply({ orderId: order.id, total: order.total }, 201);
   } catch (e) {
@@ -88,6 +150,8 @@ async function handlePOST(req: Request) {
         "Hay productos no disponibles.",
         "Total inválido.",
         "Saldo insuficiente.",
+        "Stock insuficiente.",
+        "El acceso de streaming aún no está configurado.",
       ].includes(e.message)
         ? e.message
         : "No se pudo realizar la compra. Inténtalo nuevamente.";

@@ -2,6 +2,7 @@ import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
+import { publicProductSelect } from "@/lib/catalog-dto";
 import { productSchema } from "@/lib/product-schema";
 async function handlePATCH(
   req: Request,
@@ -14,10 +15,30 @@ async function handlePATCH(
   if (!p) return fail("Producto no encontrado.", 404);
   if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
     return fail("No puedes modificar este producto.", 403);
-  const v = productSchema.safeParse(await req.json());
+  const raw = await req.json();
+  const expectedStock = raw?.expectedStock;
+  if (
+    !Number.isInteger(expectedStock) ||
+    expectedStock < 0 ||
+    expectedStock > 1000000
+  )
+    return fail("Reabre el producto para cargar su stock actual.", 409);
+  const v = productSchema.safeParse(raw);
   if (!v.success) return fail("Datos inválidos.");
+  const updated = await db.product.updateMany({
+    where: { id, stock: expectedStock },
+    data: v.data,
+  });
+  if (updated.count !== 1)
+    return fail(
+      "El stock cambió mientras editabas. Cierra y vuelve a abrir el producto antes de guardar.",
+      409,
+    );
   return reply({
-    product: await db.product.update({ where: { id }, data: v.data }),
+    product: await db.product.findUniqueOrThrow({
+      where: { id },
+      select: publicProductSelect,
+    }),
   });
 }
 async function handleDELETE(
@@ -31,7 +52,7 @@ async function handleDELETE(
   if (!p) return fail("Producto no encontrado.", 404);
   if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
     return fail("No autorizado.", 403);
-  await db.product.update({ where: { id }, data: { active: false } });
+  await db.product.update({ where: { id }, data: { stock: 0, active: true } });
   return reply({ ok: true });
 }
 
