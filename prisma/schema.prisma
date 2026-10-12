@@ -54,6 +54,9 @@ model Order {
 }
 
 model OrderItem {
+  category String @default("")
+  sellerId String?
+  @@index([sellerId])
   id        String  @id @default(cuid())
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id])

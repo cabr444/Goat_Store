@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {supportLink} from "@/lib/account-links";
+import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
 import { useRouter } from "next/navigation";
@@ -328,6 +330,7 @@ export default function Storefront({
               <Wallet size={17} />
               {cop(user?.balance || 0)}
             </span>
+            <ProfileMenu name={user?.name} />
             <button
               className="icon-button"
               title="Carrito"
@@ -632,7 +635,7 @@ export default function Storefront({
               modalidades de acceso y entrega.
             </p>
           </div>
-          <p>Configura tu canal de soporte antes de publicar la tienda.</p>
+          <a className="button violet" href={supportLink} target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>
         </section>
         {user?.role === "ADMIN" && !technology && !secondhand && (
           <BannerEditor />

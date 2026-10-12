@@ -58,6 +58,8 @@ async function handlePOST(req: Request) {
                 const p = products.find((p) => p.id === i.id)!;
                 return {
                   productId: p.id,
+                  category: p.category,
+                  sellerId: p.ownerId,
                   name: p.name,
                   unitPrice: p.price,
                   quantity: i.qty,

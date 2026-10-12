@@ -84,3 +84,13 @@ Los seis fondos predeterminados de Inicio ahora son diseños de Netflix, Prime V
 Las tarjetas de Inicio, Tienda y Segunda muestran imágenes locales representativas, y el carrito muestra la misma miniatura del producto. La selección usa nombre y categoría: plataformas de streaming, computadores, periféricos, audio, accesorios, ropa y calzado. Funciona con los productos ya existentes; no exige migraciones ni volver a ejecutar los seeds. Nuevos productos usan una imagen de su categoría si su tipo no está reconocido.
 
 Las fotos y dibujos del catálogo son ejemplos representativos; sustitúyelos por fotos de tus artículos reales antes de vender, especialmente los usados. Cambia las rutas de selección en lib/catalog-images.ts o reemplaza los archivos de public/images/catalog. No se solicitan imágenes a servicios externos cuando el cliente abre la web. Fotos descargadas de Unsplash; fuente y referencias en public/images/catalog/SOURCES.md.
+
+## Perfil, pedidos y WhatsApp
+El círculo de perfil junto al saldo abre un menú al pasar el mouse; también funciona por clic, teclado y toque. Incluye Perfil, Pedidos, Soporte y Recargas.
+
+- Perfil: nombre, email, rol, saldo, total gastado, fecha de registro, número de pedidos y los últimos 10 productos comprados. Vendedores también ven sus últimas 10 ventas. Administradores ven sus ventas y las de productos gestionados por la tienda.
+- Pedidos: historial privado con todos los pedidos accesibles mediante paginación de 20, filtros de Streaming y digitales, Tienda y Segunda, y detalle de productos, cantidades, precios, subtotales y estado. Los pedidos mixtos aparecen en los filtros correspondientes y separan sus productos por sección dentro del detalle.
+- Soporte: abre WhatsApp a +57 3223037790 con el mensaje "Necesito soporte...".
+- Recargas: abre el mismo número con "quiero recargar saldo.".
+
+Ejecuta npm run db:push después de actualizar. Los nuevos pedidos guardan la categoría y el vendedor de cada producto al comprar. Los pedidos históricos usan la categoría y el propietario actuales del producto cuando no tienen esos datos guardados. El gasto corresponde al total debitado por pedidos; no implementa reembolsos. Las páginas verifican la sesión y solo consultan compras del usuario; las listas de ventas respetan el vendedor o el rol administrador. El enlace de WhatsApp prepara el mensaje; el usuario decide enviarlo.
