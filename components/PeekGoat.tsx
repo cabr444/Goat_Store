@@ -1,12 +1,6 @@
-"use client";
-
-import { useState } from "react";
-import { Pause, Play } from "lucide-react";
-
 export default function PeekGoat() {
-  const [paused, setPaused] = useState(false);
   return (
-    <aside className={"peek-goat" + (paused ? " is-paused" : "")} aria-label="Mascota Goat">
+    <aside className="peek-goat" aria-label="Mascota Goat">
       <div className="peek-goat-window" aria-hidden="true">
         <div className="peek-goat-character">
           <span className="peek-goat-bubble">¡Beeenvenido!</span>
@@ -33,10 +27,6 @@ export default function PeekGoat() {
           </svg>
         </div>
       </div>
-      <button className="peek-goat-toggle" type="button" aria-pressed={paused} onClick={() => setPaused(!paused)}>
-        {paused ? <Play size={12} /> : <Pause size={12} />}
-        {paused ? "Animar cabrita" : "Pausar cabrita"}
-      </button>
     </aside>
   );
 }

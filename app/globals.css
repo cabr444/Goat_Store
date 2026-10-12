@@ -79,22 +79,23 @@
 @media(max-width:720px){.access-float{width:42px;height:42px;border-radius:12px;opacity:.6}.access-float svg{width:21px}.access-float-play{right:8%;top:14%}.access-float-music{right:3%;top:55%}.access-float-game,.access-float-tech{display:none}.access-portal{width:220px;height:220px;right:-80px;bottom:-70px}.access-animation-toggle{left:auto;right:14px;bottom:12px;font-size:10px;padding:7px 9px}.access-star-one{font-size:25px;top:35%;right:20%}.access-star-two{display:none}.access-energy{filter:blur(25px)}}
 @media(prefers-reduced-motion:reduce){.access-anime-backdrop *{animation:none!important}.access-animation-toggle{display:none}}
 
-.access-form-scene{position:relative;width:min(570px,100%);padding-left:110px}
-.access-form-scene .access-card{position:relative;z-index:2;width:100%}
-.peek-goat{position:absolute;left:0;top:95px;width:120px}
+.access-form-scene{position:relative;width:min(430px,100%)}
+.access-form-scene .access-card{position:relative;z-index:2;width:100%;border:1px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#b497f2,#91c6f6,#b497f2) border-box;box-shadow:0 0 10px #8658ed18,0 0 24px #6cafff14,0 22px 80px #2010350d}
+.access-form-scene .access-card>h2{text-align:center}
+.peek-goat{position:absolute;left:-115px;top:95px;width:120px}
 .peek-goat-window{height:210px;overflow:hidden;position:relative}
 .peek-goat-character{position:absolute;inset:0;animation:goat-peek-side 9s ease-in-out infinite;transform-origin:bottom center}
 .peek-goat-drawing{position:absolute;right:-8px;bottom:0;width:120px;height:160px;filter:drop-shadow(0 5px 7px #75548a22)}
 .peek-goat-bubble{position:absolute;left:2px;top:8px;white-space:nowrap;border-radius:16px 16px 4px 16px;padding:9px 10px;background:#fff;border:1px solid #e6d8fb;color:#7349b5;font-size:11px;font-weight:800;animation:goat-bubble 9s ease-in-out infinite}
 .peek-goat-eyes{transform-box:fill-box;transform-origin:center;animation:goat-blink 4.5s infinite}
 .peek-goat-wave{transform-box:fill-box;transform-origin:bottom left;animation:goat-wave 1.1s ease-in-out infinite alternate}
-.peek-goat-toggle{display:flex;align-items:center;justify-content:center;gap:4px;width:110px;border:1px solid #e6dcf7;border-radius:30px;padding:7px 4px;font-size:9px;background:#ffffffb5;color:#7a6195;cursor:pointer}
-.peek-goat-toggle:focus-visible{outline:3px solid #7045ee;outline-offset:3px}
-.peek-goat.is-paused *{animation-play-state:paused!important}
+
+
+
 @keyframes goat-peek-side{0%,100%{transform:translateX(125px) rotate(8deg)}12%,42%{transform:translateX(0) rotate(0)}52%,66%{transform:translateX(125px) rotate(8deg)}76%,90%{transform:translateX(12px) rotate(-5deg)}}
 @keyframes goat-bubble{0%,10%,45%,72%,100%{opacity:0;transform:translateY(8px)}18%,38%,80%,90%{opacity:1;transform:translateY(0)}}
 @keyframes goat-blink{0%,43%,47%,100%{transform:scaleY(1)}45%{transform:scaleY(.08)}}
 @keyframes goat-wave{from{rotate:-8deg}to{rotate:15deg}}
-@media(max-width:1100px){.access-form-scene{width:min(430px,100%);padding-left:0;padding-top:102px}.peek-goat{top:0;left:auto;right:6px;width:150px;height:110px}.peek-goat-window{height:110px}.peek-goat-character{animation-name:goat-peek-top}.peek-goat-drawing{width:100px;height:117px;right:7px;bottom:-31px}.peek-goat-bubble{left:0;top:10px;font-size:10px;padding:7px}.peek-goat-toggle{position:absolute;right:107px;bottom:15px;width:103px}.peek-goat-bubble{top:4px;left:0;z-index:1}.access-panel{padding-top:16px}}
+@media(max-width:1100px){.access-form-scene{width:min(430px,100%)}.peek-goat{top:-100px;left:auto;right:6px;width:150px;height:110px}.peek-goat-window{height:110px}.peek-goat-character{animation-name:goat-peek-top}.peek-goat-drawing{width:100px;height:117px;right:7px;bottom:-31px}.peek-goat-bubble{left:0;top:10px;font-size:10px;padding:7px}.peek-goat-bubble{top:4px;left:0;z-index:1}.access-panel{padding-top:116px}}
 @keyframes goat-peek-top{0%,100%{transform:translateY(120px) rotate(8deg)}12%,42%{transform:translateY(0) rotate(0)}52%,66%{transform:translateY(120px) rotate(8deg)}76%,90%{transform:translateY(6px) rotate(-5deg)}}
-@media(prefers-reduced-motion:reduce){.peek-goat *{animation:none!important}.peek-goat-toggle{display:none}.peek-goat-bubble{opacity:1}}
+@media(prefers-reduced-motion:reduce){.peek-goat *{animation:none!important}.peek-goat-bubble{opacity:1}}
