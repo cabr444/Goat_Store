@@ -177,8 +177,7 @@ export default function Storefront({
     () =>
       sortCards(products.filter(
         (p) =>
-          catalogCategories.includes(p.category) &&
-          (!home || p.category === "Streaming") &&
+          (home ? allCategories : catalogCategories).includes(p.category) &&
           (filter === "Todos" || p.category === filter) &&
           p.name
             .toLocaleLowerCase("es")
@@ -246,7 +245,7 @@ export default function Storefront({
     setNotice("Producto agregado al carrito");
   };
   const jump = (cat: string) => {
-    if (home && cat !== "Streaming") {
+    if (home && cat !== "Streaming" && cat !== "Todos") {
       router.push("/catalogo?categoria=" + encodeURIComponent(cat));
       return;
     }
@@ -371,7 +370,7 @@ export default function Storefront({
             </a>
             <Link
               href={home ? "#catalogo" : "/catalogo?categoria=Streaming"}
-              onClick={() => setMenu(false)}
+              onClick={(event) => { if (home) { event.preventDefault(); setQuery(""); jump("Streaming"); } else setMenu(false); }}
             >
               Streaming
             </Link>
@@ -586,14 +585,16 @@ export default function Storefront({
           <div className="section-heading">
             <div>
               <span className="overline">
-                {secondhand
+                {home
+                  ? "CATÁLOGO GOAT"
+                  : secondhand
                   ? "CATÁLOGO DE SEGUNDA MANO"
                   : technology
                     ? "CATÁLOGO DE TECNOLOGÍA"
                     : "CATÁLOGO DIGITAL"}
               </span>
               <h2>
-                {home ? "Streaming" : filter === "Todos"
+                {home ? (filter === "Todos" ? "Catálogo Goat" : filter) : filter === "Todos"
                   ? secondhand
                     ? "Encuentra tu próxima historia"
                     : technology
@@ -604,7 +605,7 @@ export default function Storefront({
               </h2>
               <p>
                 {
-                  products.filter((p) => catalogCategories.includes(p.category) && (!home || p.category === "Streaming"))
+                  products.filter((p) => (home ? allCategories : catalogCategories).includes(p.category))
                     .length
                 }{" "}
                 productos disponibles en Goat.
@@ -625,8 +626,8 @@ export default function Storefront({
                 placeholder="Buscar productos..."
               />
             </label>
-            {!home && <div className="filter-row">
-              {["Todos", ...orderedCategories].map((c) => (
+            {<div className="filter-row">
+              {["Todos", ...(home ? sortCards(allCategories, cardOrders.categories.ids, category => category).filter(category => products.some(product => product.category === category)) : orderedCategories)].map((c) => (
                 <button
                   key={c}
                   className={`filter-pill ${filter === c ? "active" : ""}`}
@@ -639,7 +640,8 @@ export default function Storefront({
           </div>
           <div className="catalog-results-heading">
             <p className="result-count">{visible.length} productos</p>
-            {(home || (digitalCatalog && filter === "Streaming")) && query && <button type="button" className="button outline catalog-show-all" onClick={() => { setQuery(""); setFilter("Streaming"); }}>Ver todo Streaming</button>}
+            {home && (query || filter !== "Todos") && <button type="button" className="button outline catalog-show-all" onClick={() => { setQuery(""); setFilter("Todos"); }}>Ver todos los productos</button>}
+            {!home && digitalCatalog && filter === "Streaming" && query && <button type="button" className="button outline catalog-show-all" onClick={() => { setQuery(""); setFilter("Streaming"); }}>Ver todo Streaming</button>}
           </div>
           <div className="product-grid">
             {visible.map((p) => (
