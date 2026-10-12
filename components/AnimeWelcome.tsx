@@ -2,18 +2,21 @@
 
 import { useEffect, useRef } from "react";
 
-export default function AnimeWelcome() {
+export default function AnimeWelcome({ onComplete }: { onComplete?: () => void }) {
+  const complete = useRef(onComplete);
+  complete.current = onComplete;
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    try {
-      if (sessionStorage.getItem("goat-welcome-seen")) return;
-      sessionStorage.setItem("goat-welcome-seen", "1");
-    } catch { /* The intro still works when browser storage is unavailable. */ }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      complete.current?.();
+      return;
+    }
     const element = dialog.current;
+    const finish = () => complete.current?.();
+    element?.addEventListener("close", finish);
     element?.showModal();
     const timer = window.setTimeout(() => element?.close(), 3200);
-    return () => { window.clearTimeout(timer); element?.close(); };
+    return () => { window.clearTimeout(timer); element?.removeEventListener("close", finish); element?.close(); };
   }, []);
 
   return (

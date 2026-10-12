@@ -56,3 +56,25 @@
 @keyframes anime-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(max-height:650px){.anime-mascot{width:190px}.anime-orbit{width:210px;height:210px;top:15px}.anime-welcome-copy h2{font-size:30px;margin:10px 0}.anime-progress{margin-top:14px}.anime-skip{top:12px;right:12px}}
 @media(prefers-reduced-motion:reduce){.anime-welcome,.anime-welcome *,.anime-welcome *::after{animation:none!important}}
+
+.access-brand>.eyebrow,.access-brand>h1,.access-brand>h2,.access-brand>p{position:relative;z-index:2}
+.access-anime-backdrop{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.access-energy{position:absolute;width:65%;aspect-ratio:1;border-radius:50%;filter:blur(45px);opacity:.4;animation:access-energy-drift 14s ease-in-out infinite alternate}
+.access-energy-one{background:#9debff;top:-15%;left:-20%}.access-energy-two{background:#cc8aff;bottom:-15%;right:-10%;animation-delay:-7s}
+.access-portal{position:absolute;width:400px;height:400px;right:-120px;bottom:30px;transform:rotateX(25deg) rotate(-20deg);opacity:.65}
+.access-portal i{position:absolute;inset:0;border:2px solid #fff9;border-radius:50%;box-shadow:0 0 25px #ae7ffa55,inset 0 0 25px #ae7ffa33;animation:access-portal-turn 24s linear infinite}
+.access-portal i:nth-child(2){inset:26px;border:2px dashed #8351ed55;animation-direction:reverse}.access-portal i:nth-child(3){inset:65px;border-color:#fff8;animation:access-portal-pulse 6s ease-in-out infinite alternate}
+.access-float{position:absolute;display:grid;place-items:center;width:70px;height:70px;border:1px solid #ffffffa8;background:linear-gradient(140deg,#ffffffaa,#ffffff44);border-radius:20px;color:#7446c9;box-shadow:0 12px 30px #67428d15;animation:access-card-float 7s ease-in-out infinite}
+.access-float-play{right:9%;top:12%;rotate:14deg}.access-float-music{right:4%;top:48%;rotate:-12deg;animation-delay:-2s}.access-float-game{left:12%;bottom:9%;rotate:-15deg;animation-delay:-4s}.access-float-tech{right:26%;bottom:19%;rotate:10deg;animation-delay:-1s}
+.access-star{position:absolute;color:#ffffffc9;animation:access-star-glow 5s ease-in-out infinite alternate;line-height:1}
+.access-star-one{top:32%;right:12%;font-size:40px}.access-star-two{bottom:12%;left:37%;font-size:30px;animation-delay:-3s}.access-star-three{top:8%;left:45%;font-size:20px;animation-delay:-1s}
+.access-animation-toggle{position:absolute;left:28px;bottom:20px;z-index:3;display:flex;align-items:center;gap:6px;border:1px solid #ffffff77;border-radius:30px;background:#ffffff65;color:#513b6c;padding:8px 12px;font-size:11px}
+.access-animation-toggle:focus-visible{outline:3px solid #7045ee;outline-offset:3px}
+.access-anime-backdrop.is-paused *{animation-play-state:paused!important}
+@keyframes access-energy-drift{to{transform:translate(35px,45px) scale(1.15)}}
+@keyframes access-portal-turn{to{rotate:360deg}}
+@keyframes access-portal-pulse{to{scale:.9;opacity:.35}}
+@keyframes access-card-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes access-star-glow{from{opacity:.3;scale:.8}to{opacity:1;scale:1.1}}
+@media(max-width:720px){.access-float{width:42px;height:42px;border-radius:12px;opacity:.6}.access-float svg{width:21px}.access-float-play{right:8%;top:14%}.access-float-music{right:3%;top:55%}.access-float-game,.access-float-tech{display:none}.access-portal{width:220px;height:220px;right:-80px;bottom:-70px}.access-animation-toggle{left:auto;right:14px;bottom:12px;font-size:10px;padding:7px 9px}.access-star-one{font-size:25px;top:35%;right:20%}.access-star-two{display:none}.access-energy{filter:blur(25px)}}
+@media(prefers-reduced-motion:reduce){.access-anime-backdrop *{animation:none!important}.access-animation-toggle{display:none}}

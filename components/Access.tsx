@@ -1,5 +1,7 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
+import AnimeWelcome from "@/components/AnimeWelcome";
+import AccessBackdrop from "@/components/AccessBackdrop";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
 export default function Access({
@@ -10,6 +12,8 @@ export default function Access({
   recover?: boolean;
 }) {
   const router = useRouter();
+  const [entering, setEntering] = useState(false);
+  const enterStore = useCallback(() => { router.replace("/"); router.refresh(); }, [router]);
   const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">(
       resetToken ? "reset" : recover ? "forgot" : "login",
     ),
@@ -58,9 +62,10 @@ export default function Access({
         setMessage(d.message);
         setPassword("");
         setConfirmation("");
+      } else if (mode === "login") {
+        setEntering(true);
       } else {
-        router.replace("/");
-        router.refresh();
+        enterStore();
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -70,7 +75,9 @@ export default function Access({
   }
   return (
     <main className="access-screen">
+      {entering && <AnimeWelcome onComplete={enterStore} />}
       <div className="access-brand">
+        <AccessBackdrop />
         <span className="eyebrow">
           <Sparkles size={15} /> TU MUNDO DIGITAL
         </span>
@@ -225,7 +232,7 @@ export default function Access({
           )}
           <button
             className="button violet full"
-            disabled={busy || (mode === "reset" && !!message)}
+            disabled={busy || entering || (mode === "reset" && !!message)}
           >
             {busy
               ? "Procesando..."

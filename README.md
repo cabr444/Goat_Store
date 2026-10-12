@@ -123,4 +123,4 @@ Las nuevas compras tienen una referencia consecutiva P1, P2, P3 (P de pedido), a
 
 Para cambiar precios: Perfil → Administrar productos, stock e imágenes → Editar → Precio (COP) → Guardar producto. El precio nuevo se usa en futuras compras y los pedidos anteriores conservan el precio pagado.
 
-Inicio muestra una bienvenida de 3,2 segundos con una mascota Goat original de estilo anime. Se puede omitir con el botón o Escape, aparece una vez por sesión de pestaña y se desactiva cuando el navegador solicita reducir movimiento. La ilustración es SVG local y no requiere servicios externos.
+Después de iniciar sesión correctamente con Entrar a Goat, se muestra una bienvenida de 3,2 segundos con una mascota Goat original de estilo anime. Al terminar, omitirla o pulsar Escape, se entra a Inicio. Los accesos fallidos y las visitas normales a Inicio no muestran la bienvenida. Con movimiento reducido se entra directamente. El panel lateral de acceso tiene un fondo animado con portal y tarjetas flotantes, que se puede pausar y respeta movimiento reducido. La ilustración es SVG local y no requiere servicios externos.
