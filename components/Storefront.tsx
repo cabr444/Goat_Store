@@ -7,6 +7,7 @@ import ImageUploadButton from "@/components/ImageUploadButton";
 import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -102,6 +103,7 @@ export default function Storefront({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
+    [catalogLoading, setCatalogLoading] = useState(true),
     [filter, setFilter] = useState(initialCategory),
     [query, setQuery] = useState(""),
     [cart, setCart] = useState<CartItem[]>([]),
@@ -134,7 +136,7 @@ export default function Storefront({
     setOrders(o.orders);
   };
   useEffect(() => {
-    load().catch((e) => setNotice(e.message));
+    load().catch((e) => setNotice(e.message)).finally(() => setCatalogLoading(false));
     try {
       const data = JSON.parse(localStorage.getItem("goat-cart-v3") || "[]");
       if (Array.isArray(data))
@@ -326,18 +328,18 @@ export default function Storefront({
             >
               Inicio
             </a>
-            <a
+            <Link
               href="/catalogo?categoria=Streaming"
               onClick={() => setMenu(false)}
             >
               Streaming
-            </a>
-            <a
+            </Link>
+            <Link
               href="/catalogo?categoria=Combos"
               onClick={() => setMenu(false)}
             >
               Combos
-            </a>
+            </Link>
             <a
               href="/store"
               aria-current={technology ? "page" : undefined}
@@ -387,6 +389,7 @@ export default function Storefront({
         </div>
       </header>
       <main id="inicio">
+        {!digitalCatalog && (
         <section
           className={
             "container hero " +
@@ -491,8 +494,10 @@ export default function Storefront({
             </div>
           </div>
         </section>
+        )}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
+        {!digitalCatalog && (
         <section className="container category-section" id="streaming">
           <div className="section-heading">
             <div>
@@ -525,6 +530,7 @@ export default function Storefront({
             ))}
           </div>
         </section>
+        )}
         {(technology || secondhand || management || digitalCatalog) && (
         <section className="container products-section" id="catalogo">
           <span id="combos" />
@@ -640,7 +646,8 @@ export default function Storefront({
               </article>
             ))}
           </div>
-          {visible.length === 0 && (
+          {catalogLoading && <p role="status">Cargando catálogo…</p>}
+          {!catalogLoading && visible.length === 0 && (
             <div className="empty">No hay productos para mostrar.</div>
           )}
         </section>
