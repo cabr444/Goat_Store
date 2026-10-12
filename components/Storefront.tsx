@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
+import StoreOptionsEditor from "@/components/StoreOptionsEditor";
+import type { StoreOptions } from "@/lib/store-settings";
 import CategoryImageManager from "@/components/CategoryImageManager";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
@@ -105,6 +107,7 @@ export default function Storefront({
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
     [catalogLoading, setCatalogLoading] = useState(true),
+    [storeOptions, setStoreOptions] = useState<StoreOptions>({ tiendaEnabled: true, segundaEnabled: true }),
     [filter, setFilter] = useState(initialCategory),
     [query, setQuery] = useState(""),
     [cart, setCart] = useState<CartItem[]>([]),
@@ -128,6 +131,7 @@ export default function Storefront({
     setProducts(data.products);
     setUsers(data.users);
     setOrders(data.orders);
+    setStoreOptions(data.storeOptions);
   };
   useEffect(() => {
     load().catch((e) => setNotice(e.message)).finally(() => setCatalogLoading(false));
@@ -150,11 +154,15 @@ export default function Storefront({
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       void request("/api/products")
-        .then((data) => setProducts(data.products))
+        .then((data) => {
+          setProducts(data.products);
+          setStoreOptions(data.storeOptions);
+          if (user?.role === "CLIENTE" && ((technology && !data.storeOptions.tiendaEnabled) || (secondhand && !data.storeOptions.segundaEnabled))) router.replace("/");
+        })
         .catch(() => {});
     }, 15000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [user?.role, technology, secondhand, router]);
   const visible = useMemo(
     () =>
       products.filter(
@@ -336,20 +344,20 @@ export default function Storefront({
             >
               Combos
             </Link>
-            <a
+            {user && (user.role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a
               href="/store"
               aria-current={technology ? "page" : undefined}
               onClick={() => setMenu(false)}
             >
               Tienda
-            </a>
-            <a
+            </a>}
+            {user && (user.role !== "CLIENTE" || storeOptions.segundaEnabled) && <a
               href="/segunda"
               aria-current={secondhand ? "page" : undefined}
               onClick={() => setMenu(false)}
             >
               Segunda
-            </a>
+            </a>}
             <a href="#contacto" onClick={() => setMenu(false)}>
               Contacto
             </a>
@@ -491,6 +499,7 @@ export default function Storefront({
           </div>
         </section>
         )}
+        {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
         {!digitalCatalog && (

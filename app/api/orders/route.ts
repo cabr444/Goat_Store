@@ -1,3 +1,4 @@
+import { disabledClientCategories } from "@/lib/store-settings";
 import { randomUUID } from "node:crypto";
 import {
   encryptPrivate,
@@ -49,12 +50,16 @@ async function handlePOST(req: Request) {
   try {
     const order = await db.$transaction(
       async (tx) => {
+        const settings = await tx.storeSettings.findUnique({ where: { id: "main" } });
+        const blocked = disabledClientCategories(u.role, settings || { tiendaEnabled: true, segundaEnabled: true });
         const ids = v.data.items.map((i) => i.id);
         const products = await tx.product.findMany({
           where: { id: { in: ids } },
         });
         if (products.length !== ids.length)
           throw new Error("Hay productos no disponibles.");
+        if (products.some(product => blocked.includes(product.category)))
+          throw Error("Esta sección está deshabilitada temporalmente para clientes.");
         const total = v.data.items.reduce(
           (sum, i) =>
             sum + (products.find((p) => p.id === i.id)?.price ?? 0) * i.qty,
@@ -154,6 +159,7 @@ async function handlePOST(req: Request) {
     const message =
       e instanceof Error &&
       [
+        "Esta sección está deshabilitada temporalmente para clientes.",
         "Hay productos no disponibles.",
         "Total inválido.",
         "Saldo insuficiente.",

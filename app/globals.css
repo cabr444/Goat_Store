@@ -113,3 +113,5 @@
 .hero-slideshow .banner-controls button:not(.banner-pause)::after{background:#c0b5d1}
 .hero-slideshow .banner-controls button.active::after{background:#fff;box-shadow:0 0 0 3px #8d67e8}
 .hero-slideshow .banner-controls .banner-pause{color:#fff}
+
+.store-options-editor{padding:36px 0}.store-options-editor>p{color:#797184;font-size:13px;line-height:1.7;max-width:760px}.store-options-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}.store-options-grid article{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px;border:1px solid #e8def5;border-radius:14px;background:#faf7ff}.store-options-grid article p{font-size:12px;color:#797184;margin-bottom:0}@media(max-width:720px){.store-options-grid{grid-template-columns:1fr}.store-options-grid article{padding:18px}.store-options-grid .button{padding:12px}}

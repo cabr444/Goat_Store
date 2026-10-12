@@ -115,3 +115,9 @@ model CatalogImageAsset {
   contentType String
   updatedAt DateTime @updatedAt
 }
+
+model StoreSettings {
+  id String @id @default("main")
+  tiendaEnabled Boolean @default(true)
+  segundaEnabled Boolean @default(true)
+}
