@@ -5,7 +5,7 @@ export default function ImageUploadButton({
   kind,
   imageKey,
 }: {
-  kind: "category" | "product";
+  kind: "category" | "product" | "series" | "platform";
   imageKey: string;
 }) {
   const [busy, setBusy] = useState(false),

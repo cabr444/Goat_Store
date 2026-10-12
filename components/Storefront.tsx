@@ -580,7 +580,7 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {(home || (digitalCatalog && filter === "Streaming")) && <StreamingHighlights />}
+        {(home || (digitalCatalog && filter === "Streaming") || (management && user?.role === "ADMIN")) && <StreamingHighlights admin={user?.role === "ADMIN"} />}
         <section className="container products-section" id="catalogo">
           <span id="combos" />
           <div className="section-heading">

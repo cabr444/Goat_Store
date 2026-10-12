@@ -9,3 +9,7 @@ export const streamingHighlights = [
   { id: "vix", name: "ViX", query: "ViX", image: "vix", color: "#ffab75", shows: [["El gallo de oro", "Drama", "✦"], ["Mujeres asesinas", "Suspenso", "◆"], ["El extraño retorno de Diana Salazar", "Misterio", "☾"], ["La cabeza de Joaquín Murrieta", "Aventura", "⚔"], ["Travesuras de la niña mala", "Romance", "♡"], ["Isla brava", "Suspenso", "◈"]] },
   { id: "youtube", name: "YouTube", query: "YouTube", image: "youtube", color: "#ff6777", shows: [["Mind Field", "Documental", "◉"], ["BTS: Burn the Stage", "Documental", "♫"], ["Justin Bieber: Seasons", "Documental", "♫"], ["Liza on Demand", "Comedia", "✦"], ["Escape the Night", "Misterio", "☾"], ["Impulse", "Ciencia ficción", "⚡"]] },
 ] as const;
+
+export function seriesImageKey(platformId: string, title: string) {
+  return platformId + ":" + title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}

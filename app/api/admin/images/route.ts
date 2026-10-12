@@ -1,3 +1,4 @@
+import { streamingHighlights, seriesImageKey } from "@/lib/streaming-highlights";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { allCategories } from "@/lib/technology-products";
@@ -8,6 +9,8 @@ async function imageKey(req: Request) {
   const params = new URL(req.url).searchParams,
     kind = params.get("kind"),
     key = params.get("key") || "";
+  if (kind === "platform" && streamingHighlights.some(platform => platform.id === key)) return "platform:" + key;
+  if (kind === "series" && streamingHighlights.some(platform => platform.shows.some(([title]) => seriesImageKey(platform.id, title) === key))) return "series:" + key;
   if (kind === "category" && allCategories.some((c) => c === key))
     return "category:" + key;
   if (
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
     return fail("Solo el administrador puede cambiar imágenes.", 403);
   try {
     const key = await imageKey(req);
-    if (!key) return fail("Producto o categoría inválidos.");
+    if (!key) return fail("Imagen no reconocida.");
     const image = await readImageUpload(req);
     if (image instanceof Response) return image;
     await db.catalogImageAsset.upsert({
@@ -45,7 +48,7 @@ async function remove(req: Request) {
   if (!user || user.role !== "ADMIN")
     return fail("Solo el administrador puede cambiar imágenes.", 403);
   const key = await imageKey(req);
-  if (!key) return fail("Producto o categoría inválidos.");
+  if (!key) return fail("Imagen no reconocida.");
   await db.catalogImageAsset.deleteMany({ where: { key } });
   return reply({ ok: true });
 }
