@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
 import { useRouter } from "next/navigation";
 import {
@@ -15,13 +16,6 @@ import {
   Pencil,
   ShieldCheck,
   Sparkles,
-  Laptop,
-  Keyboard,
-  Headphones,
-  Cable,
-  Router,
-  Shirt,
-  Footprints,
 } from "lucide-react";
 import {
   technologyCategories,
@@ -29,16 +23,7 @@ import {
   allCategories,
 } from "@/lib/technology-products";
 import { secondhandCategories } from "@/lib/secondhand-products";
-const techIcons = {
-  "Tecnología usada": Laptop,
-  "Ropa usada": Shirt,
-  "Calzado usado": Footprints,
-  Computadores: Laptop,
-  Periféricos: Keyboard,
-  Audio: Headphones,
-  Accesorios: Cable,
-  Redes: Router,
-};
+
 type Role = "CLIENTE" | "VENDEDOR" | "ADMIN";
 type User = {
   id: string;
@@ -518,7 +503,13 @@ export default function Storefront({
                 className={`category-tile ${["tile-stream", "tile-music", "tile-office", "tile-stream"][i % 4]}`}
                 onClick={() => jump(c)}
               >
-                <Sparkles size={30} />
+                <CatalogImage
+                  name={c}
+                  category={c}
+                  tile
+                  className="category-photo"
+                />
+                <span className="category-photo-shade" aria-hidden="true" />
                 <strong>{c}</strong>
                 <small>Explorar productos</small>
                 <ArrowRight className="tile-arrow" />
@@ -591,22 +582,7 @@ export default function Storefront({
                   style={{ background: p.gradient }}
                 >
                   <div className="photo-click">
-                    {p.category in techIcons ? (
-                      (() => {
-                        const Icon =
-                          techIcons[p.category as keyof typeof techIcons];
-                        return (
-                          <Icon
-                            size={76}
-                            strokeWidth={1.3}
-                            className="tech-product-icon"
-                            aria-hidden="true"
-                          />
-                        );
-                      })()
-                    ) : (
-                      <span className="brand-mark long">{p.mark}</span>
-                    )}
+                    <CatalogImage name={p.name} category={p.category} />
                   </div>
                   <span className="tag">
                     {secondhand ? "Segunda mano" : p.category}
@@ -774,7 +750,12 @@ export default function Storefront({
                   const p = products.find((p) => p.id === i.id);
                   return p ? (
                     <div key={i.id} className="cart-row">
-                      <div>
+                      <CatalogImage
+                        name={p.name}
+                        category={p.category}
+                        className="cart-product-image"
+                      />
+                      <div className="cart-product-copy">
                         <strong>{p.name}</strong>
                         <p>
                           {cop(p.price)} × {i.qty}

@@ -79,3 +79,8 @@ Ejecuta npm run db:push para crear BannerImage. Inicia sesión como administrado
 Solo el administrador puede modificar imágenes. El servidor valida origen, tamaño real y firma del archivo; no acepta SVG subidos. Tienda y Segunda mantienen sus propios banners.
 
 Los seis fondos predeterminados de Inicio ahora son diseños de Netflix, Prime Video, Disney+, Max, YouTube Premium y Paramount+. Si una posición tiene una imagen personalizada, pulsa **Restaurar imagen** en el editor del banner para mostrar el nuevo fondo de plataforma.
+
+## Imágenes de categorías, productos y carrito
+Las tarjetas de Inicio, Tienda y Segunda muestran imágenes locales representativas, y el carrito muestra la misma miniatura del producto. La selección usa nombre y categoría: plataformas de streaming, computadores, periféricos, audio, accesorios, ropa y calzado. Funciona con los productos ya existentes; no exige migraciones ni volver a ejecutar los seeds. Nuevos productos usan una imagen de su categoría si su tipo no está reconocido.
+
+Las fotos y dibujos del catálogo son ejemplos representativos; sustitúyelos por fotos de tus artículos reales antes de vender, especialmente los usados. Cambia las rutas de selección en lib/catalog-images.ts o reemplaza los archivos de public/images/catalog. No se solicitan imágenes a servicios externos cuando el cliente abre la web. Fotos descargadas de Unsplash; fuente y referencias en public/images/catalog/SOURCES.md.
