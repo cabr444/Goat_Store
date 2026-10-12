@@ -10,6 +10,7 @@ import {
   type OrderSection,
 } from "@/lib/account";
 import AccountHeader from "@/components/AccountHeader";
+import ReceiptModal from "@/components/ReceiptModal";
 import PurchaseReceipt from "@/components/PurchaseReceipt";
 import CatalogImage from "@/components/CatalogImage";
 import { supportLink } from "@/lib/account-links";
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; pagina?: string; pedido?: string }>;
+  searchParams: Promise<{ tipo?: string; pagina?: string; pedido?: string; comprobante?: string }>;
 }) {
   const user = await getUser();
   if (!user) redirect("/acceso");
@@ -49,6 +50,9 @@ export default async function Page({
     "/pedidos?tipo=" + section + "&pagina=" + page;
   return (
     <>
+      {params.comprobante === "1" && selectedOrder && data.orders[0] && (
+        <ReceiptModal reference={data.orders[0].reference || data.orders[0].id} date={accountDate(data.orders[0].createdAt)} total={cop(data.orders[0].total)} items={data.orders[0].items.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, amount: cop(item.unitPrice * item.quantity), receipt: item.receipt }))} />
+      )}
       <AccountHeader name={user.name} balance={user.balance} />
       <main className="container account-dashboard">
         <a href="/" className="account-back">
@@ -100,7 +104,7 @@ export default async function Page({
                 <header>
                   <div>
                     <span className="overline">
-                      PEDIDO #{order.id.slice(-8).toUpperCase()}
+                      PEDIDO #{order.reference || order.id.slice(-8).toUpperCase()}
                     </span>
                     <p>{accountDate(order.createdAt)}</p>
                   </div>

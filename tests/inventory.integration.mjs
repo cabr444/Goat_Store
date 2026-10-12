@@ -157,6 +157,7 @@ async function request(path, cookie, method = "GET", body) {
     include: { items: true },
   });
   assert.equal(order.status, "ENTREGADO");
+  assert.match(order.reference, /^P[1-9][0-9]*$/);
   assert.ok(
     order.items[0].receiptCipher &&
       !order.items[0].receiptCipher.includes(access.password),
@@ -167,17 +168,19 @@ async function request(path, cookie, method = "GET", body) {
     access.password,
     "Perfil: 1",
     "Pin: 3311",
-    order.id,
+    order.reference,
     "Fecha de compra:",
   ])
     assert.ok(receipt.includes(value));
   const winner = order.userId === buyer1.id ? b1 : b2,
     other = order.userId === buyer1.id ? b2 : b1;
-  const ownPage = await fetch(url + "/pedidos?pedido=" + order.id, {
+  const ownPage = await fetch(url + "/pedidos?pedido=" + order.id + "&comprobante=1", {
     headers: { Cookie: "goat_session=" + winner },
   });
   const ownHtml = await ownPage.text();
   assert.equal(ownPage.status, 200);
+  assert.ok(ownHtml.includes("receipt-modal"));
+  assert.ok(ownHtml.includes("<strong>👑 STREAMING LT👑</strong>"));
   assert.ok(ownHtml.includes(access.email));
   assert.ok(ownHtml.includes(access.password));
   const otherHtml = await (
@@ -226,6 +229,16 @@ async function request(path, cookie, method = "GET", body) {
   );
   assert.ok(oldReceipt.includes(access.password));
   assert.ok(!oldReceipt.includes("FixtureAccessUpdated"));
+  const priceEdit = await request("/api/products/" + product.id, a, "PATCH", {
+    name: product.name, category: product.category, price: 17000, stock: 1, expectedStock: 0,
+  });
+  assert.equal(priceEdit.response.status, 200);
+  assert.equal(priceEdit.data.product.price, 17000);
+  const secondPurchase = await request("/api/orders", winner, "POST", { items: [{ id: product.id, qty: 1 }] });
+  assert.equal(secondPurchase.response.status, 201);
+  assert.equal(secondPurchase.data.total, 17000);
+  assert.equal(secondPurchase.data.reference, "P" + (Number(order.reference.slice(1)) + 1));
+  assert.equal((await db.order.findUniqueOrThrow({where: {id: order.id}})).total, 14000);
   const png = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aFOkAAAAASUVORK5CYII=",
     "base64",

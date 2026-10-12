@@ -62,6 +62,12 @@ async function handlePOST(req: Request) {
         );
         if (!Number.isSafeInteger(total) || total < 1 || total > 2147483647)
           throw new Error("Total inválido.");
+        const counter = await tx.orderCounter.upsert({
+          where: { id: "orders" },
+          create: { id: "orders", value: 1 },
+          update: { value: { increment: 1 } },
+        });
+        const reference = "P" + counter.value;
         const orderId = randomUUID(),
           date = new Date();
         const delivered = new Map<string, string>();
@@ -85,7 +91,7 @@ async function handlePOST(req: Request) {
                 receiptText(
                   access,
                   product.name,
-                  orderId,
+                  reference,
                   date,
                   item.qty,
                   product.price * item.qty,
@@ -107,6 +113,7 @@ async function handlePOST(req: Request) {
         const order = await tx.order.create({
           data: {
             id: orderId,
+            reference,
             createdAt: date,
             status:
               delivered.size === v.data.items.length
@@ -135,14 +142,14 @@ async function handlePOST(req: Request) {
             userId: u.id,
             amount: -total,
             type: "COMPRA",
-            note: `Pedido ${order.id}`,
+            note: `Pedido ${order.reference}`,
           },
         });
         return order;
       },
       { isolationLevel: "Serializable", maxWait: 10000, timeout: 30000 },
     );
-    return reply({ orderId: order.id, total: order.total }, 201);
+    return reply({ orderId: order.id, reference: order.reference, total: order.total }, 201);
   } catch (e) {
     const message =
       e instanceof Error &&

@@ -289,9 +289,9 @@ export default function Storefront({
       setCart([]);
       setCartOpen(false);
       setNotice(
-        `Pedido ${result.orderId} registrado. Consulta el comprobante en Pedidos.`,
+        `Pedido ${result.reference || result.orderId} registrado. Consulta el comprobante en Pedidos.`,
       );
-      router.push("/pedidos?pedido=" + encodeURIComponent(result.orderId));
+      router.push("/pedidos?pedido=" + encodeURIComponent(result.orderId) + "&comprobante=1");
     } catch (e) {
       setNotice((e as Error).message);
     } finally {

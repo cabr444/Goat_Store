@@ -5,7 +5,10 @@ export default function PurchaseReceipt({ text }: { text: string }) {
   return (
     <section className="purchase-receipt">
       <h4>Comprobante y acceso de streaming</h4>
-      <pre>{text}</pre>
+      <pre>{text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g).map((part, index) =>
+        /^\*\*[^*\n]+\*\*$/.test(part) ? <strong key={index}>{part.slice(2, -2)}</strong> :
+        /^\*[^*\n]+\*$/.test(part) ? <strong key={index}>{part.slice(1, -1)}</strong> : part
+      )}</pre>
       <button
         type="button"
         className="button outline"
