@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState, type FormEvent } from "react";
 import AnimeWelcome from "@/components/AnimeWelcome";
+import PeekGoat from "@/components/PeekGoat";
 import AccessBackdrop from "@/components/AccessBackdrop";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
@@ -96,6 +97,8 @@ export default function Access({
         <div className="access-orb">GOAT ✦</div>
       </div>
       <div className="access-panel">
+        <div className="access-form-scene">
+        <PeekGoat />
         <form className="access-card" onSubmit={submit}>
           <div className="access-lock">
             <LockKeyhole size={22} />
@@ -265,6 +268,7 @@ export default function Access({
             configuración privada del servidor.
           </small>
         </form>
+        </div>
       </div>
     </main>
   );
