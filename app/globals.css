@@ -28,3 +28,31 @@
 .receipt-modal h2 { font-size: 1.3rem; }
 .receipt-modal section { margin-top: 20px; }
 .purchase-receipt pre strong { font-weight: 800; }
+
+.anime-welcome{position:fixed;inset:0;margin:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;padding:0;color:#fff;background:radial-gradient(ellipse at 50% 38%,#573293 0%,#241340 45%,#120c24 85%);overflow:hidden;overscroll-behavior:contain}
+.anime-welcome::backdrop{background:#120c24}
+.anime-welcome[open]{display:grid;place-items:center;animation:anime-arrive .35s ease-out both}
+.anime-skip{position:absolute;right:24px;top:24px;z-index:3;border:1px solid #ffffff55;border-radius:100px;background:#ffffff12;color:white;padding:12px 18px;font-size:13px;cursor:pointer}
+.anime-skip:focus-visible{outline:3px solid #c4abff;outline-offset:4px}
+.anime-scene{position:relative;width:min(600px,100%);text-align:center;padding:18px 24px}
+.anime-orbit{position:absolute;left:50%;top:40px;width:310px;height:310px;border:1px solid #cdb4ff70;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 70px #a669ff55,inset 0 0 70px #a669ff33;animation:anime-aura 2s ease-in-out infinite alternate}
+.anime-orbit::after{content:"";position:absolute;inset:-18px;border:1px dashed #e0bfff60;border-radius:50%;animation:anime-orbit 16s linear infinite}
+.anime-mascot{position:relative;display:block;width:min(300px,65vw);height:auto;margin:0 auto;filter:drop-shadow(0 12px 24px #120a3b55);animation:anime-character .8s cubic-bezier(.2,.8,.3,1.1) both}
+.anime-welcome-copy{position:relative;animation:anime-copy .7s .25s ease-out both}
+.anime-welcome-copy>span{font-size:10px;font-weight:800;letter-spacing:3px;color:#d8c4ff}
+.anime-welcome-copy h2{font-family:Outfit,Arial,sans-serif;font-size:clamp(32px,5vw,48px);line-height:1.08;letter-spacing:-1.5px;margin:16px 0}
+.anime-welcome-copy em{font-style:normal;color:#c8a8ff}
+.anime-welcome-copy p{font-size:13px;color:#d0bbdf}
+.anime-spark{position:absolute;color:#dac7ff;animation:anime-spark 1.7s ease-in-out infinite alternate;font-size:40px}
+.anime-spark-one{left:15%;top:100px}.anime-spark-two{right:15%;top:40px;animation-delay:.4s}.anime-spark-three{right:12%;top:270px;font-size:24px;animation-delay:.8s}
+.anime-progress{width:100px;height:3px;margin:24px auto 0;background:#ffffff25;border-radius:5px;overflow:hidden}
+.anime-progress i{display:block;height:100%;background:#c8a8ff;transform-origin:left;animation:anime-progress 3.2s linear both}
+@keyframes anime-arrive{from{opacity:0}to{opacity:1}}
+@keyframes anime-character{from{opacity:0;transform:translateY(45px) scale(.8) rotate(-8deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes anime-copy{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes anime-aura{from{opacity:.55;scale:.94}to{opacity:1;scale:1.04}}
+@keyframes anime-orbit{to{rotate:360deg}}
+@keyframes anime-spark{from{opacity:.4;transform:scale(.75)}to{opacity:1;transform:scale(1.15)}}
+@keyframes anime-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-height:650px){.anime-mascot{width:190px}.anime-orbit{width:210px;height:210px;top:15px}.anime-welcome-copy h2{font-size:30px;margin:10px 0}.anime-progress{margin-top:14px}.anime-skip{top:12px;right:12px}}
+@media(prefers-reduced-motion:reduce){.anime-welcome,.anime-welcome *,.anime-welcome *::after{animation:none!important}}

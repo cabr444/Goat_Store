@@ -122,3 +122,5 @@ La prueba reproducible npm run test:inventory requiere un PostgreSQL desechable 
 Las nuevas compras tienen una referencia consecutiva P1, P2, P3 (P de pedido), asignada en la misma transacción que el pago. Los pedidos antiguos conservan su referencia anterior. Ejecuta `npm run db:push` antes de iniciar esta versión. Al terminar el pago se abre un comprobante centrado; puede cerrarse con Cerrar o Escape y sigue guardado en Pedidos. Las marcas de negrita `*texto*` y `**texto**` se muestran en negrita, sin interpretar HTML.
 
 Para cambiar precios: Perfil → Administrar productos, stock e imágenes → Editar → Precio (COP) → Guardar producto. El precio nuevo se usa en futuras compras y los pedidos anteriores conservan el precio pagado.
+
+Inicio muestra una bienvenida de 3,2 segundos con una mascota Goat original de estilo anime. Se puede omitir con el botón o Escape, aparece una vez por sesión de pestaña y se desactiva cuando el navegador solicita reducir movimiento. La ilustración es SVG local y no requiere servicios externos.
