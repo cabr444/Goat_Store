@@ -93,6 +93,7 @@ export default function Storefront({
   digitalCatalog?: boolean;
   initialCategory?: string;
 }) {
+  const home = !technology && !secondhand && !management && !digitalCatalog;
   const catalogCategories: readonly string[] = management
     ? allCategories
     : secondhand
@@ -165,12 +166,13 @@ export default function Storefront({
       products.filter(
         (p) =>
           catalogCategories.includes(p.category) &&
+          (!home || p.category === "Streaming") &&
           (filter === "Todos" || p.category === filter) &&
           p.name
             .toLocaleLowerCase("es")
             .includes(query.toLocaleLowerCase("es")),
       ),
-    [products, filter, query, technology, secondhand, management],
+    [products, filter, query, technology, secondhand, management, home],
   );
   const total = cart.reduce(
     (s, i) => s + (products.find((p) => p.id === i.id)?.price || 0) * i.qty,
@@ -205,7 +207,7 @@ export default function Storefront({
     setNotice("Producto agregado al carrito");
   };
   const jump = (cat: string) => {
-    if (!technology && !secondhand && !management && !digitalCatalog) {
+    if (home && cat !== "Streaming") {
       router.push("/catalogo?categoria=" + encodeURIComponent(cat));
       return;
     }
@@ -329,7 +331,7 @@ export default function Storefront({
               Inicio
             </a>
             <Link
-              href="/catalogo?categoria=Streaming"
+              href={home ? "#catalogo" : "/catalogo?categoria=Streaming"}
               onClick={() => setMenu(false)}
             >
               Streaming
@@ -531,7 +533,6 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {(technology || secondhand || management || digitalCatalog) && (
         <section className="container products-section" id="catalogo">
           <span id="combos" />
           <div className="section-heading">
@@ -544,7 +545,7 @@ export default function Storefront({
                     : "CATÁLOGO DIGITAL"}
               </span>
               <h2>
-                {filter === "Todos"
+                {home ? "Streaming" : filter === "Todos"
                   ? secondhand
                     ? "Encuentra tu próxima historia"
                     : technology
@@ -555,7 +556,7 @@ export default function Storefront({
               </h2>
               <p>
                 {
-                  products.filter((p) => catalogCategories.includes(p.category))
+                  products.filter((p) => catalogCategories.includes(p.category) && (!home || p.category === "Streaming"))
                     .length
                 }{" "}
                 productos disponibles en Goat.
@@ -576,7 +577,7 @@ export default function Storefront({
                 placeholder="Buscar productos..."
               />
             </label>
-            <div className="filter-row">
+            {!home && <div className="filter-row">
               {["Todos", ...catalogCategories].map((c) => (
                 <button
                   key={c}
@@ -586,7 +587,7 @@ export default function Storefront({
                   {c}
                 </button>
               ))}
-            </div>
+            </div>}
           </div>
           <p className="result-count">{visible.length} productos</p>
           <div className="product-grid">
@@ -651,7 +652,6 @@ export default function Storefront({
             <div className="empty">No hay productos para mostrar.</div>
           )}
         </section>
-        )}
         <section className="container contact" id="contacto">
           <div>
             <span className="overline">GOAT DIGITAL</span>

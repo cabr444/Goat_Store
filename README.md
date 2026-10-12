@@ -127,4 +127,4 @@ Después de iniciar sesión correctamente con Entrar a Goat, se muestra una bien
 
 La cabrita junto al formulario de acceso se asoma, saluda, parpadea y se esconde en un ciclo de 9 segundos. En móvil aparece sobre la tarjeta sin tapar los campos. Queda estática con movimiento reducido.
 
-Inicio omite las secciones Productos y Beneficios y sus enlaces de navegación. Las compras digitales siguen disponibles en `/catalogo`; Streaming y Combos abren sus categorías, y las tarjetas de Inicio y Ver catálogo llevan a esa página. Tienda, Segunda y administración conservan sus catálogos.
+Inicio omite las secciones Productos y Beneficios y sus enlaces de navegación. Las compras digitales siguen disponibles en `/catalogo`; Inicio muestra una sección de Streaming con sus productos; su enlace del menú lleva a esa sección. Combos abre su categoría en el catálogo digital. Las demás categorías de Inicio y Ver catálogo llevan al catálogo digital. Tienda, Segunda y administración conservan sus catálogos.
