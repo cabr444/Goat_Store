@@ -77,3 +77,5 @@ El fondo del banner de Inicio cambia cada 7 segundos mediante un fundido; el tex
 Ejecuta npm run db:push para crear BannerImage. Inicia sesión como administrador, abre Inicio y baja a **Imágenes del banner de Inicio**. Usa **Cambiar imagen 1** hasta **Cambiar imagen 6** para subir tus imágenes. Formatos: JPG, PNG o WebP, máximo 2 MB por archivo; tamaño recomendado: 1600 × 700 px. Las imágenes se guardan en PostgreSQL, por lo que permanecen después de reiniciar o desplegar la aplicación. **Restaurar imagen** vuelve al fondo de ejemplo de esa posición. El almacenamiento máximo de los seis archivos es 12 MB; incluye la tabla en las copias de seguridad.
 
 Solo el administrador puede modificar imágenes. El servidor valida origen, tamaño real y firma del archivo; no acepta SVG subidos. Tienda y Segunda mantienen sus propios banners.
+
+Los seis fondos predeterminados de Inicio ahora son diseños de Netflix, Prime Video, Disney+, Max, YouTube Premium y Paramount+. Si una posición tiene una imagen personalizada, pulsa **Restaurar imagen** en el editor del banner para mostrar el nuevo fondo de plataforma.
