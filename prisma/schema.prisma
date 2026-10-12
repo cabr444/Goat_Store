@@ -121,3 +121,9 @@ model StoreSettings {
   tiendaEnabled Boolean @default(true)
   segundaEnabled Boolean @default(true)
 }
+
+model CatalogOrder {
+  kind String @id
+  ids Json
+  version Int @default(0)
+}

@@ -1,3 +1,4 @@
+import { readCardOrders } from "@/lib/catalog-order";
 import { getStoreOptions, disabledClientCategories } from "@/lib/store-settings";
 import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
@@ -11,6 +12,7 @@ export async function GET() {
   const storeOptions = await getStoreOptions();
   return reply({
     storeOptions,
+    cardOrders: readCardOrders(await db.catalogOrder.findMany()),
     products: await db.product.findMany({
       where: { category: { notIn: disabledClientCategories(user.role, storeOptions) } },
       select: publicProductSelect,

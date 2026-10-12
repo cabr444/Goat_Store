@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
+import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
 import type { StoreOptions } from "@/lib/store-settings";
 import CategoryImageManager from "@/components/CategoryImageManager";
@@ -104,6 +105,10 @@ export default function Storefront({
         ? technologyCategories
         : digitalCategories;
   const router = useRouter();
+  const [cardOrders, setCardOrders] = useState<CardOrders>(emptyCardOrders);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [dragged, setDragged] = useState<{kind: "products" | "categories"; id: string} | null>(null);
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
     [catalogLoading, setCatalogLoading] = useState(true),
@@ -132,6 +137,7 @@ export default function Storefront({
     setUsers(data.users);
     setOrders(data.orders);
     setStoreOptions(data.storeOptions);
+    setCardOrders(data.cardOrders);
   };
   useEffect(() => {
     load().catch((e) => setNotice(e.message)).finally(() => setCatalogLoading(false));
@@ -152,20 +158,21 @@ export default function Storefront({
   }, [cart, cartReady]);
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || reorderMode) return;
       void request("/api/products")
         .then((data) => {
           setProducts(data.products);
+          setCardOrders(data.cardOrders);
           setStoreOptions(data.storeOptions);
           if (user?.role === "CLIENTE" && ((technology && !data.storeOptions.tiendaEnabled) || (secondhand && !data.storeOptions.segundaEnabled))) router.replace("/");
         })
         .catch(() => {});
     }, 15000);
     return () => window.clearInterval(timer);
-  }, [user?.role, technology, secondhand, router]);
+  }, [user?.role, technology, secondhand, router, reorderMode]);
   const visible = useMemo(
     () =>
-      products.filter(
+      sortCards(products.filter(
         (p) =>
           catalogCategories.includes(p.category) &&
           (!home || p.category === "Streaming") &&
@@ -173,9 +180,36 @@ export default function Storefront({
           p.name
             .toLocaleLowerCase("es")
             .includes(query.toLocaleLowerCase("es")),
-      ),
-    [products, filter, query, technology, secondhand, management, home],
+      ), cardOrders.products.ids, p => p.id),
+    [products, cardOrders, filter, query, technology, secondhand, management, home],
   );
+  const orderedCategories = sortCards(catalogCategories, cardOrders.categories.ids, category => category);
+  async function move(kind: "products" | "categories", id: string, target: string, position: "before" | "after") {
+    if (user?.role !== "ADMIN" || !reorderMode || orderBusy || id === target) return;
+    setOrderBusy(true);
+    try {
+      const result = await request("/api/admin/card-order", "PUT", {kind, id, target, position, version: cardOrders[kind].version});
+      setCardOrders(old => ({...old, [kind]: result.order}));
+      setNotice("Orden guardado para todos.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudo guardar el orden."); }
+    finally { setOrderBusy(false); setDragged(null); }
+  }
+  const orderControls = (kind: "products" | "categories", id: string, label: string, ids: string[]) => {
+    if (user?.role !== "ADMIN" || !reorderMode) return null;
+    const index = ids.indexOf(id);
+    return <div className="card-order-controls">
+      <span aria-hidden="true">⠿</span>
+      <button type="button" disabled={orderBusy || index <= 0} aria-label={"Mover " + label + " antes"} onClick={() => void move(kind, id, ids[index - 1], "before")}>←</button>
+      <button type="button" disabled={orderBusy || index >= ids.length - 1} aria-label={"Mover " + label + " después"} onClick={() => void move(kind, id, ids[index + 1], "after")}>→</button>
+    </div>;
+  };
+  const dragProps = (kind: "products" | "categories", id: string) => ({
+    draggable: user?.role === "ADMIN" && reorderMode && !orderBusy,
+    onDragStart: (event: React.DragEvent) => { setDragged({kind, id}); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id); },
+    onDragEnd: () => setDragged(null),
+    onDragOver: (event: React.DragEvent) => { if (dragged?.kind === kind && !orderBusy) event.preventDefault(); },
+    onDrop: (event: React.DragEvent) => { event.preventDefault(); if (dragged?.kind === kind) void move(kind, dragged.id, id, "before"); },
+  });
   const total = cart.reduce(
     (s, i) => s + (products.find((p) => p.id === i.id)?.price || 0) * i.qty,
     0,
@@ -393,6 +427,11 @@ export default function Storefront({
         </div>
       </header>
       <main id="inicio">
+        {user?.role === "ADMIN" && <div className="container card-order-toolbar">
+          <button type="button" className="button violet" aria-pressed={reorderMode} disabled={orderBusy} onClick={() => setReorderMode(!reorderMode)}>{reorderMode ? "Terminar de ordenar" : "Ordenar tarjetas"}</button>
+          {reorderMode && <p>Arrastra las tarjetas o usa las flechas para moverlas. Cada movimiento se guarda para todos.</p>}
+        </div>}
+
         {!digitalCatalog && (
         <section
           className={
@@ -515,11 +554,12 @@ export default function Storefront({
           <div
             className={`category-grid ${secondhand ? "secondhand-categories" : technology ? "tech-categories" : ""}`}
           >
-            {[...catalogCategories].map((c, i) => (
+            {orderedCategories.map((c, i) => (
+              <div key={c} className="category-order-card" {...dragProps("categories", c)}>
               <button
                 key={c}
                 className={`category-tile ${["tile-stream", "tile-music", "tile-office", "tile-stream"][i % 4]}`}
-                onClick={() => jump(c)}
+                onClick={() => { if (!reorderMode) jump(c); }}
               >
                 <CatalogImage
                   name={c}
@@ -532,6 +572,8 @@ export default function Storefront({
                 <small>Explorar productos</small>
                 <ArrowRight className="tile-arrow" />
               </button>
+              {orderControls("categories", c, c, orderedCategories)}
+              </div>
             ))}
           </div>
         </section>
@@ -581,7 +623,7 @@ export default function Storefront({
               />
             </label>
             {!home && <div className="filter-row">
-              {["Todos", ...catalogCategories].map((c) => (
+              {["Todos", ...orderedCategories].map((c) => (
                 <button
                   key={c}
                   className={`filter-pill ${filter === c ? "active" : ""}`}
@@ -595,7 +637,8 @@ export default function Storefront({
           <p className="result-count">{visible.length} productos</p>
           <div className="product-grid">
             {visible.map((p) => (
-              <article key={p.id} className="product-card">
+              <article key={p.id} className="product-card" {...dragProps("products", p.id)}>
+                {orderControls("products", p.id, p.name, visible.map(product => product.id))}
                 <div
                   className="product-photo"
                   style={{ background: p.gradient }}
