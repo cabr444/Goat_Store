@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
+import StreamingHighlights from "@/components/StreamingHighlights";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
 import type { StoreOptions } from "@/lib/store-settings";
 import CategoryImageManager from "@/components/CategoryImageManager";
@@ -89,12 +90,14 @@ export default function Storefront({
   management = false,
   digitalCatalog = false,
   initialCategory = "Todos",
+  initialQuery = "",
 }: {
   technology?: boolean;
   secondhand?: boolean;
   management?: boolean;
   digitalCatalog?: boolean;
   initialCategory?: string;
+  initialQuery?: string;
 }) {
   const home = !technology && !secondhand && !management && !digitalCatalog;
   const catalogCategories: readonly string[] = management
@@ -114,7 +117,7 @@ export default function Storefront({
     [catalogLoading, setCatalogLoading] = useState(true),
     [storeOptions, setStoreOptions] = useState<StoreOptions>({ tiendaEnabled: true, segundaEnabled: true }),
     [filter, setFilter] = useState(initialCategory),
-    [query, setQuery] = useState(""),
+    [query, setQuery] = useState(initialQuery),
     [cart, setCart] = useState<CartItem[]>([]),
     [cartReady, setCartReady] = useState(false),
     [cartOpen, setCartOpen] = useState(false),
@@ -538,6 +541,7 @@ export default function Storefront({
           </div>
         </section>
         )}
+        {(home || (digitalCatalog && filter === "Streaming")) && <StreamingHighlights />}
         {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
