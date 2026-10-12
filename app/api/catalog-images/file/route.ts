@@ -9,10 +9,14 @@ export async function GET(req: Request) {
   try {
     const image = await db.catalogImageAsset.findUnique({ where: { key } });
     if (!image) return fail("Imagen no encontrada.", 404);
+    const etag = '"' + image.updatedAt.getTime().toString(36) + '"';
+    const cacheHeaders = { "Cache-Control": "private, max-age=0, must-revalidate", ETag: etag };
+    if (req.headers.get("if-none-match") === etag)
+      return new NextResponse(null, { status: 304, headers: cacheHeaders });
     return new NextResponse(new Uint8Array(image.data), {
       headers: {
         "Content-Type": image.contentType,
-        "Cache-Control": "private, no-store",
+        ...cacheHeaders,
         "X-Content-Type-Options": "nosniff",
       },
     });

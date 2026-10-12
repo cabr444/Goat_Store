@@ -44,6 +44,7 @@ function useBannerSources() {
 }
 export function BannerBackground() {
   const sources = useBannerSources();
+  const [loaded, setLoaded] = useState<number[]>([0]);
   const [active, setActive] = useState(0),
     [paused, setPaused] = useState(false),
     [reduced, setReduced] = useState(false);
@@ -62,14 +63,24 @@ export function BannerBackground() {
     );
     return () => window.clearInterval(timer);
   }, [paused, reduced]);
+  useEffect(() => {
+    // Prepare one following slide after the current image has had priority.
+    const timer = window.setTimeout(() => {
+      const next = (active + 1) % bannerSlots.length;
+      setLoaded(old => old.includes(next) ? old : [...old, next]);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [active]);
   return (
     <>
       <div className="banner-background" aria-hidden="true">
-        {sources.map((src, i) => (
+        {sources.map((src, i) => (loaded.includes(i) || active === i) && (
           <img
             key={i}
             src={src}
             alt=""
+            decoding="async"
+            fetchPriority={i === 0 ? "high" : "low"}
             className={"banner-slide " + (i === active ? "active" : "")}
             onError={(e) => {
               const fallback = defaultBannerImage(i + 1);
@@ -88,7 +99,10 @@ export function BannerBackground() {
             aria-label={"Ver imagen " + slot}
             aria-pressed={active === i}
             className={active === i ? "active" : ""}
-            onClick={() => setActive(i)}
+            onClick={() => {
+              setLoaded(old => old.includes(i) ? old : [...old, i]);
+              setActive(i);
+            }}
           />
         ))}
         <button

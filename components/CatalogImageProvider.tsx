@@ -17,6 +17,10 @@ export default function CatalogImageProvider({
   const pathname = usePathname();
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
+    if (pathname === "/acceso" || pathname === "/restablecer-contrasena" || pathname === "/reset-password") {
+      setImages({});
+      return;
+    }
     let alive = true;
     const load = async () => {
       try {

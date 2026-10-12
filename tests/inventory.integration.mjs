@@ -105,6 +105,15 @@ async function request(path, cookie, method = "GET", body) {
     },
   });
   products.push(product.id, empty.id, unconfigured.id);
+  const bootstrap = await request("/api/storefront", b1);
+  assert.equal(bootstrap.response.status, 200);
+  assert.equal(bootstrap.data.user.id, buyer1.id);
+  assert.deepEqual(bootstrap.data.users, []);
+  assert.ok(bootstrap.data.products.some(p => p.id === product.id));
+  assert.ok(!JSON.stringify(bootstrap.data).includes("deliveryCipher"));
+  assert.ok(!JSON.stringify(bootstrap.data).includes(access.email));
+  assert.ok((await request("/api/storefront", a)).data.users.some(u => u.id === buyer1.id));
+  assert.equal((await request("/api/storefront", "")).response.status, 401);
   const catalog = await request("/api/products", b1);
   assert.equal(catalog.response.status, 200);
   assert.ok(
@@ -271,6 +280,13 @@ async function request(path, cookie, method = "GET", body) {
     { headers: { Cookie: "goat_session=" + b1 } },
   );
   assert.deepEqual(Buffer.from(await loaded.arrayBuffer()), png);
+  const etag = loaded.headers.get("etag");
+  assert.ok(etag);
+  const cachedImageUrl = url + "/api/catalog-images/file?key=" + encodeURIComponent("product:" + product.id);
+  const cached = await fetch(cachedImageUrl, {headers: {Cookie: "goat_session=" + b1, "If-None-Match": etag}});
+  assert.equal(cached.status, 304);
+  assert.equal((await cached.arrayBuffer()).byteLength, 0);
+  assert.equal((await fetch(cachedImageUrl, {headers: {"If-None-Match": etag}})).status, 401);
   const metadata = await request("/api/catalog-images", b1);
   assert.ok(
     metadata.data.images.some((i) => i.key === "product:" + product.id),

@@ -6,7 +6,7 @@ import { bannerContentType, maxBannerBytes } from "@/lib/banner-images";
 import { secureMutation } from "@/lib/security";
 type Context = { params: Promise<{ slot: string }> };
 const validSlot = (value: string) => /^[1-6]$/.test(value);
-export async function GET(_req: Request, { params }: Context) {
+export async function GET(req: Request, { params }: Context) {
   if (!(await getUser())) return fail("Inicia sesión.", 401);
   const { slot } = await params;
   if (!validSlot(slot)) return fail("Imagen inválida.", 404);
@@ -15,10 +15,14 @@ export async function GET(_req: Request, { params }: Context) {
       where: { slot: Number(slot) },
     });
     if (!image) return fail("Imagen no encontrada.", 404);
+    const etag = '"' + image.updatedAt.getTime().toString(36) + '"';
+    const cacheHeaders = { "Cache-Control": "private, max-age=0, must-revalidate", ETag: etag };
+    if (req.headers.get("if-none-match") === etag)
+      return new NextResponse(null, { status: 304, headers: cacheHeaders });
     return new NextResponse(new Uint8Array(image.data), {
       headers: {
         "Content-Type": image.contentType,
-        "Cache-Control": "private, no-store",
+        ...cacheHeaders,
         "X-Content-Type-Options": "nosniff",
       },
     });

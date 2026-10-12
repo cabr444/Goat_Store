@@ -123,18 +123,11 @@ export default function Storefront({
       { id: string; total: number; status: string }[]
     >([]);
   const load = async () => {
-    const [m, p] = await Promise.all([
-      request("/api/me"),
-      request("/api/products"),
-    ]);
-    setUser(m.user);
-    setProducts(p.products);
-    if (m.user?.role === "ADMIN") {
-      const u = await request("/api/admin/users");
-      setUsers(u.users);
-    }
-    const o = await request("/api/orders");
-    setOrders(o.orders);
+    const data = await request("/api/storefront");
+    setUser(data.user);
+    setProducts(data.products);
+    setUsers(data.users);
+    setOrders(data.orders);
   };
   useEffect(() => {
     load().catch((e) => setNotice(e.message)).finally(() => setCatalogLoading(false));
@@ -155,6 +148,7 @@ export default function Storefront({
   }, [cart, cartReady]);
   useEffect(() => {
     const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       void request("/api/products")
         .then((data) => setProducts(data.products))
         .catch(() => {});
