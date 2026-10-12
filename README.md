@@ -126,3 +126,5 @@ Para cambiar precios: Perfil → Administrar productos, stock e imágenes → Ed
 Después de iniciar sesión correctamente con Entrar a Goat, se muestra una bienvenida de 3,2 segundos con una mascota Goat original de estilo anime. Al terminar, omitirla o pulsar Escape, se entra a Inicio. Los accesos fallidos y las visitas normales a Inicio no muestran la bienvenida. Con movimiento reducido se entra directamente. El panel lateral de acceso tiene un fondo animado con portal y tarjetas flotantes, que se puede pausar y respeta movimiento reducido. La ilustración es SVG local y no requiere servicios externos.
 
 La cabrita junto al formulario de acceso se asoma, saluda, parpadea y se esconde en un ciclo de 9 segundos. En móvil aparece sobre la tarjeta sin tapar los campos. Queda estática con movimiento reducido.
+
+Inicio omite las secciones Productos y Beneficios y sus enlaces de navegación. Las compras digitales siguen disponibles en `/catalogo`; Streaming y Combos abren sus categorías, y las tarjetas de Inicio y Ver catálogo llevan a esa página. Tienda, Segunda y administración conservan sus catálogos.

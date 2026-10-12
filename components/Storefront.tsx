@@ -19,7 +19,6 @@ import {
   X,
   Search,
   Pencil,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import {
@@ -84,10 +83,14 @@ export default function Storefront({
   technology = false,
   secondhand = false,
   management = false,
+  digitalCatalog = false,
+  initialCategory = "Todos",
 }: {
   technology?: boolean;
   secondhand?: boolean;
   management?: boolean;
+  digitalCatalog?: boolean;
+  initialCategory?: string;
 }) {
   const catalogCategories: readonly string[] = management
     ? allCategories
@@ -99,7 +102,7 @@ export default function Storefront({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
-    [filter, setFilter] = useState("Todos"),
+    [filter, setFilter] = useState(initialCategory),
     [query, setQuery] = useState(""),
     [cart, setCart] = useState<CartItem[]>([]),
     [cartReady, setCartReady] = useState(false),
@@ -200,10 +203,14 @@ export default function Storefront({
     setNotice("Producto agregado al carrito");
   };
   const jump = (cat: string) => {
+    if (!technology && !secondhand && !management && !digitalCatalog) {
+      router.push("/catalogo?categoria=" + encodeURIComponent(cat));
+      return;
+    }
     setFilter(cat);
     setMenu(false);
     document
-      .getElementById("productos")
+      .getElementById("catalogo")
       ?.scrollIntoView({ behavior: "smooth" });
   };
   async function logout() {
@@ -309,37 +316,25 @@ export default function Storefront({
       </div>
       <header className="header">
         <div className="container nav">
-          <a className="logo" href={technology || secondhand ? "/" : "#inicio"}>
+          <a className="logo" href={technology || secondhand || digitalCatalog || management ? "/" : "#inicio"}>
             Goat<span>.</span>
           </a>
           <nav className={`navlinks ${menu ? "expanded" : ""}`}>
             <a
-              href={technology || secondhand ? "/#inicio" : "#inicio"}
+              href={technology || secondhand || digitalCatalog || management ? "/#inicio" : "#inicio"}
               onClick={() => setMenu(false)}
             >
               Inicio
             </a>
             <a
-              href={technology || secondhand ? "/#streaming" : "#streaming"}
-              onClick={() =>
-                !technology && !secondhand && !management && jump("Streaming")
-              }
+              href="/catalogo?categoria=Streaming"
+              onClick={() => setMenu(false)}
             >
               Streaming
             </a>
             <a
-              href={technology || secondhand ? "/#productos" : "#productos"}
-              onClick={() =>
-                !technology && !secondhand && !management && jump("Todos")
-              }
-            >
-              Productos
-            </a>
-            <a
-              href={technology || secondhand ? "/#combos" : "#combos"}
-              onClick={() =>
-                !technology && !secondhand && !management && jump("Combos")
-              }
+              href="/catalogo?categoria=Combos"
+              onClick={() => setMenu(false)}
             >
               Combos
             </a>
@@ -356,9 +351,6 @@ export default function Storefront({
               onClick={() => setMenu(false)}
             >
               Segunda
-            </a>
-            <a href="#beneficios" onClick={() => setMenu(false)}>
-              Beneficios
             </a>
             <a href="#contacto" onClick={() => setMenu(false)}>
               Contacto
@@ -501,40 +493,6 @@ export default function Storefront({
         </section>
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
-        <section className="container benefits" id="beneficios">
-          <div>
-            <ShieldCheck />
-            <span>
-              <strong>Tu cuenta segura</strong>
-              <small>Acceso con contraseña</small>
-            </span>
-          </div>
-          <div>
-            <Wallet />
-            <span>
-              <strong>Saldo Goat</strong>
-              <small>Recarga administrada</small>
-            </span>
-          </div>
-          <div>
-            <ShoppingBag />
-            <span>
-              <strong>
-                {technology || secondhand
-                  ? "Compra con saldo"
-                  : "Compra digital"}
-              </strong>
-              <small>Registro de pedidos</small>
-            </span>
-          </div>
-          <div>
-            <Sparkles />
-            <span>
-              <strong>Precios en COP</strong>
-              <small>Pesos colombianos</small>
-            </span>
-          </div>
-        </section>
         <section className="container category-section" id="streaming">
           <div className="section-heading">
             <div>
@@ -567,7 +525,8 @@ export default function Storefront({
             ))}
           </div>
         </section>
-        <section className="container products-section" id="productos">
+        {(technology || secondhand || management || digitalCatalog) && (
+        <section className="container products-section" id="catalogo">
           <span id="combos" />
           <div className="section-heading">
             <div>
@@ -685,6 +644,7 @@ export default function Storefront({
             <div className="empty">No hay productos para mostrar.</div>
           )}
         </section>
+        )}
         <section className="container contact" id="contacto">
           <div>
             <span className="overline">GOAT DIGITAL</span>
