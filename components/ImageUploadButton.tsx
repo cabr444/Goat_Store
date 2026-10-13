@@ -1,4 +1,5 @@
 "use client";
+import { compressUpload } from "@/lib/compress-upload";
 import { useState } from "react";
 import { Upload } from "lucide-react";
 export default function ImageUploadButton({
@@ -21,10 +22,11 @@ export default function ImageUploadButton({
     setBusy(true);
     setMessage("");
     try {
+      const upload = await compressUpload(file, kind);
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": upload.type },
+        body: upload,
       });
       const data = await response.json();
       if (!response.ok) throw Error(data.error);

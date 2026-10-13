@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -15,14 +16,17 @@ export default function CatalogImageProvider({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const lastLoad = useRef(0);
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
     if (pathname === "/acceso" || pathname === "/restablecer-contrasena" || pathname === "/reset-password") {
+      lastLoad.current = 0;
       setImages({});
       return;
     }
     let alive = true;
-    const load = async () => {
+    const load = async (force = false) => {
+      if (!force && Date.now() - lastLoad.current < 30000) return;
       try {
         const response = await fetch("/api/catalog-images", {
           cache: "no-store",
@@ -31,7 +35,8 @@ export default function CatalogImageProvider({
         const result = (await response.json()) as {
           images: { key: string; updatedAt: string }[];
         };
-        if (alive)
+        if (alive) {
+          lastLoad.current = Date.now();
           setImages(
             Object.fromEntries(
               result.images.map((image) => [
@@ -43,13 +48,15 @@ export default function CatalogImageProvider({
               ]),
             ),
           );
+        }
       } catch {}
     };
     void load();
-    window.addEventListener("goat-catalog-images-updated", load);
+    const refresh = () => void load(true);
+    window.addEventListener("goat-catalog-images-updated", refresh);
     return () => {
       alive = false;
-      window.removeEventListener("goat-catalog-images-updated", load);
+      window.removeEventListener("goat-catalog-images-updated", refresh);
     };
   }, [pathname]);
   return <Context.Provider value={images}>{children}</Context.Provider>;

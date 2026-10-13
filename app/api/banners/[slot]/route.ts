@@ -11,6 +11,14 @@ export async function GET(req: Request, { params }: Context) {
   const { slot } = await params;
   if (!validSlot(slot)) return fail("Imagen inválida.", 404);
   try {
+    if (req.headers.has("if-none-match")) {
+      const metadata = await db.bannerImage.findUnique({ where: { slot: Number(slot) }, select: { updatedAt: true } });
+      if (metadata) {
+        const tag = '"' + metadata.updatedAt.getTime().toString(36) + '"';
+        if (req.headers.get("if-none-match") === tag)
+          return new NextResponse(null, { status: 304, headers: { "Cache-Control": "private, max-age=0, must-revalidate", ETag: tag } });
+      }
+    }
     const image = await db.bannerImage.findUnique({
       where: { slot: Number(slot) },
     });
