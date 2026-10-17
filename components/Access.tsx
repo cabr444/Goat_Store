@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import RegistrationPending, { type PendingRegistrationInfo } from "@/components/RegistrationPending";
+import PasswordInput from "@/components/PasswordInput";
 import AnimeWelcome from "@/components/AnimeWelcome";
 import PeekGoat from "@/components/PeekGoat";
 import AccessBackdrop from "@/components/AccessBackdrop";
@@ -202,10 +203,11 @@ export default function Access({
             </label>
           )}
           {mode !== "forgot" && (
-            <label>
-              Contraseña
-              <input
-                type="password"
+            <div className="access-password-field">
+              <label htmlFor="access-password">Contraseña</label>
+              <PasswordInput
+                key={mode}
+                id="access-password"
                 required
                 minLength={mode === "login" ? 1 : 10}
                 maxLength={128}
@@ -218,13 +220,13 @@ export default function Access({
                   mode === "login" ? "current-password" : "new-password"
                 }
               />
-            </label>
+            </div>
           )}
           {mode === "reset" && (
-            <label>
-              Confirmar contraseña
-              <input
-                type="password"
+            <div className="access-password-field">
+              <label htmlFor="access-confirmation">Confirmar contraseña</label>
+              <PasswordInput
+                id="access-confirmation"
                 required
                 minLength={10}
                 maxLength={128}
@@ -232,7 +234,7 @@ export default function Access({
                 onChange={(e) => setConfirmation(e.target.value)}
                 autoComplete="new-password"
               />
-            </label>
+            </div>
           )}
           {mode === "login" && (
             <a
