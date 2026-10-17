@@ -13,7 +13,8 @@
     "db:seed:technology": "node --env-file=.env --import tsx prisma/seed-technology.ts",
     "db:seed:secondhand": "node --env-file=.env --import tsx prisma/seed-secondhand.ts",
     "test:inventory": "node --import tsx tests/inventory.integration.mjs",
-    "email:check": "node --env-file=.env --import tsx scripts/check-email.ts"
+    "email:check": "node --env-file=.env --import tsx scripts/check-email.ts",
+    "test:streaming": "node --import tsx tests/streaming-inventory.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

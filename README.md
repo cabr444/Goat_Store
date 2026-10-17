@@ -104,8 +104,8 @@ Después de actualizar, ejecuta npm run db:push. Los productos anteriores empiez
 Inicia sesión como ADMIN, abre Perfil y pulsa **Administrar productos, stock e imágenes**:
 - Las categorías tienen **Cambiar imagen** y **Restaurar imagen**. Los banners mantienen sus seis espacios de carga.
 - Busca un producto y pulsa **Editar** para cambiar precio, descripción, cantidad e imagen. **Agotar** pone su stock a cero sin ocultarlo.
-- Para productos digitales existentes, configura encabezado, correo de plataforma, clave, perfil y PIN; pulsa **Guardar acceso privado**. Después ajusta stock y pulsa **Guardar producto**. Un producto nuevo debe guardarse primero para obtener su ID.
-- Un producto de Streaming sin acceso configurado no se puede comprar. Cada unidad recibe el mismo acceso configurado en ese producto; para perfiles únicos, usa stock 1 y un producto por perfil.
+- Para Streaming, añade perfiles en **Inventario privado de streaming**; el stock es automático. En otros productos digitales se mantiene **Guardar acceso privado** y stock manual. Un producto nuevo debe guardarse primero para obtener su ID.
+- Un producto de Streaming sin accesos individuales disponibles no se puede comprar. Cada unidad recibe un perfil distinto, asignado una sola vez desde el inventario privado del producto.
 
 Las imágenes de productos y categorías se guardan en PostgreSQL y permanecen después de reiniciar. Se admiten JPG, PNG y WebP hasta 2 MB por archivo; solo ADMIN puede modificarlas.
 
@@ -163,3 +163,16 @@ Validación: `npm test` y `npm run build`. La prueba `node tests/email-verificat
 Para comprobar la configuración local de correo, ejecuta `npm run email:check`. Solo muestra si las variables están presentes y si existe la tabla necesaria; no envía mensajes ni imprime claves. Necesitas crear tu propia clave en Resend y guardarla en `.env` como `RESEND_API_KEY`. Para probar con tu propio correo de la cuenta de Resend puedes usar `EMAIL_FROM="Goat <onboarding@resend.dev>"`; ese remitente de pruebas no permite registrar otros destinatarios. Para clientes reales, verifica tu dominio en Resend y utiliza un remitente de ese dominio. Reinicia `npm run dev` después de modificar `.env`.
 
 Las compras guardan todos los productos, cantidades, comprobantes y un solo descuento de saldo en una transacción. El carrito muestra progreso y errores, y conserva una clave de solicitud para recuperar el mismo pedido tras una respuesta perdida sin cobrar otra vez. Ejecuta `npm run db:push` al actualizar para crear la tabla `CheckoutAttempt`. La prueba `node --import tsx tests/multi-item-checkout.integration.mjs`, con la misma base local aislada y secreto del servidor de pruebas de inventario, comprueba compras múltiples como cliente, persistencia, reintentos concurrentes y fallos sin cambios parciales.
+
+
+## Inventario individual de streaming
+
+Actualiza con `npm run db:push` para crear `StreamingAccess` antes de arrancar la nueva versión. Los comprobantes anteriores se conservan. El antiguo acceso compartido del producto deja de entregarse; no se importa automáticamente porque podría haber sido vendido. Hasta añadir perfiles disponibles, esos productos muestran Agotado aunque antes tuvieran stock manual.
+
+Como administrador abre **Administración → Editar producto → Inventario privado de streaming**. Añade una fila por acceso sin vender: plataforma, encabezado, correo, clave, perfil y PIN. Usa la misma plataforma en todos sus planes (por ejemplo `netflix` para Netflix x28 y x33 días). El stock se calcula por filas disponibles; no se escribe manualmente. Puedes corregir clave, PIN y encabezado de una fila disponible o retirarla. Plataforma, correo y perfil identifican una fila y no se cambian al editarla. Retirar un acceso es definitivo; su identidad permanece registrada para evitar una venta accidental posterior.
+
+La identidad plataforma/correo/perfil se protege con HMAC y es única entre productos, incluso si cambian clave o PIN. Las credenciales se guardan cifradas. Las filas vendidas quedan vinculadas a su línea de pedido, no se pueden editar o retirar y no vuelven al inventario. El administrador ve cantidades disponibles/vendidas; los compradores solo ven sus comprobantes. Las compras de varias unidades incluyen un comprobante por acceso dentro del pedido. La asignación, stock, saldo, comprobantes y pedido se guardan en una transacción; los reintentos conservan la asignación original. Al añadir accesos también se comprueban los comprobantes antiguos de streaming para impedir reutilizar perfiles ya entregados.
+
+Mantén estables `DELIVERY_SECRET` y su alternativa `AUTH_SECRET`: son necesarios tanto para descifrar accesos como para comprobar identidades. Incluye la nueva tabla en los respaldos. Esta actualización cambia los productos de categoría Streaming; los demás tipos de producto conservan su flujo.
+
+Validación: `npm test`, `npm run build` y `npm run test:streaming` con la base aislada local `goat_inventory_test`, el servidor local y el mismo `AUTH_SECRET` de pruebas. Cubre permisos, perfiles únicos entre planes, cantidades múltiples, ventas concurrentes, recibos privados, reintentos, retiros, historial anterior y fallos sin débito ni asignación parcial.

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { SignJWT } from "jose";
+import { accessFingerprint } from "../lib/streaming-inventory.ts";
 import { encryptPrivate, decryptPrivate } from "../lib/private-delivery.ts";
 const database = new URL(process.env.DATABASE_URL || "postgresql://invalid");
 const base = new URL(process.env.INVENTORY_TEST_URL || "http://127.0.0.1:3103");
@@ -105,6 +106,7 @@ async function request(path, cookie, method = "GET", body) {
     },
   });
   products.push(product.id, empty.id, unconfigured.id);
+  await db.streamingAccess.create({ data: { productId: product.id, platform: "netflix", fingerprint: accessFingerprint("netflix", access), cipher: encryptPrivate(JSON.stringify(access)) } });
   const bootstrap = await request("/api/storefront", b1);
   assert.equal(bootstrap.response.status, 200);
   assert.equal(bootstrap.data.user.id, buyer1.id);
@@ -224,13 +226,13 @@ async function request(path, cookie, method = "GET", body) {
   assert.equal(
     (
       await request(
-        "/api/admin/products/" + product.id + "/delivery",
+        "/api/admin/products/" + product.id + "/inventory",
         a,
-        "PUT",
-        { ...access, password: "FixtureAccessUpdated" },
+        "POST",
+        { platform: "netflix", delivery: { ...access, profile: "2", password: "FixtureAccessUpdated" } },
       )
     ).response.status,
-    200,
+    201,
   );
   const oldReceipt = decryptPrivate(
     (await db.orderItem.findFirstOrThrow({ where: { order: ownUsers } }))
@@ -239,7 +241,7 @@ async function request(path, cookie, method = "GET", body) {
   assert.ok(oldReceipt.includes(access.password));
   assert.ok(!oldReceipt.includes("FixtureAccessUpdated"));
   const priceEdit = await request("/api/products/" + product.id, a, "PATCH", {
-    name: product.name, category: product.category, price: 17000, stock: 1, expectedStock: 0,
+    name: product.name, category: product.category, price: 17000, stock: 999, expectedStock: 1,
   });
   assert.equal(priceEdit.response.status, 200);
   assert.equal(priceEdit.data.product.price, 17000);
@@ -305,6 +307,7 @@ async function request(path, cookie, method = "GET", body) {
         where: { key: { in: products.map((id) => "product:" + id) } },
       });
       await db.walletEvent.deleteMany({ where: { userId: { in: users } } });
+      await db.streamingAccess.deleteMany({ where: { productId: { in: products } } });
       await db.orderItem.deleteMany({
         where: { order: { userId: { in: users } } },
       });

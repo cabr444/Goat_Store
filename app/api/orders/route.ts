@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { disabledClientCategories } from "@/lib/store-settings";
 import { encryptPrivate, decryptPrivate, deliverySchema, receiptText } from "@/lib/private-delivery";
+import { availableAccess } from "@/lib/streaming-inventory";
 import { mergeCart, cartSignature } from "@/lib/cart";
 import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
@@ -48,15 +49,26 @@ async function handlePOST(req: Request) {
         if (products.length !== items.length) throw new PurchaseError("Hay productos que ya no están disponibles. Actualiza tu carrito.");
         const byId = new Map(products.map(product => [product.id, product]));
         let total = 0;
-        const accesses = new Map<string, z.infer<typeof deliverySchema>>();
+        const accesses = new Map<string, z.infer<typeof deliverySchema>[]>();
+        const assignments: { id: string; productId: string }[] = [];
         for (const item of items) {
           const product = byId.get(item.id)!;
           if (blocked.includes(product.category)) throw new PurchaseError("Esta sección está deshabilitada temporalmente para clientes.");
-          if (product.stock < item.qty) throw new PurchaseError(`${product.name}: pediste ${item.qty}, pero hay ${product.stock} unidades disponibles.`);
-          if (product.category === "Streaming" && !product.deliveryCipher) throw new PurchaseError(`${product.name}: el acceso de streaming aún no está configurado. Contacta con soporte.`);
-          if (product.deliveryCipher && ["Streaming", "Música", "Productividad", "Combos"].includes(product.category)) {
-            try { accesses.set(product.id, deliverySchema.parse(JSON.parse(decryptPrivate(product.deliveryCipher)))); }
+          if (product.category === "Streaming") {
+            const rows = await tx.streamingAccess.findMany({ where: { productId: product.id, ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: item.qty });
+            if (rows.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes accesos individuales disponibles. Ajusta la cantidad o contacta con soporte.`);
+            try { accesses.set(product.id, rows.map(row => deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher))))); }
             catch { throw new PurchaseError(`${product.name}: no se pudo preparar el acceso. Contacta con soporte.`, 503); }
+            assignments.push(...rows.map(row => ({ id: row.id, productId: product.id })));
+            // Replace legacy/manual stock with the actual unassigned inventory before reserving units.
+            const stock = await tx.streamingAccess.count({ where: { productId: product.id, ...availableAccess } });
+            await tx.product.update({ where: { id: product.id }, data: { stock } });
+          } else {
+            if (product.stock < item.qty) throw new PurchaseError(`${product.name}: pediste ${item.qty}, pero hay ${product.stock} unidades disponibles.`);
+            if (product.deliveryCipher && ["Música", "Productividad", "Combos"].includes(product.category)) {
+              try { accesses.set(product.id, [deliverySchema.parse(JSON.parse(decryptPrivate(product.deliveryCipher)))]); }
+              catch { throw new PurchaseError(`${product.name}: no se pudo preparar el acceso. Contacta con soporte.`, 503); }
+            }
           }
           total += product.price * item.qty;
         }
@@ -69,14 +81,21 @@ async function handlePOST(req: Request) {
         if (reserved !== items.length) throw new PurchaseError("El stock cambió durante la compra. Revisa las cantidades e inténtalo de nuevo.");
         const debit = await tx.user.updateMany({ where: { id: user.id, balance: { gte: total } }, data: { balance: { decrement: total } } });
         if (!debit.count) throw new PurchaseError("Saldo insuficiente para el total del carrito.");
+        const itemIds = new Map(items.map(item => [item.id, randomUUID()]));
         const order = await tx.order.create({ data: {
           id: randomUUID(), reference, createdAt: date, userId: user.id, total,
           status: accesses.size === items.length ? "ENTREGADO" : "PENDIENTE_ENTREGA",
           items: { createMany: { data: items.map(item => {
             const product = byId.get(item.id)!, access = accesses.get(item.id);
-            return { productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate(receiptText(access, product.name, reference, date, item.qty, product.price * item.qty)) : null };
+            return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate(access.map((unit, index) => (product.category === "Streaming" && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, product.name, reference, date, product.category === "Streaming" ? 1 : item.qty, product.category === "Streaming" ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
           }) } },
         } });
+        for (const item of items) {
+          const ids = assignments.filter(row => row.productId === item.id).map(row => row.id);
+          if (!ids.length) continue;
+          const claimed = await tx.streamingAccess.updateMany({ where: { id: { in: ids }, ...availableAccess }, data: { soldAt: date, orderItemId: itemIds.get(item.id)!, version: { increment: 1 } } });
+          if (claimed.count !== ids.length) throw new PurchaseError("Un acceso acaba de venderse. Inténtalo de nuevo.", 409);
+        }
         if (checkoutKey) await tx.checkoutAttempt.create({ data: { key: checkoutKey, orderId: order.id } });
         await tx.walletEvent.create({ data: { userId: user.id, amount: -total, type: "COMPRA", note: `Pedido ${reference}` } });
         return { order, replayed: false };

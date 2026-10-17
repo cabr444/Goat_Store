@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { SignJWT } from 'jose';
+import { accessFingerprint } from '../lib/streaming-inventory.ts';
 import { encryptPrivate } from '../lib/private-delivery.ts';
 const database=new URL(process.env.DATABASE_URL||'postgresql://invalid');
 const base=new URL(process.env.INVENTORY_TEST_URL||'http://127.0.0.1:3103');
@@ -13,6 +14,7 @@ try {
  const token=await new SignJWT({uid:user.id,sv:0}).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('1h').sign(new TextEncoder().encode(process.env.AUTH_SECRET));
  const cipher=encryptPrivate(JSON.stringify({brand:'STREAMING LT',email:'fixture@example.com',password:'fixture',profile:'1',pin:'1234'}));
  for (const [name,price] of [['A',13000],['B',7000]]) products.push(await db.product.create({data:{name:`Multi ${name} ${suffix}`,category:'Streaming',price,stock:10,deliveryCipher:cipher}}));
+ for (const p of products) for(let i=0;i<10;i++) { const access={brand:'STREAMING LT',email:`${p.id}@example.com`,password:'fixture',profile:String(i),pin:'1234'}; await db.streamingAccess.create({data:{productId:p.id,platform:p.name,fingerprint:accessFingerprint(p.name,access),cipher:encryptPrivate(JSON.stringify(access))}}); }
  const buy=async(items,key)=>{const res=await fetch(base.origin+'/api/orders',{method:'POST',headers:{Cookie:'goat_session='+token,Origin:base.origin,'Content-Type':'application/json'},body:JSON.stringify({items,checkoutKey:key})});return {status:res.status,data:await res.json()};};
  const items=products.map((p,i)=>({id:p.id,qty:i+1})),key=randomUUID();
  const first=await buy(items,key); assert.equal(first.status,201,JSON.stringify(first.data));
@@ -32,6 +34,7 @@ try {
  assert.deepEqual((await db.product.findMany({where:{id:{in:products.map(p=>p.id)}},orderBy:{name:'asc'}})).map(p=>p.stock),[8,6]);
  console.log('PASS: client multi-item purchase, private receipts, database persistence, concurrent retry protection and atomic failure.');
 } finally {
+ await db.streamingAccess.deleteMany({where:{productId:{in:products.map(p=>p.id)}}});
  if(user){await db.orderItem.deleteMany({where:{order:{userId:user.id}}});await db.order.deleteMany({where:{userId:user.id}});await db.walletEvent.deleteMany({where:{userId:user.id}});await db.user.delete({where:{id:user.id}});}
  await db.product.deleteMany({where:{id:{in:products.map(p=>p.id)}}});await db.$disconnect();
 }

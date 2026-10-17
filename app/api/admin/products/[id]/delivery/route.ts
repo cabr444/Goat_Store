@@ -43,6 +43,7 @@ async function save(req: Request, { params }: Context) {
     select: { category: true },
   });
   if (!product) return fail("Producto no encontrado.", 404);
+  if (product.category === "Streaming") return fail("Añade accesos individuales en el inventario de streaming.", 409);
   if (!digitalCategories.some((c) => c === product.category))
     return fail("Los accesos solo se configuran en productos digitales.");
   await db.product.update({

@@ -1,8 +1,9 @@
+import { availableAccess } from "@/lib/streaming-inventory";
 import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
-import { publicProductSelect } from "@/lib/catalog-dto";
+import { publicProductSelect, publicProduct } from "@/lib/catalog-dto";
 import { productSchema } from "@/lib/product-schema";
 async function handlePATCH(
   req: Request,
@@ -25,21 +26,18 @@ async function handlePATCH(
     return fail("Reabre el producto para cargar su stock actual.", 409);
   const v = productSchema.safeParse(raw);
   if (!v.success) return fail("Datos inválidos.");
-  const updated = await db.product.updateMany({
-    where: { id, stock: expectedStock },
-    data: v.data,
+  const updated = await db.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
+    const current = await tx.product.findUniqueOrThrow({ where: { id } });
+    const inventoryCount = await tx.streamingAccess.count({ where: { productId: id } });
+    if (inventoryCount && v.data.category !== "Streaming") return null;
+    const stock = current.category === "Streaming" ? await tx.streamingAccess.count({ where: { productId: id, ...availableAccess } }) : current.stock;
+    if (stock !== expectedStock) return null;
+    await tx.product.update({ where: { id }, data: { ...v.data, stock: v.data.category === "Streaming" ? (current.category === "Streaming" ? stock : 0) : v.data.stock } });
+    return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
   });
-  if (updated.count !== 1)
-    return fail(
-      "El stock cambió mientras editabas. Cierra y vuelve a abrir el producto antes de guardar.",
-      409,
-    );
-  return reply({
-    product: await db.product.findUniqueOrThrow({
-      where: { id },
-      select: publicProductSelect,
-    }),
-  });
+  if (!updated) return fail("El inventario cambió o el producto tiene accesos registrados. Actualiza el producto antes de guardar.", 409);
+  return reply({ product: publicProduct(updated) });
 }
 async function handleDELETE(
   _req: Request,
@@ -52,7 +50,11 @@ async function handleDELETE(
   if (!p) return fail("Producto no encontrado.", 404);
   if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
     return fail("No autorizado.", 403);
-  await db.product.update({ where: { id }, data: { stock: 0, active: true } });
+  await db.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
+    await tx.streamingAccess.updateMany({ where: { productId: id, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
+    await tx.product.update({ where: { id }, data: { stock: 0, active: true } });
+  });
   return reply({ ok: true });
 }
 

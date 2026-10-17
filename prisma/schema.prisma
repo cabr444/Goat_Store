@@ -29,6 +29,7 @@ model User {
 }
 
 model Product {
+  streamingAccesses StreamingAccess[]
   stock Int @default(0)
   deliveryCipher String?
   id          String      @id @default(cuid())
@@ -63,6 +64,7 @@ model Order {
 }
 
 model OrderItem {
+  streamingAccesses StreamingAccess[]
   receiptCipher String?
   category String @default("")
   sellerId String?
@@ -146,4 +148,20 @@ model CheckoutAttempt {
   key String @id
   orderId String @unique
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model StreamingAccess {
+  id String @id @default(cuid())
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  fingerprint String @unique
+  platform String
+  cipher String
+  createdAt DateTime @default(now())
+  version Int @default(0)
+  soldAt DateTime?
+  retiredAt DateTime?
+  orderItemId String?
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+  @@index([productId, soldAt, retiredAt, createdAt])
 }

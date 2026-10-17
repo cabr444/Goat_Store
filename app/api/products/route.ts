@@ -4,7 +4,7 @@ import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
-import { publicProductSelect } from "@/lib/catalog-dto";
+import { publicProductSelect, publicProduct } from "@/lib/catalog-dto";
 import { productSchema } from "@/lib/product-schema";
 export async function GET() {
   const user = await getUser();
@@ -13,11 +13,11 @@ export async function GET() {
   return reply({
     storeOptions,
     cardOrders: readCardOrders(await db.catalogOrder.findMany()),
-    products: await db.product.findMany({
+    products: (await db.product.findMany({
       where: { category: { notIn: disabledClientCategories(user.role, storeOptions) } },
       select: publicProductSelect,
       orderBy: { createdAt: "asc" },
-    }),
+    })).map(publicProduct),
   });
 }
 async function handlePOST(req: Request) {
@@ -32,10 +32,10 @@ async function handlePOST(req: Request) {
     const v = productSchema.safeParse(await req.json());
     if (!v.success) return fail("Información de producto inválida.");
     const product = await db.product.create({
-      data: { ...v.data, ownerId: u.id },
+      data: { ...v.data, stock: v.data.category === "Streaming" ? 0 : v.data.stock, ownerId: u.id },
       select: publicProductSelect,
     });
-    return reply({ product }, 201);
+    return reply({ product: publicProduct(product) }, 201);
   } catch {
     return fail("No se pudo guardar el producto.", 500);
   }

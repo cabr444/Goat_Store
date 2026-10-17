@@ -7,6 +7,7 @@ import { mergeCart, cartSignature } from "@/lib/cart";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
 import type { StoreOptions } from "@/lib/store-settings";
 import CategoryImageManager from "@/components/CategoryImageManager";
+import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
 import ProfileMenu from "@/components/ProfileMenu";
@@ -983,13 +984,14 @@ export default function Storefront({
                   />
                 </label>
                 <label>
-                  Unidades disponibles
+                  {form.category === "Streaming" ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
                   <input
                     type="number"
                     min={0}
                     max={1000000}
                     required
                     value={form.stock}
+                    disabled={form.category === "Streaming"}
                     onChange={(e) =>
                       setForm({ ...form, stock: Number(e.target.value) })
                     }
@@ -999,7 +1001,7 @@ export default function Storefront({
                   <>
                     <ImageUploadButton kind="product" imageKey={editId} />
                     {digitalCategories.some((c) => c === form.category) && (
-                      <DeliveryEditor productId={editId} />
+                      form.category === "Streaming" ? <StreamingInventoryEditor productId={editId} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}
