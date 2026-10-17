@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
 import { secureMutation } from "@/lib/security";
-import { issueVerification, VerificationError } from "@/lib/email-verification";
 import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
 import { hash } from "bcryptjs";
@@ -26,9 +25,10 @@ async function handlePOST(req: Request) {
     const email = v.data.email.toLowerCase().trim();
     const exists = await db.user.findUnique({ where: { email } });
     if (exists) return fail("Este correo ya está registrado.", 409);
-    return reply(await issueVerification({ name, email, role, passwordHash: await hash(password, 12) }), 202);
+    await db.user.create({ data: { name, email, role, passwordHash: await hash(password, 12) }, select: { id: true } });
+    return reply({ message: "Cuenta creada correctamente. Ya puedes iniciar sesión." }, 201);
   } catch (error) {
-    if (error instanceof VerificationError) return fail(error.message, error.status);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return fail("Este correo ya está registrado.", 409);
     if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2021", "P2022"].includes(error.code)) {
       console.error("[registration:DB_SCHEMA] Run npm run db:push on the application database.");
       return fail("El registro todavía no está preparado en el servidor. Contacta con soporte.", 503);

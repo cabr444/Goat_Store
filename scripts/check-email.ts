@@ -1,6 +1,7 @@
 import { emailConfig } from "../lib/password-reset";
 import { db } from "../lib/db";
 async function main() {
+console.log("Esta comprobación es solo para recuperar contraseñas; crear cuentas no requiere correo.");
 let failed = false;
 for (const key of ["APP_URL", "RESEND_API_KEY", "EMAIL_FROM"]) {
   const configured = Boolean(process.env[key]?.trim());
@@ -15,7 +16,7 @@ try {
     console.log("EMAIL_FROM: reemplaza el ejemplo por un remitente de tu dominio verificado en Resend."); failed = true;
   }
 } catch { console.log("Configuración de correo inválida. Completa .env y usa APP_URL HTTPS en producción."); failed = true; }
-try { await db.$queryRaw`SELECT 1 FROM "PendingRegistration" LIMIT 0`; console.log("PendingRegistration: tabla disponible."); }
+try { await db.$queryRaw`SELECT 1 FROM "PasswordReset" LIMIT 0`; console.log("PasswordReset: tabla disponible."); }
 catch { console.log("Base de datos: comprueba DATABASE_URL y ejecuta npm run db:push."); failed = true; }
 finally { await db.$disconnect(); }
 console.log("No se enviaron correos ni se mostraron claves. Verifica también el dominio y los límites de tu cuenta en Resend.");

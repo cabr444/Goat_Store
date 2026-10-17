@@ -1,7 +1,10 @@
-import EmailConfirmation from "@/components/EmailConfirmation";
+import Link from "next/link";
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Confirma tu correo | Goat", robots: { index: false, follow: false } };
-export default async function Page({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
-  const { token } = await searchParams;
-  return <EmailConfirmation token={token && /^[a-f0-9]{64}$/.test(token) ? token : ""} />;
+export const metadata: Metadata = { title: "Registro | Goat", robots: { index: false, follow: false } };
+export default function Page() {
+  return <main className="email-confirmation-screen"><section className="access-card">
+    <h1>Regístrate directamente</h1>
+    <p>Ya no necesitas confirmar tu correo. Si tu cuenta había quedado pendiente, vuelve al registro y créala con la contraseña que quieras usar.</p>
+    <Link className="button violet full" href="/acceso">Ir a iniciar sesión o registrarse</Link>
+  </section></main>;
 }
