@@ -51,6 +51,7 @@ model OrderCounter {
 }
 
 model Order {
+  checkoutAttempt CheckoutAttempt?
   reference String? @unique
   id        String      @id @default(cuid())
   userId    String
@@ -139,4 +140,10 @@ model PendingRegistration {
   expiresAt DateTime
   confirmedAt DateTime?
   @@index([expiresAt])
+}
+
+model CheckoutAttempt {
+  key String @id
+  orderId String @unique
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
 import StreamingHighlights from "@/components/StreamingHighlights";
+import { mergeCart, cartSignature } from "@/lib/cart";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
 import type { StoreOptions } from "@/lib/store-settings";
 import CategoryImageManager from "@/components/CategoryImageManager";
@@ -108,6 +109,11 @@ export default function Storefront({
         ? technologyCategories
         : digitalCategories;
   const router = useRouter();
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const checkoutLock = useRef(false);
+  const checkoutIntent = useRef<{ userId: string; signature: string; key: string } | null>(null);
+
   const [cardOrders, setCardOrders] = useState<CardOrders>(emptyCardOrders);
   const [reorderMode, setReorderMode] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
@@ -148,10 +154,9 @@ export default function Storefront({
       const data = JSON.parse(localStorage.getItem("goat-cart-v3") || "[]");
       if (Array.isArray(data))
         setCart(
-          data.filter(
-            (i: CartItem) =>
-              typeof i.id === "string" && Number.isInteger(i.qty) && i.qty > 0,
-          ),
+          mergeCart(data.filter(
+            (i: CartItem) => i && typeof i.id === "string" && Number.isInteger(i.qty) && i.qty > 0,
+          )),
         );
     } catch {}
     setCartReady(true);
@@ -225,6 +230,7 @@ export default function Storefront({
         .filter((i) => i.qty > 0),
     );
   const add = (id: string) => {
+    if (checkoutLock.current) { setNotice("Espera a que termine la compra actual."); return; }
     const product = products.find((p) => p.id === id);
     if (!product || product.stock === 0) {
       setNotice("Producto agotado.");
@@ -331,22 +337,42 @@ export default function Storefront({
       setBusy(false);
     }
   }
+  useEffect(() => { setCheckoutError(""); }, [cart]);
   async function checkout() {
-    setBusy(true);
+    if (checkoutLock.current || !cart.length || !user) return;
+    checkoutLock.current = true;
+    setCheckoutBusy(true); setCheckoutError("");
     try {
-      const result = await request("/api/orders", "POST", { items: cart });
-      setCart([]);
-      setCartOpen(false);
-      setNotice(
-        `Pedido ${result.reference || result.orderId} registrado. Consulta el comprobante en Pedidos.`,
-      );
+      const items = mergeCart(cart), signature = cartSignature(items);
+      if (!checkoutIntent.current) {
+        try { checkoutIntent.current = JSON.parse(sessionStorage.getItem("goat-checkout-intent") || "null"); } catch {}
+      }
+      if (checkoutIntent.current?.userId !== user.id || checkoutIntent.current?.signature !== signature || !/^[a-f0-9-]{36}$/i.test(checkoutIntent.current?.key || "")) {
+        checkoutIntent.current = { userId: user.id, signature, key: crypto.randomUUID() };
+      }
+      try { sessionStorage.setItem("goat-checkout-intent", JSON.stringify(checkoutIntent.current)); } catch {}
+      const response = await fetch("/api/orders", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, checkoutKey: checkoutIntent.current.key }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error || "No se pudo completar la compra.");
+      checkoutIntent.current = null;
+      try { sessionStorage.removeItem("goat-checkout-intent"); } catch {}
+      setCart([]); setCartOpen(false);
+      setNotice(`Pedido ${result.reference || result.orderId} guardado. Consulta el comprobante en Pedidos.`);
       router.push("/pedidos?pedido=" + encodeURIComponent(result.orderId) + "&comprobante=1");
-    } catch (e) {
-      setNotice((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    } catch (error) {
+      const message = error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)
+        ? "La respuesta está tardando. Revisa Mis pedidos o reintenta; recuperaremos el mismo pedido si ya se guardó."
+        : error instanceof TypeError || error instanceof SyntaxError
+          ? "No se recibió una respuesta válida. Revisa Mis pedidos o vuelve a intentarlo sin cambiar el carrito."
+          : error instanceof Error ? error.message : "No se pudo completar la compra. Inténtalo de nuevo.";
+      setCheckoutError(message);
+    } finally { checkoutLock.current = false; setCheckoutBusy(false); }
   }
+
   return (
     <>
       <div className="announcement">
@@ -855,17 +881,17 @@ export default function Storefront({
                         </p>
                       </div>
                       <div className="qty-controls">
-                        <button onClick={() => updateQty(i.id, -1)}>−</button>
+                        <button disabled={checkoutBusy} onClick={() => updateQty(i.id, -1)}>−</button>
                         {i.qty}
                         <button
-                          disabled={i.qty >= Math.min(50, p.stock)}
+                          disabled={checkoutBusy || i.qty >= Math.min(50, p.stock)}
                           onClick={() => updateQty(i.id, 1)}
                         >
                           +
                         </button>
                       </div>
                     </div>
-                  ) : null;
+                  ) : <div key={i.id} className="cart-row"><div className="cart-product-copy"><strong>Producto no disponible</strong><p>Quita este producto para continuar con los demás.</p></div><button type="button" disabled={checkoutBusy} onClick={() => setCart(old => old.filter(item => item.id !== i.id))}>Quitar</button></div>;
                 })
               )}
             </div>
@@ -877,23 +903,16 @@ export default function Storefront({
               <p>Tu saldo: {cop(user?.balance || 0)}</p>
               <button
                 className="button violet full"
-                disabled={
-                  busy ||
-                  !cart.length ||
-                  total > (user?.balance || 0) ||
-                  cart.some(
-                    (i) =>
-                      !products.find((p) => p.id === i.id) ||
-                      i.qty > (products.find((p) => p.id === i.id)?.stock || 0),
-                  )
-                }
+                disabled={checkoutBusy || !cart.length || !user || catalogLoading}
                 onClick={checkout}
               >
-                Comprar con saldo Goat
+                {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goat"}
               </button>
+              {checkoutBusy && <p role="status">Estamos comprobando todos los productos y guardando tu compra. Espera un momento.</p>}
+              {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
               {total > (user?.balance || 0) && (
                 <small>
-                  Saldo insuficiente: solicita una recarga al administrador.
+                  El saldo mostrado no cubre este total. Al comprar comprobaremos tu saldo actualizado.
                 </small>
               )}
               {cart.some(

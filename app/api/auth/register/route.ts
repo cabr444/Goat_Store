@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { secureMutation } from "@/lib/security";
 import { issueVerification, VerificationError } from "@/lib/email-verification";
 import { db } from "@/lib/db";
@@ -28,7 +29,12 @@ async function handlePOST(req: Request) {
     return reply(await issueVerification({ name, email, role, passwordHash: await hash(password, 12) }), 202);
   } catch (error) {
     if (error instanceof VerificationError) return fail(error.message, error.status);
-    return fail("No fue posible enviar el correo de confirmación. Inténtalo más tarde.", 503);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2021", "P2022"].includes(error.code)) {
+      console.error("[registration:DB_SCHEMA] Run npm run db:push on the application database.");
+      return fail("El registro todavía no está preparado en el servidor. Contacta con soporte.", 503);
+    }
+    console.error("[registration:SERVER] Registration could not be completed.");
+    return fail("No fue posible preparar el registro. Inténtalo más tarde.", 503);
   }
 }
 
