@@ -43,7 +43,21 @@ try {
     assert.ok((await request("/api/products", client)).data.products.some(item => item.id === product.id));
     assert.equal((await request(path, client)).response.status, 200);
   }
-  console.log("Section switches passed: admin-only save, persistence, independent departments, client route/catalog/purchase restrictions, no debit or stock change, old orders preserved and admin/seller access retained.");
+  // Account pages must use the same visibility settings, including empty-order links.
+  for (const tiendaEnabled of [false, true]) for (const segundaEnabled of [false, true]) {
+    for (const [department, enabled] of [["tienda", tiendaEnabled], ["segunda", segundaEnabled]]) assert.equal((await request("/api/admin/store-options", admin, "PUT", { department, enabled })).response.status, 200);
+    for (const [cookie, restricted] of [[client, true], [admin, false], [seller, false]]) {
+      for (const path of ["/perfil", "/pedidos?pedido=nonexistent-fixture"]) {
+        const response = await fetch(base.origin + path, { headers: { Cookie: "goat_session=" + cookie }, redirect: "manual" });
+        assert.equal(response.status, 200);
+        const html = await response.text();
+        assert.equal(html.includes('href="/store"'), !restricted || tiendaEnabled, path + " Tienda visibility");
+        assert.equal(html.includes('href="/segunda"'), !restricted || segundaEnabled, path + " Segunda visibility");
+        if (restricted && !tiendaEnabled && path.startsWith("/pedidos")) assert.ok(html.includes("Explorar streaming"));
+      }
+    }
+  }
+  console.log("Section switches passed: admin-only save, persistence, independent departments, client route/catalog/purchase restrictions, no debit or stock change, old orders preserved, profile/order navigation visibility and admin/seller access retained.");
 } finally {
   if (previous) await db.storeSettings.upsert({ where: { id: "main" }, create: previous, update: previous }); else await db.storeSettings.deleteMany({ where: { id: "main" } });
   const ids = users.map(user => user.id);

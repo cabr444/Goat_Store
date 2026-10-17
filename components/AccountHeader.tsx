@@ -1,12 +1,17 @@
+import type { StoreOptions } from "@/lib/store-settings";
 import { Wallet } from "lucide-react";
 import ProfileMenu from "@/components/ProfileMenu";
 import { cop } from "@/lib/account";
 export default function AccountHeader({
   name,
   balance,
+  role,
+  storeOptions,
 }: {
   name: string;
   balance: number;
+  role: string;
+  storeOptions: StoreOptions;
 }) {
   return (
     <header className="header">
@@ -16,8 +21,8 @@ export default function AccountHeader({
         </a>
         <nav className="account-page-links" aria-label="Navegación de cuenta">
           <a href="/">Inicio</a>
-          <a href="/store">Tienda</a>
-          <a href="/segunda">Segunda</a>
+          {(role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a href="/store">Tienda</a>}
+          {(role !== "CLIENTE" || storeOptions.segundaEnabled) && <a href="/segunda">Segunda</a>}
           <a href="/perfil">Perfil</a>
           <a href="/pedidos">Pedidos</a>
         </nav>

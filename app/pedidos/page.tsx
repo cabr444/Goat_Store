@@ -1,3 +1,4 @@
+import { getStoreOptions } from "@/lib/store-settings";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import {
@@ -40,6 +41,8 @@ export default async function Page({
     params.pedido && /^[a-zA-Z0-9-]{1,80}$/.test(params.pedido)
       ? params.pedido
       : undefined;
+  const storeOptions = await getStoreOptions();
+  const canBrowseTienda = user.role !== "CLIENTE" || storeOptions.tiendaEnabled;
   const data = await getOrderHistory(
     user.id,
     section,
@@ -53,7 +56,7 @@ export default async function Page({
       {params.comprobante === "1" && selectedOrder && data.orders[0] && (
         <ReceiptModal reference={data.orders[0].reference || data.orders[0].id} date={accountDate(data.orders[0].createdAt)} total={cop(data.orders[0].total)} items={data.orders[0].items.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, amount: cop(item.unitPrice * item.quantity), receipt: item.receipt }))} />
       )}
-      <AccountHeader name={user.name} balance={user.balance} />
+      <AccountHeader name={user.name} balance={user.balance} role={user.role} storeOptions={storeOptions} />
       <main className="container account-dashboard">
         <a href="/" className="account-back">
           ← Volver a Inicio
@@ -193,7 +196,7 @@ export default async function Page({
             <div className="account-empty">
               <h2>Aún no hay pedidos aquí.</h2>
               <p>Tus compras aparecerán en esta sección.</p>
-              <a href="/store">Explorar Tienda →</a>
+              <a href={canBrowseTienda ? "/store" : "/"}>{canBrowseTienda ? "Explorar Tienda →" : "Explorar streaming →"}</a>
             </div>
           )}
         </div>

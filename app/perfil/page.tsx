@@ -1,3 +1,4 @@
+import { getStoreOptions } from "@/lib/store-settings";
 import { redirect } from "next/navigation";
 import {
   Wallet,
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   const user = await getUser();
   if (!user) redirect("/acceso");
-  const data = await getProfileData(user.id, user.role);
+  const [data, storeOptions] = await Promise.all([getProfileData(user.id, user.role), getStoreOptions()]);
   const { profile } = data;
   function recent(
     items: typeof data.bought,
@@ -70,7 +71,7 @@ export default async function Page() {
   }
   return (
     <>
-      <AccountHeader name={profile.name} balance={profile.balance} />
+      <AccountHeader name={profile.name} balance={profile.balance} role={user.role} storeOptions={storeOptions} />
       <main className="container account-dashboard">
         <a href="/" className="account-back">
           ← Volver a Inicio
