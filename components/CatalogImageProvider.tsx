@@ -19,7 +19,7 @@ export default function CatalogImageProvider({
   const lastLoad = useRef(0);
   const [images, setImages] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (pathname === "/acceso" || pathname === "/restablecer-contrasena" || pathname === "/reset-password") {
+    if (pathname === "/acceso" || pathname === "/confirmar-correo" || pathname === "/restablecer-contrasena" || pathname === "/reset-password") {
       lastLoad.current = 0;
       setImages({});
       return;

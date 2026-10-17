@@ -1,7 +1,6 @@
 import { secureMutation } from "@/lib/security";
-import { Prisma } from "@prisma/client";
+import { issueVerification, VerificationError } from "@/lib/email-verification";
 import { db } from "@/lib/db";
-import { setSession } from "@/lib/auth";
 import { reply, fail } from "@/lib/http";
 import { hash } from "bcryptjs";
 import { z } from "zod";
@@ -26,18 +25,10 @@ async function handlePOST(req: Request) {
     const email = v.data.email.toLowerCase().trim();
     const exists = await db.user.findUnique({ where: { email } });
     if (exists) return fail("Este correo ya está registrado.", 409);
-    const user = await db.user.create({
-      data: { name, email, role, passwordHash: await hash(password, 12) },
-    });
-    await setSession(user.id);
-    return reply({ ok: true });
+    return reply(await issueVerification({ name, email, role, passwordHash: await hash(password, 12) }), 202);
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    )
-      return fail("Este correo ya está registrado.", 409);
-    return fail("No fue posible registrar la cuenta.", 500);
+    if (error instanceof VerificationError) return fail(error.message, error.status);
+    return fail("No fue posible enviar el correo de confirmación. Inténtalo más tarde.", 503);
   }
 }
 

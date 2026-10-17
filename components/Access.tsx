@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import RegistrationPending, { type PendingRegistrationInfo } from "@/components/RegistrationPending";
 import AnimeWelcome from "@/components/AnimeWelcome";
 import PeekGoat from "@/components/PeekGoat";
 import AccessBackdrop from "@/components/AccessBackdrop";
@@ -13,6 +14,23 @@ export default function Access({
   recover?: boolean;
 }) {
   const router = useRouter();
+  const [pending, setPending] = useState<PendingRegistrationInfo | null>(null);
+  useEffect(() => {
+    if (resetToken || recover) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("goat-pending-registration") || "null");
+      if (saved && typeof saved.email === "string" && /^[a-f0-9]{64}$/.test(saved.ticket) && Number.isFinite(Date.parse(saved.expiresAt))) { setPending(saved); setEmail(saved.email); }
+    } catch {}
+  }, [resetToken, recover]);
+  const registrationConfirmed = useCallback(() => {
+    setPending(null); setMode("login"); setError("");
+    setMessage("Correo confirmado. Tu cuenta ya fue creada; inicia sesión para entrar.");
+    try { sessionStorage.removeItem("goat-pending-registration"); } catch {}
+  }, []);
+  function leavePending() {
+    setPending(null); setMode("login"); setError(""); setMessage("");
+    try { sessionStorage.removeItem("goat-pending-registration"); } catch {}
+  }
   const [entering, setEntering] = useState(false);
   const enterStore = useCallback(() => { router.replace("/"); router.refresh(); }, [router]);
   const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">(
@@ -66,7 +84,10 @@ export default function Access({
       } else if (mode === "login") {
         setEntering(true);
       } else {
-        enterStore();
+        if (!d.pending || !d.ticket) throw Error("No se pudo solicitar la confirmación.");
+        const info = { ticket: d.ticket, email: d.email, expiresAt: d.expiresAt };
+        setPending(info); setPassword("");
+        try { sessionStorage.setItem("goat-pending-registration", JSON.stringify(info)); } catch {}
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -100,6 +121,7 @@ export default function Access({
         <div className="access-form-scene">
         <PeekGoat />
         <form className="access-card" onSubmit={submit}>
+          {pending ? <RegistrationPending info={pending} onConfirmed={registrationConfirmed} onBack={leavePending} /> : <>
           <div className="access-lock">
             <LockKeyhole size={22} />
           </div>
@@ -267,6 +289,7 @@ export default function Access({
             El perfil de administrador se crea únicamente mediante la
             configuración privada del servidor.
           </small>
+          </>}
         </form>
         </div>
       </div>

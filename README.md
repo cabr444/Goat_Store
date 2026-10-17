@@ -25,7 +25,7 @@
 Configura PostgreSQL gestionado y variables del entorno en el proveedor de hosting (por ejemplo, Vercel), aplica el esquema con Prisma en un entorno seguro, ejecuta seed para inicializar catálogo y administrador, y despliega el repositorio Next.js. El comando `npm run build` ejecuta `prisma generate`. No ejecutes seed con contraseñas predeterminadas.
 
 ## Consideraciones de seguridad y negocio
-- Registro de vendedor es abierto por solicitud; **antes de lanzar** es recomendable aprobar vendedores manualmente, añadir verificación de correo, rate limit, protección antiabuso, auditoría con panel, política de privacidad y términos.
+- Registro de vendedor es abierto por solicitud; **antes de lanzar** es recomendable aprobar vendedores manualmente, definir aprobación de vendedores, protección antiabuso, auditoría con panel, política de privacidad y términos. El registro de clientes y vendedores ya exige confirmar el correo.
 - La cookie de sesión es httpOnly, sameSite=Lax, firmada y expira en 7 días; la contraseña se guarda con bcrypt. Todos los endpoints protegidos verifican identidad/rol en servidor.
 - Recargas y compras exigen conexión PostgreSQL real. Las recargas se registran en `WalletEvent`; no están conectadas a un depósito bancario.
 - **Las compras físicas debitadas crean pedidos pendientes de entrega manual**; no implican activación instantánea de plataformas. Se recomienda agregar panel de gestión de pedidos/reembolsos antes de operar comercialmente.
@@ -55,7 +55,7 @@ Ejecuta `npm run db:push` antes de usar la función para crear `PasswordReset` y
 
 Tras actualizar: `npm install`, `npm run db:push` y reinicia el servidor. Configura `APP_URL` con el origen exacto de tu web y usa HTTPS en producción. La tabla `RateLimit` es necesaria para iniciar sesión o registrarse. Ejecuta `npm test`, `npx tsc --noEmit`, `npm run build` y `npm audit --omit=dev` para validar.
 
-La revisión incluye código y pruebas automatizadas; no reemplaza una prueba de penetración. No se ha validado aquí una base de datos real ni entrega de emails. El registro de vendedores sigue abierto por diseño: para una tienda pública, define aprobación de vendedores, verificación de email y MFA para el administrador. Usa credenciales de base de datos con privilegios mínimos, copias de seguridad y protección antiabuso del hosting.
+La revisión incluye código y pruebas automatizadas; no reemplaza una prueba de penetración. Las pruebas de integración usan PostgreSQL real aislado y correos interceptados; la entrega real requiere configurar el proveedor y su remitente. El registro de vendedores sigue abierto por diseño: para una tienda pública, define aprobación de vendedores y MFA para el administrador. Usa credenciales de base de datos con privilegios mínimos, copias de seguridad y protección antiabuso del hosting.
 
 ## Store de tecnología
 El enlace **Store**, después de Combos, abre `/store`. La página mantiene el acceso obligatorio y comparte carrito, saldo, pedidos y permisos con el catálogo digital. Añade búsqueda y filtros para Computadores, Periféricos, Audio, Accesorios y Redes.
@@ -146,3 +146,16 @@ El administrador puede cambiar las portadas de Historias que enganchan y los log
 Las portadas de Historias que enganchan tienen 2 cm CSS adicionales de altura (aproximadamente 76 px; la medida física varía según la pantalla). Las imágenes nuevas subidas desde los controles de categorías, productos, series y logos se convierten a WebP y se redimensionan en el navegador cuando esto reduce su peso; ante falta de compatibilidad se conserva el archivo original. El servidor mantiene validación de formato, permisos y límite de 2 MB. Las imágenes existentes se conservan. La lista de imágenes se reutiliza durante 30 segundos al navegar; guardar o restaurar una imagen fuerza la actualización inmediata, y salir a acceso limpia la lista. Las revalidaciones con ETag coincidente consultan solo la fecha de modificación en lugar de leer los bytes completos de la imagen.
 
 Los cinco filtros digitales están disponibles tanto en Inicio como en Streaming. Cambiar de categoría limpia la búsqueda anterior; Inicio mantiene Streaming seleccionado al entrar.
+
+
+## Registro con confirmación de correo
+
+Crear cuenta guarda una solicitud temporal en PendingRegistration y envía un correo mediante Resend. No crea User ni una sesión. La pantalla muestra Esperando la confirmación y permite reenviar después de 60 segundos. Puede recargarse sin perder la solicitud; solo se conserva un ticket de consulta en sessionStorage, nunca la contraseña.
+
+El usuario abre el enlace del correo y pulsa Confirmar correo y crear cuenta. La cuenta se crea en una transacción al consumir el enlace válido. Las visitas GET de los escáneres de correo no crean usuarios. La pestaña original comprueba el resultado cada 10 segundos mientras está visible y vuelve al inicio de sesión al detectar la confirmación. No inicia sesión automáticamente; se usa la contraseña elegida en el registro. Las cuentas que ya existían siguen funcionando.
+
+Los enlaces vencen a los 30 minutos, son de un solo uso y se guardan como hashes SHA-256. Las contraseñas pendientes se guardan con bcrypt y se borran del registro temporal al confirmar. Reenviar invalida el enlace anterior; si falla el proveedor, se mantiene el enlace que ya había sido enviado. Un fallo de envío inicial no crea una cuenta. Los correos normalizados siguen siendo únicos, incluso con solicitudes simultáneas. Los pendientes antiguos se purgan al solicitar nuevos correos, una vez transcurridas 24 horas desde su vencimiento; sin confirmar nunca pasan a User.
+
+Antes de usarlo, ejecuta `npm run db:push` y configura en `.env` o en el hosting `APP_URL`, `RESEND_API_KEY` y `EMAIL_FROM`, usando un remitente autorizado en Resend. En producción, APP_URL debe ser la URL pública HTTPS exacta de tu tienda; no localhost. Estas mismas variables sirven para recuperar contraseñas. `.env.example` incluye los nombres necesarios sin credenciales.
+
+Validación: `npm test` y `npm run build`. La prueba `node tests/email-verification.integration.mjs` requiere una base local aislada llamada goat_inventory_test, la aplicación local y VERIFICATION_EMAIL_CAPTURE con la ruta de un archivo de capturas. Para interceptar los correos en el servidor de pruebas, usa NODE_OPTIONS con `--require=./tests/fixtures/resend-preload.cjs`, RESEND_API_KEY=goat-registration-test-key, APP_URL local y la misma ruta de captura. El interceptor rechaza entornos que no sean locales y solo acepta destinatarios de ejemplo; no debe habilitarse en producción. Cubre espera sin usuario/sesión, confirmación concurrente, unicidad, vencimiento, reenvío y errores del proveedor.

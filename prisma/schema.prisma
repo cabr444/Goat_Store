@@ -127,3 +127,16 @@ model CatalogOrder {
   ids Json
   version Int @default(0)
 }
+
+model PendingRegistration {
+  email String @id
+  name String
+  passwordHash String
+  role Role
+  tokenHash String @unique
+  statusHash String @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  confirmedAt DateTime?
+  @@index([expiresAt])
+}

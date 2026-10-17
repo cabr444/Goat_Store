@@ -5,6 +5,8 @@ import { fail } from "@/lib/http";
 const authLimits: Record<string, number> = {
   login: 20,
   register: 5,
+  "resend-verification": 5,
+  "verify-email": 20,
   "forgot-password": 5,
   "reset-password": 20,
 };
@@ -82,7 +84,9 @@ export function secureMutation<T extends unknown[]>(
         const account =
           typeof data.email === "string"
             ? data.email.trim().toLowerCase()
-            : "token-reset";
+            : typeof data.ticket === "string" || typeof data.token === "string"
+              ? createHash("sha256").update(typeof data.ticket === "string" ? data.ticket : data.token).digest("hex")
+              : "token-reset";
         // Global ceiling also bounds attempts using arbitrary email addresses.
         if (
           !(await consumeLimit("auth-global", 1000)) ||
