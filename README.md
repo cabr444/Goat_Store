@@ -176,3 +176,7 @@ La identidad plataforma/correo/perfil se protege con HMAC y es única entre prod
 Mantén estables `DELIVERY_SECRET` y su alternativa `AUTH_SECRET`: son necesarios tanto para descifrar accesos como para comprobar identidades. Incluye la nueva tabla en los respaldos. Esta actualización cambia los productos de categoría Streaming; los demás tipos de producto conservan su flujo.
 
 Validación: `npm test`, `npm run build` y `npm run test:streaming` con la base aislada local `goat_inventory_test`, el servidor local y el mismo `AUTH_SECRET` de pruebas. Cubre permisos, perfiles únicos entre planes, cantidades múltiples, ventas concurrentes, recibos privados, reintentos, retiros, historial anterior y fallos sin débito ni asignación parcial.
+
+
+### Login con dominios de Vercel
+`APP_URL` sigue siendo la URL canónica para los enlaces de correo. Las escrituras aceptan el origen real de la petición y, en Vercel, sus direcciones exactas `VERCEL_URL`, `VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL`. Esto permite abrir el mismo despliegue por su dominio público o dirección de rama sin recibir un rechazo de origen al iniciar sesión. No se aceptan otros proyectos por compartir `vercel.app`, ni se confía en cabeceras `Host`/`X-Forwarded-Host` añadidas por el cliente. Las peticiones marcadas como cross-site se rechazan. Tras actualizar hay que desplegar el nuevo commit; no cambia la base de datos.

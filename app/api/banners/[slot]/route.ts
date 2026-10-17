@@ -1,3 +1,4 @@
+import { allowedMutationOrigin } from "@/lib/request-origin";
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -44,12 +45,7 @@ export async function POST(req: Request, { params }: Context) {
     return fail("Solo el administrador puede cambiar el banner.", 403);
   const { slot } = await params;
   if (!validSlot(slot)) return fail("Selecciona una imagen entre 1 y 6.");
-  const origin = req.headers.get("origin");
-  if (
-    req.headers.get("sec-fetch-site") === "cross-site" ||
-    (origin && origin !== new URL(process.env.APP_URL || req.url).origin)
-  )
-    return fail("Solicitud no autorizada.", 403);
+  if (!allowedMutationOrigin(req)) return fail("Solicitud no autorizada.", 403);
   const type = req.headers.get("content-type")?.split(";")[0];
   if (!["image/jpeg", "image/png", "image/webp"].includes(type || ""))
     return fail("Usa una imagen JPG, PNG o WebP.", 415);

@@ -1,3 +1,4 @@
+import { allowedMutationOrigin } from "@/lib/request-origin";
 import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { fail } from "@/lib/http";
@@ -12,13 +13,7 @@ const authLimits: Record<string, number> = {
 };
 
 export function validateMutation(req: Request) {
-  const origin = req.headers.get("origin");
-  const allowed = new URL(process.env.APP_URL || req.url).origin;
-  if (
-    req.headers.get("sec-fetch-site") === "cross-site" ||
-    (origin && origin !== allowed)
-  )
-    return fail("Solicitud no autorizada.", 403);
+  if (!allowedMutationOrigin(req)) return fail("Solicitud no autorizada.", 403);
   if (
     req.method !== "DELETE" &&
     !new URL(req.url).pathname.endsWith("/logout") &&
