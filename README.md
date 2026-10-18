@@ -1,5 +1,7 @@
 # Goat Store — tienda con usuarios, saldos y combos
 
+Documentación profesional editable: [English](docs/goat-store-en.md) · [Español](docs/goat-store-es.md). Para generar ambos archivos Word, consulta [docs/README.md](docs/README.md).
+
 ## Qué incluye
 - Diseño Colorful Modern en español, móvil y escritorio.
 - 23 productos predefinidos (19 productos individuales + 4 opciones de combos).
