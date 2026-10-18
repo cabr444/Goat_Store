@@ -19,3 +19,7 @@ Both Word files are directly editable. For reproducible releases, keep Markdown 
 Ambos Word son editables. Para versiones reproducibles, sincroniza los Markdown, actualiza versión/fecha/commit en las fuentes y generador, regenera y revisa las páginas antes de publicar. El contenido tiene enlaces internos y los títulos aparecen en el panel de navegación de Word.
 
 Do not place real credentials, private platform accesses or customer records in documentation. Application configuration and documentation examples are separate. Supabase and Neon are alternative PostgreSQL providers; this manual does not require using both or claim to verify current production settings.
+
+Published editable files are stored in `exports/`: `Goat_Store_Documentation_EN.docx` and `Goat_Store_Documentacion_ES.docx`. The source ZIP contains both Markdown masters and the generator. To update the published files, run the generator with `--output-dir docs/exports`.
+
+Los archivos Word publicados se encuentran en `exports/`. El ZIP incluye las fuentes de ambas ediciones y el generador para futuras revisiones.
