@@ -26,9 +26,9 @@ CONFIG = {
         'edition': 'ENGLISH EDITION', 'contents': 'Contents',
         'guide': 'Select a section to navigate. All content, tables and procedures are editable.',
         'summary': 'A complete reference for operating, administering and maintaining Goat Store. Based on the implemented application, with clear separation between current capabilities, operating procedures and future improvements.',
-        'version': 'Document version 1.0', 'date': '17 October 2026',
-        'baseline': 'Application 2.0.0  |  Source 42fd1ce  |  password-reset',
-        'footer': 'GOAT STORE  •  Documentation 1.0', 'page': 'Page', 'of': 'of',
+        'version': 'Document version 1.1', 'date': '18 October 2026',
+        'baseline': 'Application 2.0.0  |  Source 56f7f83  |  password-reset',
+        'footer': 'GOAT STORE  •  Documentation 1.1', 'page': 'Page', 'of': 'of',
         'lang': 'en-US',
     },
     'es': {
@@ -38,9 +38,9 @@ CONFIG = {
         'edition': 'EDICIÓN EN ESPAÑOL', 'contents': 'Contenido',
         'guide': 'Selecciona una sección para navegar. Todo el contenido, tablas y procedimientos son editables.',
         'summary': 'Referencia completa para operar, administrar y mantener Goat Store. Basada en la aplicación implementada, con una distinción clara entre capacidades actuales, procedimientos operativos y mejoras futuras.',
-        'version': 'Versión documental 1.0', 'date': '17 de octubre de 2026',
-        'baseline': 'Aplicación 2.0.0  |  Código 42fd1ce  |  password-reset',
-        'footer': 'GOAT STORE  •  Documentación 1.0', 'page': 'Página', 'of': 'de',
+        'version': 'Versión documental 1.1', 'date': '18 de octubre de 2026',
+        'baseline': 'Aplicación 2.0.0  |  Código 56f7f83  |  password-reset',
+        'footer': 'GOAT STORE  •  Documentación 1.1', 'page': 'Página', 'of': 'de',
         'lang': 'es-CO',
     },
 }
@@ -193,7 +193,7 @@ def build(source, destination, config):
     document.core_properties.subject = config['subtitle']
     document.core_properties.author = 'Goat Store'
     document.core_properties.keywords = 'Goat Store, streaming, administration, operations, documentation'
-    document.core_properties.comments = 'Editable documentation. Source baseline: 42fd1ce; documentation 1.0.'
+    document.core_properties.comments = 'Editable documentation. Source baseline: 56f7f83; documentation 1.1.'
     p = section.header.paragraphs[0]; p.paragraph_format.space_after = Pt(0)
     run_style(p.add_run('Goat.'), 11, PURPLE, True)
     run_style(p.add_run('   /   ' + config['edition']), 8, MUTED)

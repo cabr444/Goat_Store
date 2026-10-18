@@ -1,13 +1,13 @@
 # Goat Store
 ## 01. Document control and purpose
-This manual describes Goat Store as implemented in source revision 42fd1ce on the password-reset branch. It is an operational and technical reference for the business owner, administrators, support staff, developers and deployment operators. Application package version: 2.0.0. Documentation version: 1.0. Review date: 17 October 2026.
+This manual describes Goat Store as implemented in source revision 56f7f83 on the password-reset branch. It is an operational and technical reference for the business owner, administrators, support staff, developers and deployment operators. Application package version: 2.0.0. Documentation version: 1.1. Review date: 18 October 2026.
 
 The document distinguishes implemented behavior from operating recommendations and future work. It does not assert that a particular production database, mail sender, domain or backup policy has been configured. Those settings must be verified in the relevant provider dashboards. No customer records, passwords, connection strings or API keys are included.
 
 | Control | Value |
 |---|---|
 | Repository | github.com/cabr444/Goat_Store |
-| Source baseline | password-reset / 42fd1ce |
+| Source baseline | password-reset / 56f7f83 |
 | Document owner | Goat Store project administrator |
 | Intended use | Administration, support, deployment and maintenance |
 | Master formats | Editable Word document and versioned Markdown source |
@@ -147,6 +147,7 @@ The administrator dashboard is reached through Perfil → Administrar productos,
 
 | Task | Procedure and result |
 |---|---|
+| Duplicate product | Select Duplicar; copy is created immediately and opens in the editor |
 | Change price | Edit product → Precio (COP) → Guardar producto; future orders use the new price |
 | Edit description/name | Edit product details and save; historic line snapshots keep their recorded content |
 | Replenish Streaming | Add unsold individual accesses; availability is derived automatically |
@@ -155,6 +156,8 @@ The administrator dashboard is reached through Perfil → Administrar productos,
 | Recharge balance | Select user and amount; confirm the real-world payment independently, then record recharge |
 | Change section access | Secciones disponibles para clientes → toggle Tienda or Segunda independently |
 | Reorder cards | Enable admin ordering, drag or use arrow controls; saved order applies globally |
+
+Duplicar copies the catalog name (with a copia suffix), category, price, description, mark, background and custom product image. The new record belongs to the account creating it and has an independent image. ADMIN may duplicate any product; VENDEDOR may duplicate owned products only. Every copy starts with zero stock and no shared credentials, individual accesses, order associations or wallet events. Add real inventory before selling it. Closing the editor does not delete the already-created copy. The source remains unchanged; a failure to copy the image rolls back creation.
 
 A recharge is an administrative credit, not a bank transaction or payment gateway confirmation. The API permits a positive integer amount up to COP 10,000,000 per request and records a RECARGA WalletEvent including the administrator reference in the note. Purchases record COMPRA events. There is no automatic payment reconciliation or seller settlement.
 
@@ -413,6 +416,7 @@ All paths are relative to the application origin. JSON is required for ordinary 
 | GET /api/products | Authenticated | Permitted public product fields and settings |
 | POST /api/products | ADMIN / VENDEDOR | Create validated product with current user ownership |
 | PATCH /api/products/[id] | ADMIN / owning VENDEDOR | Product values and expectedStock; guarded update |
+| POST /api/products/[id]/duplicate | ADMIN / owning VENDEDOR | Create independent catalog/image copy with zero stock and no private delivery data |
 | DELETE /api/products/[id] | ADMIN / owning VENDEDOR | Mark sold out; retire available streaming entries |
 | GET /api/orders | Authenticated | Latest 50 own orders with safe line information |
 | POST /api/orders | Authenticated | items[{id,qty}], optional checkoutKey; transactional purchase/recovery |
@@ -449,6 +453,7 @@ Important responses include 400 for validation/business rejection, 401 for unaut
 | npm run db:migrate:apply | Copy into an empty target and verify |
 | npm test / npx tsc --noEmit | Unit checks / TypeScript validation |
 | npm run test:inventory / npm run test:streaming | Isolated inventory/allocation integration tests |
+| npm run test:duplicate | Isolated product-copy, ownership, image and rollback checks |
 | npm run test:migration | Disposable two-database migration tests |
 
 Release checklist: confirm branch/commit; protect database/secrets; apply only reviewed schema changes; configure environment and mail where needed; run relevant checks; wait for Ready; verify correct public domain; test a customer journey; confirm hidden sections; inspect private receipt access and monitor redacted logs.
@@ -456,3 +461,6 @@ Release checklist: confirm branch/commit; protect database/secrets; apply only r
 Glossary: COP is Colombian peso; saldo is the internal prepaid balance; pedido is an order; perfil is the account dashboard or platform profile depending on context; agotado means sold out; checkout key identifies one retryable purchase intent; ciphertext is encrypted content; a provider connection string selects a database, while an API key authorizes a service.
 
 Revision record: 1.0 — 17 October 2026 — Initial English edition based on source 42fd1ce; includes direct signup, individual streaming inventory, migration tooling and account-navigation visibility fixes. Update this entry and the Spanish edition when behavior changes.
+
+
+1.1 — 18 October 2026 — Updated to source 56f7f83: product duplication, independent image copying, zero-stock/private-data safeguards, ownership permissions and mobile editor guidance.

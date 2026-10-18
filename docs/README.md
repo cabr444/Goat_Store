@@ -1,7 +1,7 @@
 # Goat Store documentation / Documentación
 
-The English and Spanish manuals describe application source `42fd1ce` on `password-reset`.
-Las dos ediciones describen el código `42fd1ce` de la rama `password-reset`.
+The English and Spanish manuals describe application source `56f7f83` on `password-reset`.
+Las dos ediciones describen el código `56f7f83` de la rama `password-reset`.
 
 - `goat-store-en.md`: English master source.
 - `goat-store-es.md`: fuente maestra en español.

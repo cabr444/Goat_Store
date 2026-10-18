@@ -1,13 +1,13 @@
 # Goat Store
 ## 01. Control documental y propósito
-Este manual describe Goat Store según la revisión de código 42fd1ce de la rama password-reset. Es una referencia operativa y técnica para el propietario del negocio, administradores, personal de soporte, desarrolladores y responsables del despliegue. Versión del paquete de la aplicación: 2.0.0. Versión de la documentación: 1.0. Fecha de revisión: 17 de octubre de 2026.
+Este manual describe Goat Store según la revisión de código 56f7f83 de la rama password-reset. Es una referencia operativa y técnica para el propietario del negocio, administradores, personal de soporte, desarrolladores y responsables del despliegue. Versión del paquete de la aplicación: 2.0.0. Versión de la documentación: 1.1. Fecha de revisión: 18 de octubre de 2026.
 
 El documento distingue el funcionamiento implementado de las recomendaciones operativas y las mejoras futuras. No afirma que una base de datos de producción, remitente de correo, dominio o política de respaldos específicos estén configurados. Estos valores deben comprobarse en los paneles de los proveedores. No contiene registros de clientes, contraseñas, conexiones ni claves de API.
 
 | Control | Valor |
 |---|---|
 | Repositorio | github.com/cabr444/Goat_Store |
-| Código de referencia | password-reset / 42fd1ce |
+| Código de referencia | password-reset / 56f7f83 |
 | Responsable documental | Administrador del proyecto Goat Store |
 | Uso previsto | Administración, soporte, despliegue y mantenimiento |
 | Formatos maestros | Documento Word editable y fuente Markdown versionada |
@@ -147,6 +147,7 @@ El panel se abre desde Perfil → Administrar productos, stock e imágenes o /ad
 
 | Tarea | Procedimiento y resultado |
 |---|---|
+| Duplicar producto | Pulsar Duplicar; se crea inmediatamente una copia y se abre su editor |
 | Cambiar precio | Editar → Precio (COP) → Guardar producto; el valor nuevo se usa en compras futuras |
 | Editar nombre/descripción | Cambiar datos y guardar; las líneas históricas mantienen lo registrado |
 | Reponer Streaming | Añadir accesos individuales sin vender; la disponibilidad es automática |
@@ -155,6 +156,8 @@ El panel se abre desde Perfil → Administrar productos, stock e imágenes o /ad
 | Recargar saldo | Seleccionar usuario e importe; comprobar el pago real por separado y registrar el crédito |
 | Cambiar acceso a secciones | Secciones disponibles para clientes → Tienda y Segunda por separado |
 | Ordenar tarjetas | Activar orden administrativo, arrastrar o usar flechas; se guarda para todos |
+
+Duplicar copia nombre (con sufijo copia), categoría, precio, descripción, marca, fondo e imagen personalizada. El registro pertenece a la cuenta que lo crea y su imagen es independiente. ADMIN puede duplicar cualquier producto; VENDEDOR solo los propios. Cada copia comienza con stock cero y sin credenciales compartidas, accesos individuales, asociaciones a pedidos ni movimientos de saldo. Añade inventario real antes de venderla. Cerrar el editor no elimina la copia ya creada. El original permanece intacto; un fallo al copiar la imagen revierte la creación.
 
 Una recarga es un crédito administrativo, no una transacción bancaria ni confirmación de pasarela. La API permite un entero positivo de hasta COP 10.000.000 por solicitud y guarda un WalletEvent RECARGA con referencia al administrador en la nota. Las compras guardan eventos COMPRA. No existe conciliación automática de pagos ni liquidación a vendedores.
 
@@ -413,6 +416,7 @@ Las rutas son relativas al origen de la aplicación. Las modificaciones ordinari
 | GET /api/products | Autenticado | Campos públicos de productos permitidos y configuración |
 | POST /api/products | ADMIN / VENDEDOR | Crear producto validado con propiedad del usuario actual |
 | PATCH /api/products/[id] | ADMIN / VENDEDOR propietario | Datos y expectedStock; actualización protegida |
+| POST /api/products/[id]/duplicate | ADMIN / VENDEDOR propietario | Crear copia independiente de catálogo/imagen, sin stock ni datos privados de entrega |
 | DELETE /api/products/[id] | ADMIN / VENDEDOR propietario | Agotar; retirar streaming disponible |
 | GET /api/orders | Autenticado | Últimos 50 pedidos propios y líneas seguras |
 | POST /api/orders | Autenticado | items[{id,qty}], checkoutKey opcional; compra/recuperación transaccional |
@@ -449,6 +453,7 @@ Las respuestas importantes son 400 para validación/rechazo de negocio, 401 para
 | npm run db:migrate:apply | Copiar a destino vacío y verificar |
 | npm test / npx tsc --noEmit | Pruebas unitarias / validación de tipos |
 | npm run test:inventory / npm run test:streaming | Integración aislada de inventario/asignación |
+| npm run test:duplicate | Pruebas aisladas de copia, propiedad, imagen y rollback |
 | npm run test:migration | Pruebas con dos bases desechables |
 
 Lista de publicación: comprobar rama/commit; proteger datos y secretos; aplicar solo cambios de esquema revisados; configurar entorno y correo si corresponde; ejecutar controles; esperar Ready; verificar dominio público; probar recorrido de cliente; confirmar secciones ocultas; revisar privacidad de comprobantes y monitorizar registros sin secretos.
@@ -456,3 +461,6 @@ Lista de publicación: comprobar rama/commit; proteger datos y secretos; aplicar
 Glosario: COP significa peso colombiano; saldo es el crédito interno prepagado; pedido es una compra; perfil puede ser el panel de cuenta o un perfil de plataforma según contexto; agotado indica cero disponibilidad; checkout key identifica una intención de compra recuperable; ciphertext es contenido cifrado; la conexión selecciona una base y una clave API autoriza un servicio.
 
 Registro de revisión: 1.0 — 17 de octubre de 2026 — Primera edición española basada en 42fd1ce; incluye registro directo, inventario individual, migración y corrección de visibilidad en cuenta. Actualiza esta entrada y la edición inglesa al cambiar el comportamiento.
+
+
+1.1 — 18 de octubre de 2026 — Actualización a 56f7f83: duplicación de productos, imagen independiente, stock cero, protección de datos privados, permisos de propiedad y guía dentro del editor móvil.
