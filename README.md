@@ -196,3 +196,12 @@ Las tablas nuevas que aún no existían en Supabase se dejan vacías; los campos
 La comprobación y la copia son pasos separados: no asumas que una comprobación antigua garantiza que el destino sigue vacío; la copia vuelve a comprobarlo y bloquea escrituras en sus tablas durante la operación. El programa no genera archivos con datos privados ni imprime contraseñas, claves, tokens o conexiones. No lo conectes al arranque o build de Vercel; es una operación única desde un ordenador con acceso a ambas bases. Para grandes volúmenes o esquemas modificados, planifica una migración específica antes de usarlo.
 
 Prueba: `npm run test:migration` requiere dos bases desechables locales con el esquema actual, llamadas `goat_migration_source_test` y `goat_migration_target_test`. Las conexiones opcionales `MIGRATION_TEST_SOURCE_URL` y `MIGRATION_TEST_TARGET_URL` solo aceptan esos nombres en localhost. Cubre copia íntegra, inicio de sesión con el hash anterior, imágenes/JSON, comprobantes cifrados, secretos incorrectos, esquema antiguo, destino ocupado y rollback tras un fallo a mitad de la copia. No uses bases con datos reales para esta prueba.
+
+
+## Duplicar un producto
+
+En las tarjetas administrables aparece **Duplicar**, junto a Editar y Agotar. ADMIN puede duplicar cualquier producto y VENDEDOR únicamente los propios. Se crea inmediatamente un producto con ID independiente y nombre terminado en `(copia)`, perteneciente a la cuenta que realiza la acción; se abre su editor para ajustar nombre, precio u otros detalles. Cerrar el editor no borra la copia ya creada.
+
+Se copian categoría, precio, descripción, marca, fondo y la imagen personalizada del producto si existe. La imagen es independiente de la original. Toda copia comienza con stock cero, sin credenciales compartidas, perfiles individuales, asignaciones, pedidos ni movimientos de saldo. Para Streaming hay que añadir accesos nuevos sin vender en el inventario de la copia; para otras categorías hay que introducir disponibilidad real. No se modifica el original. La creación del producto y su imagen se realiza en una transacción; si falla la imagen, no queda una copia parcial.
+
+Prueba: `npm run test:duplicate` con el mismo entorno PostgreSQL local aislado de inventario. Verifica permisos, propiedad, imagen independiente, ausencia de datos privados, nombres Unicode, stock cero y rollback.

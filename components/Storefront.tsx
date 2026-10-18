@@ -26,6 +26,7 @@ import {
   X,
   Search,
   Pencil,
+  Copy,
   Sparkles,
 } from "lucide-react";
 import {
@@ -110,6 +111,8 @@ export default function Storefront({
         ? technologyCategories
         : digitalCategories;
   const router = useRouter();
+  const [duplicating, setDuplicating] = useState<string | null>(null);
+  const duplicateLock = useRef(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const checkoutLock = useRef(false);
@@ -309,6 +312,18 @@ export default function Storefront({
     } finally {
       setBusy(false);
     }
+  }
+  async function duplicate(p: Product) {
+    if (duplicateLock.current) return;
+    duplicateLock.current = true; setDuplicating(p.id);
+    try {
+      const data = await request(`/api/products/${p.id}/duplicate`, "POST", {});
+      setProducts(old => [...old, data.product]);
+      window.dispatchEvent(new Event("goat-catalog-images-updated"));
+      startEdit(data.product);
+      setNotice("Producto duplicado sin stock ni accesos privados. Edita la copia y añade su inventario.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudo duplicar el producto."); }
+    finally { duplicateLock.current = false; setDuplicating(null); }
   }
   async function remove(p: Product) {
     if (!confirm(`¿Marcar ${p.name} como agotado?`)) return;
@@ -719,6 +734,9 @@ export default function Storefront({
                       <div className="manage-buttons">
                         <button onClick={() => startEdit(p)}>
                           <Pencil size={14} /> Editar
+                        </button>
+                        <button type="button" disabled={duplicating !== null} onClick={() => void duplicate(p)}>
+                          <Copy size={14} /> {duplicating === p.id ? "Duplicando…" : "Duplicar"}
                         </button>
                         <button onClick={() => remove(p)}>
                           <Trash2 size={14} /> Agotar

@@ -17,7 +17,8 @@
     "test:streaming": "node --import tsx tests/streaming-inventory.integration.mjs",
     "db:migrate:check": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts",
     "db:migrate:apply": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts --apply",
-    "test:migration": "node --import tsx tests/database-migration.integration.mjs"
+    "test:migration": "node --import tsx tests/database-migration.integration.mjs",
+    "test:duplicate": "node --import tsx tests/product-duplicate.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
