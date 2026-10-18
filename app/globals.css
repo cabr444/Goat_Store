@@ -131,3 +131,5 @@
 .drawer-footer .checkout-error{padding:13px;margin-top:14px;background:#fff0f3;border:1px solid #f4ccd6;border-radius:10px;color:#9f294a}.drawer-footer .checkout-error p{color:inherit;font-size:12px;line-height:1.6;margin:0 0 8px}.checkout-error a{font-size:12px;font-weight:800;text-decoration:underline}.drawer-footer [role=status]{line-height:1.6}
 
 .streaming-inventory-list{max-height:280px;overflow:auto}.streaming-inventory-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #ded6ec}.streaming-inventory-row span{flex:1 1 180px;overflow-wrap:anywhere}.streaming-inventory-row button{padding:6px 10px;border:1px solid #ded6ec;border-radius:8px;background:white;color:#32165e}
+
+.duplicate-info{margin:0;padding:12px 14px;border-radius:10px;background:#f2edff;color:#43256f;font-size:13px;line-height:1.5}

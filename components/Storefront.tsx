@@ -111,6 +111,7 @@ export default function Storefront({
         ? technologyCategories
         : digitalCategories;
   const router = useRouter();
+  const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -271,6 +272,8 @@ export default function Storefront({
     router.refresh();
   }
   function startEdit(p?: Product) {
+    setNotice("");
+    setDuplicateHint("");
     setEditId(p?.id || null);
     setForm(
       p
@@ -321,7 +324,7 @@ export default function Storefront({
       setProducts(old => [...old, data.product]);
       window.dispatchEvent(new Event("goat-catalog-images-updated"));
       startEdit(data.product);
-      setNotice("Producto duplicado sin stock ni accesos privados. Edita la copia y añade su inventario.");
+      setDuplicateHint("Producto duplicado sin stock ni accesos privados. Edita la copia y añade su inventario.");
     } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudo duplicar el producto."); }
     finally { duplicateLock.current = false; setDuplicating(null); }
   }
@@ -967,6 +970,7 @@ export default function Storefront({
                 </button>
               </div>
               <div className="edit-fields">
+                {duplicateHint && <p className="duplicate-info" role="status">{duplicateHint}</p>}
                 <label>
                   Nombre
                   <input
