@@ -46,6 +46,7 @@ type User = {
   balance: number;
 };
 type Product = {
+  configuredStock?: number;
   id: string;
   name: string;
   category: string;
@@ -59,6 +60,7 @@ type Product = {
 type CartItem = { id: string; qty: number };
 type Entry = {
   expectedStock?: number;
+  expectedConfiguredStock?: number;
   name: string;
   category: string;
   price: number;
@@ -289,8 +291,9 @@ export default function Storefront({
             name: p.name,
             category: p.category,
             price: p.price,
-            stock: p.stock,
+            stock: p.configuredStock ?? p.stock,
             expectedStock: p.stock,
+            expectedConfiguredStock: p.configuredStock,
             description: p.description,
             mark: p.mark,
             active: true,
@@ -1052,7 +1055,7 @@ export default function Storefront({
                   />
                 </label>
                 <label>
-                  {form.category === "Streaming" ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
+                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : form.category === "Streaming" ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
                   <input
                     type="number"
                     min={0}
@@ -1069,7 +1072,7 @@ export default function Storefront({
                   <>
                     <ImageUploadButton kind="product" imageKey={editId} />
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Streaming" ? <StreamingInventoryEditor productId={editId} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : form.category === "Streaming" ? <StreamingInventoryEditor productId={editId} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}

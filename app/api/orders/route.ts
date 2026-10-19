@@ -1,3 +1,4 @@
+import { comboPools, loadComboInventory } from "@/lib/combo-inventory";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -51,7 +52,15 @@ async function handlePOST(req: Request) {
         let total = 0;
         const accesses = new Map<string, z.infer<typeof deliverySchema>[]>();
         const assignments: { id: string; productId: string }[] = [];
-        for (const item of items) {
+        const selectedAccesses = new Set<string>();
+        const reservations = new Map<string, number>();
+        const reserve = (id: string, qty: number) => reservations.set(id, (reservations.get(id) || 0) + qty);
+        const comboLabels = new Map<string, string[]>();
+        const combos = products.filter(product => product.category === "Combos");
+        const comboInventory = combos.length ? await loadComboInventory(tx, combos) : null;
+        // Standalone accesses are selected first, so bundles cannot select the same access again.
+        const allocationItems = [...items].sort((a, b) => Number(byId.get(a.id)!.category === "Combos") - Number(byId.get(b.id)!.category === "Combos"));
+        for (const item of allocationItems) {
           const product = byId.get(item.id)!;
           if (blocked.includes(product.category)) throw new PurchaseError("Esta sección está deshabilitada temporalmente para clientes.");
           if (product.category === "Streaming") {
@@ -60,25 +69,45 @@ async function handlePOST(req: Request) {
             try { accesses.set(product.id, rows.map(row => deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher))))); }
             catch { throw new PurchaseError(`${product.name}: no se pudo preparar el acceso. Contacta con soporte.`, 503); }
             assignments.push(...rows.map(row => ({ id: row.id, productId: product.id })));
-            // Replace legacy/manual stock with the actual unassigned inventory before reserving units.
-            const stock = await tx.streamingAccess.count({ where: { productId: product.id, ...availableAccess } });
-            await tx.product.update({ where: { id: product.id }, data: { stock } });
+            rows.forEach(row => selectedAccesses.add(row.id));
+          } else if (product.category === "Combos") {
+            if (product.stock < item.qty) throw new PurchaseError(`${product.name}: no hay suficientes combos disponibles.`);
+            if (!product.active) throw new PurchaseError(`${product.name}: el combo no está disponible.`);
+            const pools = comboPools(product, comboInventory!);
+            if (!pools.length) throw new PurchaseError(`${product.name}: revisa las plataformas del combo. Solo se permiten perfiles individuales; Netflix debe usar x28 días.`);
+            const deliveries: z.infer<typeof deliverySchema>[] = [], labels: string[] = [];
+            for (const pool of pools) {
+              const units = pool.filter(unit => !selectedAccesses.has(unit.id)).slice(0, item.qty);
+              if (units.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes perfiles individuales para todas las plataformas del combo.`);
+              for (const unit of units) {
+                selectedAccesses.add(unit.id); reserve(unit.source.id, 1);
+                assignments.push({ id: unit.id, productId: product.id });
+                deliveries.push(unit.delivery); labels.push(unit.source.name);
+              }
+            }
+            accesses.set(product.id, deliveries); comboLabels.set(product.id, labels);
           } else {
             if (product.stock < item.qty) throw new PurchaseError(`${product.name}: pediste ${item.qty}, pero hay ${product.stock} unidades disponibles.`);
-            if (product.deliveryCipher && ["Música", "Productividad", "Combos"].includes(product.category)) {
+            if (product.deliveryCipher && ["Música", "Productividad"].includes(product.category)) {
               try { accesses.set(product.id, [deliverySchema.parse(JSON.parse(decryptPrivate(product.deliveryCipher)))]); }
               catch { throw new PurchaseError(`${product.name}: no se pudo preparar el acceso. Contacta con soporte.`, 503); }
             }
           }
+          reserve(product.id, item.qty);
           total += product.price * item.qty;
         }
         if (!Number.isSafeInteger(total) || total < 1 || total > 2147483647) throw new PurchaseError("Total inválido.");
         const counter = await tx.orderCounter.upsert({ where: { id: "orders" }, create: { id: "orders", value: 1 }, update: { value: { increment: 1 } } });
         const reference = "P" + counter.value, date = new Date();
-        // Reserve all distinct products in one database statement, atomically.
-        const values = Prisma.join(items.map(item => Prisma.sql`(${item.id}::text, ${item.qty}::integer)`));
+        // Sync source stock, then reserve aggregate quantities shared by singles and all bundles.
+        const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] }, category: "Streaming" }, select: { id: true } });
+        for (const source of streamingSources) {
+          const stock = await tx.streamingAccess.count({ where: { productId: source.id, ...availableAccess } });
+          await tx.product.update({ where: { id: source.id }, data: { stock } });
+        }
+        const values = Prisma.join([...reservations].sort(([a], [b]) => a.localeCompare(b)).map(([id, qty]) => Prisma.sql`(${id}::text, ${qty}::integer)`));
         const reserved = await tx.$executeRaw`UPDATE "Product" AS product SET "stock" = product."stock" - cart.qty FROM (VALUES ${values}) AS cart(id, qty) WHERE product.id = cart.id AND product."stock" >= cart.qty`;
-        if (reserved !== items.length) throw new PurchaseError("El stock cambió durante la compra. Revisa las cantidades e inténtalo de nuevo.");
+        if (reserved !== reservations.size) throw new PurchaseError("El stock cambió durante la compra. Revisa las cantidades e inténtalo de nuevo.");
         const debit = await tx.user.updateMany({ where: { id: user.id, balance: { gte: total } }, data: { balance: { decrement: total } } });
         if (!debit.count) throw new PurchaseError("Saldo insuficiente para el total del carrito.");
         const itemIds = new Map(items.map(item => [item.id, randomUUID()]));
@@ -87,7 +116,7 @@ async function handlePOST(req: Request) {
           status: accesses.size === items.length ? "ENTREGADO" : "PENDIENTE_ENTREGA",
           items: { createMany: { data: items.map(item => {
             const product = byId.get(item.id)!, access = accesses.get(item.id);
-            return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate(access.map((unit, index) => (product.category === "Streaming" && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, product.name, reference, date, product.category === "Streaming" ? 1 : item.qty, product.category === "Streaming" ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
+            return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate((product.category === "Combos" ? `*Combo: ${product.name}*\nCantidad: ${item.qty}\nTotal del combo: $${new Intl.NumberFormat("es-CO").format(product.price * item.qty)} COP\n\n` : "") + access.map((unit, index) => (product.category === "Streaming" && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, comboLabels.get(product.id)?.[index] || product.name, reference, date, ["Streaming", "Combos"].includes(product.category) ? 1 : item.qty, product.category === "Combos" ? null : product.category === "Streaming" ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
           }) } },
         } });
         for (const item of items) {

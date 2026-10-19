@@ -20,7 +20,8 @@
     "test:migration": "node --import tsx tests/database-migration.integration.mjs",
     "test:duplicate": "node --import tsx tests/product-duplicate.integration.mjs",
     "db:seed:courses": "node --env-file=.env --import tsx prisma/seed-courses.ts",
-    "test:courses": "node --import tsx tests/courses.integration.mjs"
+    "test:courses": "node --import tsx tests/courses.integration.mjs",
+    "test:combos": "node --import tsx tests/combo-inventory.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

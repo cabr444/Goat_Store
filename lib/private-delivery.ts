@@ -67,7 +67,7 @@ export function receiptText(
   orderId: string,
   date: Date,
   quantity: number,
-  amount: number,
+  amount: number | null,
 ) {
   const bought = new Intl.DateTimeFormat("es-CO", {
     dateStyle: "medium",
@@ -93,8 +93,7 @@ export function receiptText(
     bought +
     "\n📦 Cantidad: " +
     quantity +
-    "\n💰 Total: $" +
-    new Intl.NumberFormat("es-CO").format(amount) +
-    " COP\n\n⚠️ *IMPORTANTE:* Prohibido cambiar correo, clave o nombre de perfil. Si lo haces perderás la garantía y el acceso inmediatamente.\n\nGracias por tu compra 🛍️"
+    (amount === null ? "" : "\n💰 Total: $" + new Intl.NumberFormat("es-CO").format(amount) + " COP") +
+    "\n\n⚠️ *IMPORTANTE:* Prohibido cambiar correo, clave o nombre de perfil. Si lo haces perderás la garantía y el acceso inmediatamente.\n\nGracias por tu compra 🛍️"
   );
 }

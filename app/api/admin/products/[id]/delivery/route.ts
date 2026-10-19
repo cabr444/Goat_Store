@@ -17,9 +17,10 @@ export async function GET(_req: Request, { params }: Context) {
     const { id } = await params;
     const product = await db.product.findUnique({
       where: { id },
-      select: { deliveryCipher: true },
+      select: { deliveryCipher: true, category: true },
     });
     if (!product) return fail("Producto no encontrado.", 404);
+    if (product.category === "Combos") return fail("Los combos usan el inventario individual de cada plataforma, no un acceso compartido.", 409);
     return reply({
       delivery: product.deliveryCipher
         ? deliverySchema.parse(
@@ -43,6 +44,7 @@ async function save(req: Request, { params }: Context) {
     select: { category: true },
   });
   if (!product) return fail("Producto no encontrado.", 404);
+  if (product.category === "Combos") return fail("Los combos usan el inventario individual de cada plataforma, no un acceso compartido.", 409);
   if (product.category === "Streaming") return fail("Añade accesos individuales en el inventario de streaming.", 409);
   if (!digitalCategories.some((c) => c === product.category))
     return fail("Los accesos solo se configuran en productos digitales.");

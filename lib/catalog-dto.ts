@@ -16,5 +16,5 @@ export const publicProductSelect = {
 
 export function publicProduct(product: Prisma.ProductGetPayload<{ select: typeof publicProductSelect }>) {
   const { _count, ...safe } = product;
-  return { ...safe, stock: product.category === "Streaming" ? _count.streamingAccesses : product.stock };
+  return { ...safe, ...(product.category === "Combos" ? { configuredStock: product.stock } : {}), stock: product.category === "Streaming" ? _count.streamingAccesses : product.stock };
 }

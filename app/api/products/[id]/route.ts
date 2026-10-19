@@ -1,3 +1,4 @@
+import { comboPools, loadComboInventory, withComboStocks } from "@/lib/combo-inventory";
 import { availableAccess } from "@/lib/streaming-inventory";
 import { secureMutation } from "@/lib/security";
 import { getUser } from "@/lib/auth";
@@ -31,13 +32,14 @@ async function handlePATCH(
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
     const inventoryCount = await tx.streamingAccess.count({ where: { productId: id } });
     if (inventoryCount && v.data.category !== "Streaming") return null;
-    const stock = current.category === "Streaming" ? await tx.streamingAccess.count({ where: { productId: id, ...availableAccess } }) : current.stock;
-    if (stock !== expectedStock) return null;
+    const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
+    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : current.category === "Streaming" ? await tx.streamingAccess.count({ where: { productId: id, ...availableAccess } }) : current.stock;
+    if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
     await tx.product.update({ where: { id }, data: { ...v.data, stock: v.data.category === "Streaming" ? (current.category === "Streaming" ? stock : 0) : v.data.stock } });
     return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
   });
   if (!updated) return fail("El inventario cambió o el producto tiene accesos registrados. Actualiza el producto antes de guardar.", 409);
-  return reply({ product: publicProduct(updated) });
+  return reply({ product: (await withComboStocks([publicProduct(updated)]))[0] });
 }
 async function handleDELETE(
   _req: Request,

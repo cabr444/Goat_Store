@@ -1,3 +1,4 @@
+import { withComboStocks } from "@/lib/combo-inventory";
 import { readCardOrders } from "@/lib/catalog-order";
 import { getStoreOptions, disabledClientCategories } from "@/lib/store-settings";
 import { getUser } from "@/lib/auth";
@@ -16,5 +17,5 @@ export async function GET() {
     user.role === "ADMIN" ? db.user.findMany({ select: { id: true, name: true, email: true, role: true, balance: true }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
     db.catalogOrder.findMany(),
   ]);
-  return reply({ user, products: products.map(publicProduct), orders, users, storeOptions, cardOrders: readCardOrders(orderRows) });
+  return reply({ user, products: await withComboStocks(products.map(publicProduct)), orders, users, storeOptions, cardOrders: readCardOrders(orderRows) });
 }

@@ -1,3 +1,4 @@
+import { withComboStocks } from "@/lib/combo-inventory";
 import { readCardOrders } from "@/lib/catalog-order";
 import { getStoreOptions, disabledClientCategories } from "@/lib/store-settings";
 import { secureMutation } from "@/lib/security";
@@ -13,11 +14,11 @@ export async function GET() {
   return reply({
     storeOptions,
     cardOrders: readCardOrders(await db.catalogOrder.findMany()),
-    products: (await db.product.findMany({
+    products: await withComboStocks((await db.product.findMany({
       where: { category: { notIn: disabledClientCategories(user.role, storeOptions) } },
       select: publicProductSelect,
       orderBy: { createdAt: "asc" },
-    })).map(publicProduct),
+    })).map(publicProduct)),
   });
 }
 async function handlePOST(req: Request) {
@@ -35,7 +36,7 @@ async function handlePOST(req: Request) {
       data: { ...v.data, stock: v.data.category === "Streaming" ? 0 : v.data.stock, ownerId: u.id },
       select: publicProductSelect,
     });
-    return reply({ product: publicProduct(product) }, 201);
+    return reply({ product: (await withComboStocks([publicProduct(product)]))[0] }, 201);
   } catch {
     return fail("No se pudo guardar el producto.", 500);
   }
