@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
+import ProductCarousel from "@/components/ProductCarousel";
+import { homeProductRows } from "@/lib/home-product-rows";
 import StreamingHighlights from "@/components/StreamingHighlights";
 import { mergeCart, cartSignature } from "@/lib/cart";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
@@ -408,6 +410,72 @@ export default function Storefront({
     } finally { checkoutLock.current = false; setCheckoutBusy(false); }
   }
 
+  function renderProduct(p: Product, rowIds: string[]) {
+    return (
+              <article key={p.id} className="product-card" {...dragProps("products", p.id)}>
+                {orderControls("products", p.id, p.name, rowIds)}
+                <div
+                  className="product-photo"
+                  style={{ background: p.gradient }}
+                >
+                  <div className="photo-click">
+                    <CatalogImage
+                      productId={p.id}
+                      name={p.name}
+                      category={p.category}
+                    />
+                  </div>
+                  <span
+                    className={
+                      p.stock > 0 ? "stock-badge" : "stock-badge sold-out"
+                    }
+                  >
+                    {p.stock > 0 ? p.stock + " disponibles" : "Agotado"}
+                  </span>
+                  <span className="tag">
+                    {secondhand ? "Segunda mano" : p.category}
+                  </span>
+                </div>
+                <div className="product-info">
+                  <span className="category-label">{p.category}</span>
+                  <strong className="product-title">{p.name}</strong>
+                  <p className="product-description">{p.description}</p>
+                  <div className="product-bottom">
+                    <strong className="price">
+                      {cop(p.price)} <small>COP</small>
+                    </strong>
+                    <button
+                      className="add-mini"
+                      title={p.stock > 0 ? "Agregar al carrito" : "Agotado"}
+                      disabled={p.stock === 0 || checkoutBusy}
+                      aria-label={`Agregar ${p.name} al carrito`}
+                      onClick={() => add(p.id)}
+                    >
+                      <Plus />
+                    </button>
+                  </div>
+                  <button type="button" className="button violet buy-now-button" disabled={p.stock === 0 || checkoutBusy || catalogLoading} onClick={() => { setCheckoutError(""); setNotice(""); setBuyNowId(p.id); }}>
+                    Comprar ahora
+                  </button>
+                  {canManage &&
+                    (user?.role === "ADMIN" || p.ownerId === user?.id) && (
+                      <div className="manage-buttons">
+                        <button onClick={() => startEdit(p)}>
+                          <Pencil size={14} /> Editar
+                        </button>
+                        <button type="button" disabled={duplicating !== null} onClick={() => void duplicate(p)}>
+                          <Copy size={14} /> {duplicating === p.id ? "Duplicando…" : "Duplicar"}
+                        </button>
+                        <button onClick={() => remove(p)}>
+                          <Trash2 size={14} /> Agotar
+                        </button>
+                      </div>
+                    )}
+                </div>
+              </article>
+    );
+  }
+
   return (
     <>
       <div className="announcement">
@@ -613,7 +681,7 @@ export default function Storefront({
         {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
-        {!digitalCatalog && !courses && (
+        {!home && !digitalCatalog && !courses && (
         <section className="container category-section" id="streaming">
           <div className="section-heading">
             <div>
@@ -650,8 +718,13 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {(home || (digitalCatalog && filter === "Streaming") || (management && user?.role === "ADMIN")) && <StreamingHighlights admin={user?.role === "ADMIN"} />}
-        <section className="container products-section" id="catalogo">
+        {digitalCatalog && filter === "Streaming" && <StreamingHighlights admin={user?.role === "ADMIN"} />}
+        {home && <div id="catalogo" className="home-product-showcase">
+          {homeProductRows(products, user?.role || "CLIENTE", storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
+            {row.products.map(product => renderProduct(product, row.products.map(item => item.id)))}
+          </ProductCarousel>)}
+        </div>}
+        {!home && <section className="container products-section" id="catalogo">
           <span id="combos" />
           <div className="section-heading">
             <div>
@@ -715,75 +788,13 @@ export default function Storefront({
             {!home && digitalCatalog && filter === "Streaming" && query && <button type="button" className="button outline catalog-show-all" onClick={() => { setQuery(""); setFilter("Streaming"); }}>Ver todo Streaming</button>}
           </div>
           <div className="product-grid">
-            {visible.map((p) => (
-              <article key={p.id} className="product-card" {...dragProps("products", p.id)}>
-                {orderControls("products", p.id, p.name, visible.map(product => product.id))}
-                <div
-                  className="product-photo"
-                  style={{ background: p.gradient }}
-                >
-                  <div className="photo-click">
-                    <CatalogImage
-                      productId={p.id}
-                      name={p.name}
-                      category={p.category}
-                    />
-                  </div>
-                  <span
-                    className={
-                      p.stock > 0 ? "stock-badge" : "stock-badge sold-out"
-                    }
-                  >
-                    {p.stock > 0 ? p.stock + " disponibles" : "Agotado"}
-                  </span>
-                  <span className="tag">
-                    {secondhand ? "Segunda mano" : p.category}
-                  </span>
-                </div>
-                <div className="product-info">
-                  <span className="category-label">{p.category}</span>
-                  <strong className="product-title">{p.name}</strong>
-                  <p className="product-description">{p.description}</p>
-                  <div className="product-bottom">
-                    <strong className="price">
-                      {cop(p.price)} <small>COP</small>
-                    </strong>
-                    <button
-                      className="add-mini"
-                      title={p.stock > 0 ? "Agregar al carrito" : "Agotado"}
-                      disabled={p.stock === 0 || checkoutBusy}
-                      aria-label={`Agregar ${p.name} al carrito`}
-                      onClick={() => add(p.id)}
-                    >
-                      <Plus />
-                    </button>
-                  </div>
-                  <button type="button" className="button violet buy-now-button" disabled={p.stock === 0 || checkoutBusy || catalogLoading} onClick={() => { setCheckoutError(""); setNotice(""); setBuyNowId(p.id); }}>
-                    Comprar ahora
-                  </button>
-                  {canManage &&
-                    (user?.role === "ADMIN" || p.ownerId === user?.id) && (
-                      <div className="manage-buttons">
-                        <button onClick={() => startEdit(p)}>
-                          <Pencil size={14} /> Editar
-                        </button>
-                        <button type="button" disabled={duplicating !== null} onClick={() => void duplicate(p)}>
-                          <Copy size={14} /> {duplicating === p.id ? "Duplicando…" : "Duplicar"}
-                        </button>
-                        <button onClick={() => remove(p)}>
-                          <Trash2 size={14} /> Agotar
-                        </button>
-                      </div>
-                    )}
-                </div>
-              </article>
-            ))}
+            {visible.map(p => renderProduct(p, visible.map(product => product.id)))}
           </div>
           {catalogLoading && <p role="status">Cargando catálogo…</p>}
           {!catalogLoading && visible.length === 0 && (
             <div className="empty">No hay productos para mostrar.</div>
           )}
-        </section>
+        </section>}
         <section className="container contact" id="contacto">
           <div>
             <span className="overline">GOAT DIGITAL</span>

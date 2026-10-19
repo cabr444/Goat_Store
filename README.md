@@ -225,3 +225,9 @@ Cada unidad vendida descuenta **un combo y un acceso individual por plataforma**
 El pedido conserva el precio del combo y un comprobante con los accesos asignados de todas sus plataformas. La reserva de perfiles, los descuentos de stock, el débito y el pedido se guardan en una sola transacción. Los carritos mixtos comparten inventario y no pueden recibir el mismo perfil dos veces; los reintentos recuperan el pedido existente. Los accesos compartidos que antes estuvieran configurados en el combo ya no se entregan. Un combo de un vendedor solo utiliza sus propios productos; los combos de administración o del catálogo general pueden utilizar inventario de la tienda.
 
 No requiere migración de esquema. Despliega el cambio, revisa los nombres/cantidades de los combos existentes y carga los perfiles en las plataformas individuales. Las pruebas con PostgreSQL local descartable se ejecutan con `npm run test:combos`, `DATABASE_URL`, `AUTH_SECRET` e `INVENTORY_TEST_URL` configurados para ese entorno de pruebas.
+
+### Carruseles de Inicio
+
+Inicio muestra cuatro carruseles horizontales: Streaming, Tienda, Segunda y Cursos. Cada uno selecciona hasta diez productos reales de su departamento, siguiendo el orden guardado por administración. Conserva imágenes personalizadas, disponibilidad, carrito, compra directa y herramientas de edición/ordenación. No repite productos ni inventa cursos para completar diez tarjetas: si una categoría tiene cinco productos, muestra cinco. Tienda y Segunda se ocultan a los clientes cuando sus opciones están deshabilitadas.
+
+«Historias que enganchan» y la cuadrícula completa de Streaming se encuentran en `/catalogo?categoria=Streaming`. Los enlaces «Ver todo» de Inicio abren el catálogo correspondiente. Los carruseles admiten desplazamiento táctil, teclado y botones de flechas, y respetan la preferencia de movimiento reducido.
