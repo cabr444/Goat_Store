@@ -27,8 +27,9 @@ export function productImage(product: ImageProduct): string {
   const name = normalized(product.name),
     category = product.category;
   if (category === "Cursos") {
-    const topics: [RegExp, string][] = [[/desarrollo web/, "web"], [/canva|diseno/, "design"], [/marketing/, "marketing"], [/finanzas/, "finance"], [/ingles/, "english"]];
-    return asset("course-" + (topics.find(([pattern]) => pattern.test(name))?.[1] || "study") + ".svg");
+    const topics: [RegExp, string][] = [[/office/, "office"], [/prime/, "prime"], [/youtube/, "youtube"], [/tarjetas/, "finance"], [/ingresos/, "marketing"], [/desarrollo web/, "web"], [/canva|diseno/, "design"], [/marketing/, "marketing"], [/finanzas/, "finance"], [/ingles/, "english"]];
+    const topic = topics.find(([pattern]) => pattern.test(name))?.[1] || "study";
+    return asset((["office", "prime", "youtube"].includes(topic) ? topic : "course-" + topic) + ".svg");
   }
   if (category === "Combos") return asset("combos.svg");
   const brands: [RegExp, string][] = [

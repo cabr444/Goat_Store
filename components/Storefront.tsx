@@ -34,7 +34,7 @@ import {
   digitalCategories,
   allCategories,
 } from "@/lib/technology-products";
-import { courseCategories, courseProducts } from "@/lib/course-products";
+import { courseCategories } from "@/lib/course-products";
 import { secondhandCategories } from "@/lib/secondhand-products";
 
 type Role = "CLIENTE" | "VENDEDOR" | "ADMIN";
@@ -486,10 +486,10 @@ export default function Storefront({
       </header>
       <main id="inicio">
         {courses && <section className="container courses-hero">
-          <div><span className="overline">GOAT ACADEMY / CURSOS</span><h1>Tu próxima habilidad<br /><em>empieza aquí.</em></h1><p>Descubre programación, diseño, marketing, finanzas e idiomas. Consulta el temario y la modalidad de acceso de cada curso antes de comprar.</p><button className="button violet" onClick={() => jump("Todos")}>Explorar cursos <ArrowRight size={17} /></button></div>
+          <div><span className="overline">GOAT ACADEMY / CURSOS</span><h1>Tu próxima habilidad<br /><em>empieza aquí.</em></h1><p>Descubre cursos de Office 365, Prime Video, YouTube, tarjetas temporales e ingresos extra. Consulta el temario y la modalidad de acceso de cada curso antes de comprar.</p><button className="button violet" onClick={() => jump("Todos")}>Explorar cursos <ArrowRight size={17} /></button></div>
           <div className="courses-hero-art" aria-hidden="true"><span>APRENDE</span><strong>CREA.<br />CRECE.</strong><small>Nuevas ideas. Nuevas posibilidades.</small></div>
         </section>}
-        {courses && user?.role === "ADMIN" && !catalogLoading && courseProducts.some(course => !products.some(product => product.id === course.id)) && <section className="container course-sample-panel"><p>Añade cinco cursos de ejemplo y personaliza su oferta antes de habilitar las ventas. Empiezan sin stock.</p><button type="button" className="button violet" disabled={courseSeedBusy} onClick={async () => { setCourseSeedBusy(true); try { const result = await request("/api/admin/courses/seed", "POST", {}); await load(); setNotice(`${result.added} cursos de ejemplo añadidos.`); } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudieron cargar los cursos."); } finally { setCourseSeedBusy(false); } }}>{courseSeedBusy ? "Añadiendo cursos…" : "Cargar cursos de ejemplo"}</button></section>}
+        {courses && user?.role === "ADMIN" && !catalogLoading && <section className="container course-sample-panel"><p>Carga o actualiza los cinco cursos del catálogo. Las actualizaciones conservan precios, stock, imágenes y títulos personalizados.</p><button type="button" className="button violet" disabled={courseSeedBusy} onClick={async () => { setCourseSeedBusy(true); try { const result = await request("/api/admin/courses/seed", "POST", {}); await load(); setNotice(`${result.added} cursos añadidos y ${result.updated} actualizados.`); } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudieron cargar los cursos."); } finally { setCourseSeedBusy(false); } }}>{courseSeedBusy ? "Añadiendo cursos…" : "Cargar / actualizar cursos"}</button></section>}
 
         {user?.role === "ADMIN" && <div className="container card-order-toolbar">
           <button type="button" className="button violet" aria-pressed={reorderMode} disabled={orderBusy} onClick={() => setReorderMode(!reorderMode)}>{reorderMode ? "Terminar de ordenar" : "Ordenar tarjetas"}</button>
