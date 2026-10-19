@@ -205,3 +205,9 @@ En las tarjetas administrables aparece **Duplicar**, junto a Editar y Agotar. AD
 Se copian categoría, precio, descripción, marca, fondo y la imagen personalizada del producto si existe. La imagen es independiente de la original. Toda copia comienza con stock cero, sin credenciales compartidas, perfiles individuales, asignaciones, pedidos ni movimientos de saldo. Para Streaming hay que añadir accesos nuevos sin vender en el inventario de la copia; para otras categorías hay que introducir disponibilidad real. No se modifica el original. La creación del producto y su imagen se realiza en una transacción; si falla la imagen, no queda una copia parcial.
 
 Prueba: `npm run test:duplicate` con el mismo entorno PostgreSQL local aislado de inventario. Verifica permisos, propiedad, imagen independiente, ausencia de datos privados, nombres Unicode, stock cero y rollback.
+
+### Cursos
+
+La sección `/cursos` incluye un catálogo independiente y un enlace en la navegación principal y de cuenta. Como administrador, abre **Cursos → Cargar cursos de ejemplo** para añadir cinco propuestas: desarrollo web, Canva, marketing digital, finanzas personales e inglés A1. La operación solo añade los registros que faltan y conserva las ediciones existentes.
+
+También puedes ejecutar `npm run db:seed:courses` usando el `DATABASE_URL` del entorno correspondiente. No requiere cambios de esquema. Los ejemplos empiezan activos y sin stock: revisa descripción, precio, imagen y contenido real antes de habilitar ventas. Los cursos utilizan el carrito y saldo existentes; los pedidos quedan en **PENDIENTE_ENTREGA** para entregar el acceso manualmente y aparecen en el filtro **Cursos** de Pedidos. Esta sección no incluye un reproductor de lecciones ni una plataforma educativa.

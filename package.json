@@ -18,7 +18,9 @@
     "db:migrate:check": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts",
     "db:migrate:apply": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts --apply",
     "test:migration": "node --import tsx tests/database-migration.integration.mjs",
-    "test:duplicate": "node --import tsx tests/product-duplicate.integration.mjs"
+    "test:duplicate": "node --import tsx tests/product-duplicate.integration.mjs",
+    "db:seed:courses": "node --env-file=.env --import tsx prisma/seed-courses.ts",
+    "test:courses": "node --import tsx tests/courses.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

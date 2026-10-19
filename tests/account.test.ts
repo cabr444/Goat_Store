@@ -11,13 +11,14 @@ import {
 import { supportLink, rechargeLink } from "../lib/account-links";
 test("order sections keep user scoping and support historical category fallback", () => {
   assert.deepEqual(userOrdersWhere("me", "todos"), { userId: "me" });
-  for (const section of ["streaming", "tienda", "segunda"] as const) {
+  for (const section of ["streaming", "tienda", "segunda", "cursos"] as const) {
     const where = userOrdersWhere("me", section);
     assert.equal(where.userId, "me");
     const rules = (where.items as { some: { OR: unknown[] } }).some.OR;
     assert.equal(rules.length, 2);
     assert.ok(JSON.stringify(rules[1]).includes('"category":""'));
   }
+  assert.equal(orderDepartment("Cursos"), "cursos");
   assert.equal(orderDepartment("Audio"), "tienda");
   assert.equal(orderDepartment("Calzado usado"), "segunda");
   assert.equal(orderDepartment("Combos"), "streaming");

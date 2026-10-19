@@ -1,3 +1,4 @@
+import { courseCategories } from "./course-products";
 import { secondhandCategories } from "./secondhand-products";
 export const technologyCategories = [
   "Computadores",
@@ -14,6 +15,7 @@ export const digitalCategories = [
 ] as const;
 export const allCategories = [
   ...digitalCategories,
+  ...courseCategories,
   ...technologyCategories,
   ...secondhandCategories,
 ] as const;

@@ -1,3 +1,4 @@
+import { courseCategories } from "./course-products";
 import { decryptPrivate } from "@/lib/private-delivery";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -17,27 +18,31 @@ export const accountDate = (value: Date | string) =>
 export { supportLink, rechargeLink, whatsappLink } from "./account-links";
 export function orderDepartment(
   category: string,
-): "streaming" | "tienda" | "segunda" {
+): "streaming" | "tienda" | "segunda" | "cursos" {
   if (technologyCategories.some((c) => c === category)) return "tienda";
   if (secondhandCategories.some((c) => c === category)) return "segunda";
+  if (category === "Cursos") return "cursos";
   return "streaming";
 }
 export const departmentLabels = {
   streaming: "Streaming y digitales",
   tienda: "Tienda",
   segunda: "Segunda",
+  cursos: "Cursos",
 };
 export const orderSections = [
   "todos",
   "streaming",
   "tienda",
   "segunda",
+  "cursos",
 ] as const;
 export type OrderSection = (typeof orderSections)[number];
 const categoryGroups = {
   streaming: digitalCategories,
   tienda: technologyCategories,
   segunda: secondhandCategories,
+  cursos: courseCategories,
 };
 export function userOrdersWhere(
   userId: string,

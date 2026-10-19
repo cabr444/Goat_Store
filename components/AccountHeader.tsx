@@ -23,6 +23,7 @@ export default function AccountHeader({
           <a href="/">Inicio</a>
           {(role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a href="/store">Tienda</a>}
           {(role !== "CLIENTE" || storeOptions.segundaEnabled) && <a href="/segunda">Segunda</a>}
+          <a href="/cursos">Cursos</a>
           <a href="/perfil">Perfil</a>
           <a href="/pedidos">Pedidos</a>
         </nav>

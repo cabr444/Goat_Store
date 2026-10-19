@@ -1,0 +1,8 @@
+export const courseCategories = ["Cursos"] as const;
+export const courseProducts = [
+  { id: "goat-course-web", name: "Desarrollo web desde cero", price: 59900, mark: "WEB", description: "Curso de ejemplo de 20 horas: fundamentos de HTML, CSS y JavaScript, diseño adaptable y un proyecto web inicial. Confirma el temario y la modalidad de entrega con soporte." },
+  { id: "goat-course-design", name: "Diseño digital con Canva", price: 39900, mark: "DISEÑO", description: "Curso de ejemplo de 12 horas: composición, tipografía, identidad visual y piezas para redes sociales. Confirma el temario y la modalidad de entrega con soporte." },
+  { id: "goat-course-marketing", name: "Marketing digital para emprendedores", price: 49900, mark: "MARKETING", description: "Curso de ejemplo de 16 horas: estrategia de contenido, campañas, audiencia y medición de resultados. Confirma el temario y la modalidad de entrega con soporte." },
+  { id: "goat-course-finance", name: "Finanzas personales inteligentes", price: 34900, mark: "FINANZAS", description: "Curso de ejemplo de 10 horas: presupuesto, ahorro, manejo de deudas y objetivos financieros. Confirma el temario y la modalidad de entrega con soporte." },
+  { id: "goat-course-english", name: "Inglés básico A1", price: 69900, mark: "ENGLISH", description: "Curso de ejemplo de 24 horas: vocabulario cotidiano, pronunciación y conversaciones básicas. Confirma el temario y la modalidad de entrega con soporte." },
+].map(product => ({ ...product, category: "Cursos" as const, stock: 0, active: true, gradient: "linear-gradient(135deg,#241453,#6d42db,#45b6d4)" }));

@@ -8,6 +8,7 @@ const normalized = (value: string) =>
 export function categoryImage(category: string): string {
   const images: Record<string, string> = {
     Streaming: "streaming.svg",
+    Cursos: "course-study.svg",
     Música: "music.svg",
     Productividad: "office.svg",
     Combos: "combos.svg",
@@ -25,6 +26,10 @@ export function categoryImage(category: string): string {
 export function productImage(product: ImageProduct): string {
   const name = normalized(product.name),
     category = product.category;
+  if (category === "Cursos") {
+    const topics: [RegExp, string][] = [[/desarrollo web/, "web"], [/canva|diseno/, "design"], [/marketing/, "marketing"], [/finanzas/, "finance"], [/ingles/, "english"]];
+    return asset("course-" + (topics.find(([pattern]) => pattern.test(name))?.[1] || "study") + ".svg");
+  }
   if (category === "Combos") return asset("combos.svg");
   const brands: [RegExp, string][] = [
     [/netflix/, "netflix.svg"],

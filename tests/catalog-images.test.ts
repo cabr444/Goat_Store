@@ -1,3 +1,4 @@
+import { courseProducts } from "../lib/course-products";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -8,6 +9,7 @@ import { secondhandProducts } from "../lib/secondhand-products";
 import { products as digitalProducts } from "../lib/products";
 test("every seeded product and category resolves to a local representative image", () => {
   for (const product of [
+    ...courseProducts,
     ...technologyProducts,
     ...secondhandProducts,
     ...digitalProducts,

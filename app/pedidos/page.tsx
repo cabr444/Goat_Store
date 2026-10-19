@@ -130,7 +130,7 @@ export default async function Page({
                   <p className="order-reference">
                     Referencia completa: {order.id}
                   </p>
-                  {(["streaming", "tienda", "segunda"] as const).map(
+                  {(["streaming", "tienda", "segunda", "cursos"] as const).map(
                     (department) => {
                       const items = order.items.filter(
                         (item) =>
