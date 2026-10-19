@@ -211,3 +211,7 @@ Prueba: `npm run test:duplicate` con el mismo entorno PostgreSQL local aislado d
 La sección `/cursos` incluye un catálogo independiente y un enlace en la navegación principal y de cuenta. Como administrador, abre **Cursos → Cargar / actualizar cursos** para añadir cinco propuestas: Office 365, Prime Video, YouTube, tarjetas temporales e ingresos extra. La operación añade registros faltantes y sustituye los títulos originales de ejemplo; conserva títulos personalizados, precios, stock e imágenes.
 
 También puedes ejecutar `npm run db:seed:courses` usando el `DATABASE_URL` del entorno correspondiente. No requiere cambios de esquema. Los ejemplos empiezan activos y sin stock: revisa descripción, precio, imagen y contenido real antes de habilitar ventas. Los cursos utilizan el carrito y saldo existentes; los pedidos quedan en **PENDIENTE_ENTREGA** para entregar el acceso manualmente y aparecen en el filtro **Cursos** de Pedidos. Esta sección no incluye un reproductor de lecciones ni una plataforma educativa.
+
+### Compra directa
+
+Todas las tarjetas de producto incluyen **Comprar ahora**, además de agregar al carrito. La compra directa pide confirmación y compra una unidad con saldo Goat, conserva el carrito existente y abre el comprobante en Pedidos. Usa el mismo endpoint transaccional de pedidos, con validación de stock/saldo e idempotencia para reintentos. Los productos agotados muestran el botón deshabilitado.

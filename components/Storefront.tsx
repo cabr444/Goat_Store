@@ -120,6 +120,7 @@ export default function Storefront({
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
+  const [buyNowId, setBuyNowId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const checkoutLock = useRef(false);
@@ -228,6 +229,7 @@ export default function Storefront({
     onDragOver: (event: React.DragEvent) => { if (dragged?.kind === kind && !orderBusy) event.preventDefault(); },
     onDrop: (event: React.DragEvent) => { event.preventDefault(); if (dragged?.kind === kind) void move(kind, dragged.id, id, "before"); },
   });
+  const buyNowProduct = products.find(product => product.id === buyNowId);
   const total = cart.reduce(
     (s, i) => s + (products.find((p) => p.id === i.id)?.price || 0) * i.qty,
     0,
@@ -365,19 +367,21 @@ export default function Storefront({
     }
   }
   useEffect(() => { setCheckoutError(""); }, [cart]);
-  async function checkout() {
-    if (checkoutLock.current || !cart.length || !user) return;
+  async function checkout(directItems?: CartItem[]) {
+    const purchaseItems = directItems || cart;
+    if (checkoutLock.current || !purchaseItems.length || !user) return;
+    const intentStorageKey = directItems ? "goat-buy-now-intent" : "goat-checkout-intent";
     checkoutLock.current = true;
     setCheckoutBusy(true); setCheckoutError("");
     try {
-      const items = mergeCart(cart), signature = cartSignature(items);
-      if (!checkoutIntent.current) {
-        try { checkoutIntent.current = JSON.parse(sessionStorage.getItem("goat-checkout-intent") || "null"); } catch {}
+      const items = mergeCart(purchaseItems), signature = (directItems ? "direct:" : "") + cartSignature(items);
+      if (!checkoutIntent.current || checkoutIntent.current.signature !== signature) {
+        try { checkoutIntent.current = JSON.parse(sessionStorage.getItem(intentStorageKey) || "null"); } catch {}
       }
       if (checkoutIntent.current?.userId !== user.id || checkoutIntent.current?.signature !== signature || !/^[a-f0-9-]{36}$/i.test(checkoutIntent.current?.key || "")) {
         checkoutIntent.current = { userId: user.id, signature, key: crypto.randomUUID() };
       }
-      try { sessionStorage.setItem("goat-checkout-intent", JSON.stringify(checkoutIntent.current)); } catch {}
+      try { sessionStorage.setItem(intentStorageKey, JSON.stringify(checkoutIntent.current)); } catch {}
       const response = await fetch("/api/orders", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items, checkoutKey: checkoutIntent.current.key }),
@@ -386,8 +390,9 @@ export default function Storefront({
       const result = await response.json();
       if (!response.ok) throw Error(result.error || "No se pudo completar la compra.");
       checkoutIntent.current = null;
-      try { sessionStorage.removeItem("goat-checkout-intent"); } catch {}
-      setCart([]); setCartOpen(false);
+      try { sessionStorage.removeItem(intentStorageKey); } catch {}
+      if (!directItems) setCart([]);
+      setBuyNowId(null); setCartOpen(false);
       setNotice(`Pedido ${result.reference || result.orderId} guardado. Consulta el comprobante en Pedidos.`);
       router.push("/pedidos?pedido=" + encodeURIComponent(result.orderId) + "&comprobante=1");
     } catch (error) {
@@ -743,12 +748,16 @@ export default function Storefront({
                     <button
                       className="add-mini"
                       title={p.stock > 0 ? "Agregar al carrito" : "Agotado"}
-                      disabled={p.stock === 0}
+                      disabled={p.stock === 0 || checkoutBusy}
+                      aria-label={`Agregar ${p.name} al carrito`}
                       onClick={() => add(p.id)}
                     >
                       <Plus />
                     </button>
                   </div>
+                  <button type="button" className="button violet buy-now-button" disabled={p.stock === 0 || checkoutBusy || catalogLoading} onClick={() => { setCheckoutError(""); setNotice(""); setBuyNowId(p.id); }}>
+                    Comprar ahora
+                  </button>
                   {canManage &&
                     (user?.role === "ADMIN" || p.ownerId === user?.id) && (
                       <div className="manage-buttons">
@@ -943,7 +952,7 @@ export default function Storefront({
               <button
                 className="button violet full"
                 disabled={checkoutBusy || !cart.length || !user || catalogLoading}
-                onClick={checkout}
+                onClick={() => void checkout()}
               >
                 {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goat"}
               </button>
@@ -968,6 +977,26 @@ export default function Storefront({
               </small>
             </div>
           </aside>
+        </>
+      )}
+      {buyNowId && (
+        <>
+          <div className="overlay" onClick={() => { if (!checkoutBusy) setBuyNowId(null); }} />
+          <section className="buy-now-dialog" role="dialog" aria-modal="true" aria-labelledby="buy-now-title">
+            <h2 id="buy-now-title">Comprar ahora</h2>
+            {buyNowProduct ? <>
+              <strong>{buyNowProduct.name}</strong>
+              <p>1 unidad · {cop(buyNowProduct.price)} COP</p>
+              <p>Saldo Goat: {cop(user?.balance || 0)}</p>
+              <p>Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva.</p>
+              {buyNowProduct.stock === 0 && <p role="status">Producto agotado.</p>}
+              <button type="button" className="button violet full" autoFocus disabled={checkoutBusy || buyNowProduct.stock === 0 || !user} onClick={() => void checkout([{ id: buyNowProduct.id, qty: 1 }])}>
+                {checkoutBusy ? "Procesando compra…" : "Confirmar compra"}
+              </button>
+            </> : <p>Este producto ya no está disponible.</p>}
+            {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
+            <button type="button" className="button pale full" disabled={checkoutBusy} onClick={() => setBuyNowId(null)}>Cancelar</button>
+          </section>
         </>
       )}
       {editor && (
