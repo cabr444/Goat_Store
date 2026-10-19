@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { withComboStocks } from "@/lib/combo-inventory";
 import { readCardOrders } from "@/lib/catalog-order";
 import { getStoreOptions, disabledClientCategories } from "@/lib/store-settings";
@@ -9,13 +10,12 @@ import { publicProductSelect, publicProduct } from "@/lib/catalog-dto";
 import { productSchema } from "@/lib/product-schema";
 export async function GET() {
   const user = await getUser();
-  if (!user) return fail("Inicia sesión.", 401);
   const storeOptions = await getStoreOptions();
   return reply({
     storeOptions,
     cardOrders: readCardOrders(await db.catalogOrder.findMany()),
     products: await withComboStocks((await db.product.findMany({
-      where: { category: { notIn: disabledClientCategories(user.role, storeOptions) } },
+      where: { category: { notIn: disabledClientCategories(user?.role || "CLIENTE", storeOptions) } },
       select: publicProductSelect,
       orderBy: { createdAt: "asc" },
     })).map(publicProduct)),

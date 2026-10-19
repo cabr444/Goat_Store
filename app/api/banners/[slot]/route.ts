@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { allowedMutationOrigin } from "@/lib/request-origin";
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
@@ -8,7 +9,6 @@ import { secureMutation } from "@/lib/security";
 type Context = { params: Promise<{ slot: string }> };
 const validSlot = (value: string) => /^[1-6]$/.test(value);
 export async function GET(req: Request, { params }: Context) {
-  if (!(await getUser())) return fail("Inicia sesión.", 401);
   const { slot } = await params;
   if (!validSlot(slot)) return fail("Imagen inválida.", 404);
   try {

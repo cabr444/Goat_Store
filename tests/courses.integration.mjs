@@ -15,7 +15,7 @@ try{
   const user=await db.user.create({data:{name:'Course '+role,email:`course-${randomUUID()}@example.com`,passwordHash:'fixture',role,balance:500000}});users.push(user);
   tokens.push(await new SignJWT({uid:user.id,sv:0}).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('1h').sign(new TextEncoder().encode(process.env.AUTH_SECRET)));
  }
- assert.equal((await request('/cursos','')).status,307);
+ assert.equal((await request('/cursos','')).status,200);
  for(const token of ['',tokens[1],tokens[2]])assert.equal((await request('/api/admin/courses/seed',token,{})).status,403);
  const seed=await request('/api/admin/courses/seed',tokens[0],{});assert.equal(seed.status,200,JSON.stringify(seed));assert.equal(seed.data.added,5);
  await db.product.update({where:{id:ids[1]},data:{name:'Diseño digital con Canva',price:22222}});

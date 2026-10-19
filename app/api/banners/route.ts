@@ -1,8 +1,7 @@
-import { getUser } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { fail, reply } from "@/lib/http";
 export async function GET() {
-  if (!(await getUser())) return fail("Inicia sesión.", 401);
   try {
     return reply({
       images: await db.bannerImage.findMany({

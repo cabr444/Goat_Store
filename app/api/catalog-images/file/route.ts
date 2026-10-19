@@ -1,9 +1,8 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fail } from "@/lib/http";
 export async function GET(req: Request) {
-  if (!(await getUser())) return fail("Inicia sesión.", 401);
   const key = new URL(req.url).searchParams.get("key") || "";
   if (key.length > 160) return fail("Imagen inválida.", 404);
   try {

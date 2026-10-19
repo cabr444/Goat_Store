@@ -5,6 +5,7 @@ import {
   bannerSlots,
   bannerInterval,
 } from "../lib/banner-images";
+import { db } from "../lib/db";
 import { POST, GET } from "../app/api/banners/[slot]/route";
 test("banner uploads reject SVG and HTML, and recognize supported image signatures", () => {
   assert.equal(
@@ -27,7 +28,7 @@ test("banner uploads reject SVG and HTML, and recognize supported image signatur
   assert.equal(bannerSlots.length, 6);
   assert.equal(bannerInterval, 7000);
 });
-test("banner image endpoints reject requests without a session", async () => {
+test("banner uploads require a session while visitors can view images", async () => {
   const ctx = { params: Promise.resolve({ slot: "1" }) };
   const req = new Request("http://localhost/api/banners/1", {
     method: "POST",
@@ -35,8 +36,13 @@ test("banner image endpoints reject requests without a session", async () => {
     body: new Uint8Array([1, 2, 3]),
   });
   assert.equal((await POST(req, ctx)).status, 403);
-  assert.equal(
-    (await GET(new Request("http://localhost/api/banners/1"), ctx)).status,
-    401,
-  );
+  const original = db.bannerImage.findUnique;
+  try {
+    db.bannerImage.findUnique = (async () => ({slot:1, data:new Uint8Array([137,80,78,71,13,10,26,10]), contentType:"image/png", updatedAt:new Date("2026-10-18T00:00:00Z")})) as unknown as typeof original;
+    const image = await GET(new Request("http://localhost/api/banners/1"), ctx);
+    assert.equal(image.status, 200);
+    assert.equal(image.headers.get("Content-Type"), "image/png");
+    const cached = await GET(new Request("http://localhost/api/banners/1", {headers:{"If-None-Match":image.headers.get("ETag")!}}), ctx);
+    assert.equal(cached.status, 304);
+  } finally { db.bannerImage.findUnique = original; }
 });

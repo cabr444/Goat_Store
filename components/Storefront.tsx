@@ -188,7 +188,7 @@ export default function Storefront({
           setProducts(data.products);
           setCardOrders(data.cardOrders);
           setStoreOptions(data.storeOptions);
-          if (user?.role === "CLIENTE" && ((technology && !data.storeOptions.tiendaEnabled) || (secondhand && !data.storeOptions.segundaEnabled))) router.replace("/");
+          if ((!user || user.role === "CLIENTE") && ((technology && !data.storeOptions.tiendaEnabled) || (secondhand && !data.storeOptions.segundaEnabled))) router.replace("/");
         })
         .catch(() => {});
     }, 15000);
@@ -278,9 +278,23 @@ export default function Storefront({
       .getElementById("catalogo")
       ?.scrollIntoView({ behavior: "smooth" });
   };
+  function authHref(productId?: string) {
+    const path = courses ? "/cursos" : secondhand ? "/segunda" : technology ? "/store" : digitalCatalog ? "/catalogo" : "/";
+    const params = new URLSearchParams();
+    if (digitalCatalog) params.set("categoria", filter);
+    if (productId) params.set("comprar", productId); else params.set("carrito", "1");
+    return "/acceso?next=" + encodeURIComponent(path + "?" + params.toString());
+  }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("comprar")) setBuyNowId(params.get("comprar"));
+    else if (params.get("carrito") === "1") setCartOpen(true);
+  }, []);
   async function logout() {
     await request("/api/auth/logout", "POST");
-    router.replace("/acceso");
+    setUser(null); setUsers([]); setOrders([]);
+    await load();
+    router.replace("/");
     router.refresh();
   }
   function startEdit(p?: Product) {
@@ -374,7 +388,8 @@ export default function Storefront({
   useEffect(() => { setCheckoutError(""); }, [cart]);
   async function checkout(directItems?: CartItem[]) {
     const purchaseItems = directItems || cart;
-    if (checkoutLock.current || !purchaseItems.length || !user) return;
+    if (checkoutLock.current || !purchaseItems.length) return;
+    if (!user) { router.push(authHref(directItems?.[0]?.id)); return; }
     const intentStorageKey = directItems ? "goat-buy-now-intent" : "goat-checkout-intent";
     checkoutLock.current = true;
     setCheckoutBusy(true); setCheckoutError("");
@@ -393,6 +408,7 @@ export default function Storefront({
         signal: AbortSignal.timeout(45000),
       });
       const result = await response.json();
+      if (response.status === 401) { setUser(null); router.push(authHref(directItems?.[0]?.id)); return; }
       if (!response.ok) throw Error(result.error || "No se pudo completar la compra.");
       checkoutIntent.current = null;
       try { sessionStorage.removeItem(intentStorageKey); } catch {}
@@ -511,14 +527,14 @@ export default function Storefront({
             >
               Combos
             </Link>
-            {user && (user.role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a
+            {!catalogLoading && (user && user.role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a
               href="/store"
               aria-current={technology ? "page" : undefined}
               onClick={() => setMenu(false)}
             >
               Tienda
             </a>}
-            {user && (user.role !== "CLIENTE" || storeOptions.segundaEnabled) && <a
+            {!catalogLoading && (user && user.role !== "CLIENTE" || storeOptions.segundaEnabled) && <a
               href="/segunda"
               aria-current={secondhand ? "page" : undefined}
               onClick={() => setMenu(false)}
@@ -531,11 +547,12 @@ export default function Storefront({
             </a>
           </nav>
           <div className="actions">
-            <span className="balance-chip">
+            {user && <><span className="balance-chip">
               <Wallet size={17} />
               {cop(user?.balance || 0)}
             </span>
-            <ProfileMenu name={user?.name} />
+            <ProfileMenu name={user.name} /></>}
+            {!user && !catalogLoading && <Link className="guest-sign-in" href="/acceso">Ingresar / Registrarse</Link>}
             <button
               className="icon-button"
               title="Carrito"
@@ -544,13 +561,13 @@ export default function Storefront({
               <ShoppingBag size={21} />
               {count > 0 && <span className="count">{count}</span>}
             </button>
-            <button
+            {user && <button
               className="icon-button"
               title="Cerrar sesión"
               onClick={logout}
             >
               <LogOut size={20} />
-            </button>
+            </button>}
             <button
               className="icon-button mobile-toggle"
               onClick={() => setMenu(!menu)}
@@ -640,10 +657,10 @@ export default function Storefront({
                     : "Explorar combos"}
               </button>
             </div>
-            <p>
-              Hola, <strong>{user?.name}</strong> · Perfil:{" "}
-              <strong>{user?.role.toLowerCase()}</strong>
-            </p>
+            {user && <p>
+              Hola, <strong>{user.name}</strong> · Perfil:{" "}
+              <strong>{user.role.toLowerCase()}</strong>
+            </p>}
           </div>
           <div className="hero-visual">
             <div className="hero-orb orb-a" />
@@ -720,7 +737,7 @@ export default function Storefront({
         )}
         {digitalCatalog && filter === "Streaming" && <StreamingHighlights admin={user?.role === "ADMIN"} />}
         {home && <div id="catalogo" className="home-product-showcase">
-          {homeProductRows(products, user?.role || "CLIENTE", storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
+          {homeProductRows(products, user?.role || "CLIENTE", catalogLoading ? { tiendaEnabled: false, segundaEnabled: false } : storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
             {row.products.map(product => renderProduct(product, row.products.map(item => item.id)))}
           </ProductCarousel>)}
         </div>}
@@ -817,7 +834,7 @@ export default function Storefront({
           !technology &&
           !secondhand &&
           !management && <BannerEditor />}
-        <section className="container account-section">
+        {user && <section className="container account-section">
           <div className="section-heading">
             <div>
               <span className="overline">MI CUENTA</span>
@@ -847,7 +864,7 @@ export default function Storefront({
               )}
             </div>
           </div>
-        </section>
+        </section>}
         {user?.role === "ADMIN" && (
           <section className="container admin-section">
             <span className="overline">ADMINISTRACIÓN EXCLUSIVA</span>
@@ -962,17 +979,17 @@ export default function Storefront({
                 <b>Total</b>
                 <strong>{cop(total)}</strong>
               </div>
-              <p>Tu saldo: {cop(user?.balance || 0)}</p>
-              <button
+              {user && <p>Tu saldo: {cop(user.balance)}</p>}
+              {user ? <button
                 className="button violet full"
                 disabled={checkoutBusy || !cart.length || !user || catalogLoading}
                 onClick={() => void checkout()}
               >
                 {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goat"}
-              </button>
+              </button> : <><p>Crea una cuenta o inicia sesión para comprar. Conservaremos tu carrito.</p><Link className="button violet full" href={authHref()}>Iniciar sesión o crear cuenta</Link></>}
               {checkoutBusy && <p role="status">Estamos comprobando todos los productos y guardando tu compra. Espera un momento.</p>}
               {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
-              {total > (user?.balance || 0) && (
+              {user && total > user.balance && (
                 <small>
                   El saldo mostrado no cubre este total. Al comprar comprobaremos tu saldo actualizado.
                 </small>
@@ -1001,12 +1018,12 @@ export default function Storefront({
             {buyNowProduct ? <>
               <strong>{buyNowProduct.name}</strong>
               <p>1 unidad · {cop(buyNowProduct.price)} COP</p>
-              <p>Saldo Goat: {cop(user?.balance || 0)}</p>
-              <p>Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva.</p>
+              {user && <p>Saldo Goat: {cop(user.balance)}</p>}
+              <p>{user ? "Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva." : "Crea una cuenta o inicia sesión para comprar. Tu carrito se conserva."}</p>
               {buyNowProduct.stock === 0 && <p role="status">Producto agotado.</p>}
-              <button type="button" className="button violet full" autoFocus disabled={checkoutBusy || buyNowProduct.stock === 0 || !user} onClick={() => void checkout([{ id: buyNowProduct.id, qty: 1 }])}>
+              {user ? <button type="button" className="button violet full" autoFocus disabled={checkoutBusy || buyNowProduct.stock === 0 || !user} onClick={() => void checkout([{ id: buyNowProduct.id, qty: 1 }])}>
                 {checkoutBusy ? "Procesando compra…" : "Confirmar compra"}
-              </button>
+              </button> : <Link className="button violet full" href={authHref(buyNowProduct.id)}>Iniciar sesión o crear cuenta</Link>}
             </> : <p>Este producto ya no está disponible.</p>}
             {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
             <button type="button" className="button pale full" disabled={checkoutBusy} onClick={() => setBuyNowId(null)}>Cancelar</button>

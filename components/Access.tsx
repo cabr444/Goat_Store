@@ -9,9 +9,11 @@ import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
 export default function Access({
   resetToken = "",
   recover = false,
+  returnTo = "/",
 }: {
   resetToken?: string;
   recover?: boolean;
+  returnTo?: string;
 }) {
   const router = useRouter();
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function Access({
     try { sessionStorage.removeItem("goat-pending-registration"); } catch {}
   }, []);
   const [entering, setEntering] = useState(false);
-  const enterStore = useCallback(() => { router.replace("/"); router.refresh(); }, [router]);
+  const enterStore = useCallback(() => { router.replace(returnTo); router.refresh(); }, [router, returnTo]);
   const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">(
       resetToken ? "reset" : recover ? "forgot" : "login",
     ),
