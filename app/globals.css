@@ -293,3 +293,8 @@
 .shared-streaming-profile{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin:12px 0}
 .shared-streaming-editor fieldset>.button{margin:10px 10px 0 0}
 @media(max-width:720px){.shared-streaming-editor{padding:16px}.shared-streaming-fields{grid-template-columns:1fr}.shared-streaming-profile{grid-template-columns:1fr 1fr}.shared-streaming-profile>.button{grid-column:1/-1}.shared-streaming-editor fieldset>.button{width:100%;margin-right:0}}
+
+.shared-streaming-editor .shared-account-feedback{padding:14px 16px;margin:16px 0 0;border:1px solid;border-radius:10px;line-height:1.6;scroll-margin:110px 0 24px}
+.shared-streaming-editor .shared-account-feedback.failed{background:#fff0f3;border-color:#eea9b9;color:#941e3c}
+.shared-streaming-editor .shared-account-feedback.saved{background:#eaf8ef;border-color:#a9d8bb;color:#215c38}
+.shared-streaming-editor .shared-account-feedback:focus{outline:2px solid currentColor;outline-offset:3px}
