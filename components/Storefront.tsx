@@ -504,7 +504,7 @@ export default function Storefront({
           : secondhand
           ? "✦ GOATS SEGUNDA — Una nueva vida para tus favoritos"
           : technology
-            ? "✦ GOATS TIENDA — Tecnología para tu día a día"
+            ? "✦ GOATS TIENDA — Productos para tu día a día"
             : "✦ Bienvenido a GOATS — Streaming, música, productividad y combos"}
       </div>
       <header className="header">
@@ -643,7 +643,7 @@ export default function Storefront({
                 : secondhand
                   ? "Tecnología, ropa y calzado de segunda mano. Encuentra piezas con historia y dales una nueva oportunidad."
                   : technology
-                    ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goats Tienda."
+                    ? "Tecnología, vasos y camisetas para tu día a día. Encuentra tus favoritos en Goats Tienda."
                     : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goats de forma fácil y rápida."}
             </p>
             <div className="hero-buttons">
@@ -772,7 +772,7 @@ export default function Storefront({
                   ? secondhand
                     ? "Encuentra tu próxima historia"
                     : technology
-                      ? "Tecnología para ti"
+                      ? "Tienda para ti"
                       : "Todos los productos"
                   : filter}
                 <span> ✳</span>

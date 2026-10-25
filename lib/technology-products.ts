@@ -6,6 +6,8 @@ export const technologyCategories = [
   "Audio",
   "Accesorios",
   "Redes",
+  "Vasos",
+  "Camisetas",
 ] as const;
 export const digitalCategories = [
   "Streaming",

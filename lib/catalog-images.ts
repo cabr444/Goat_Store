@@ -17,6 +17,8 @@ export function categoryImage(category: string): string {
     Audio: "headphones.jpg",
     Accesorios: "hub.svg",
     Redes: "router.jpg",
+    Vasos: "generic.svg",
+    Camisetas: "tshirt.jpg",
     "Tecnología usada": "desktop.jpg",
     "Ropa usada": "clothes.jpg",
     "Calzado usado": "sneakers.jpg",
