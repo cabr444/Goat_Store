@@ -9,6 +9,7 @@ export async function seedCourses() {
     if (missing.length) await tx.product.createMany({ data: missing });
     let updated = 0;
     for (const course of courseProducts) {
+      if (!previousCourseNames[course.id]) continue;
       const result = await tx.product.updateMany({
         where: { id: course.id, category: "Cursos", name: previousCourseNames[course.id] },
         data: { name: course.name, description: course.description, mark: course.mark },

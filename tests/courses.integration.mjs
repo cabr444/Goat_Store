@@ -17,7 +17,7 @@ try{
  }
  assert.equal((await request('/cursos','')).status,200);
  for(const token of ['',tokens[1],tokens[2]])assert.equal((await request('/api/admin/courses/seed',token,{})).status,403);
- const seed=await request('/api/admin/courses/seed',tokens[0],{});assert.equal(seed.status,200,JSON.stringify(seed));assert.equal(seed.data.added,5);
+ const seed=await request('/api/admin/courses/seed',tokens[0],{});assert.equal(seed.status,200,JSON.stringify(seed));assert.equal(seed.data.added,courseProducts.length);
  await db.product.update({where:{id:ids[1]},data:{name:'Diseño digital con Canva',price:22222}});
  const migration=await request('/api/admin/courses/seed',tokens[0],{});assert.equal(migration.data.updated,1);assert.equal((await db.product.findUniqueOrThrow({where:{id:ids[1]}})).price,22222);
  await db.product.update({where:{id:ids[0]},data:{name:'Edited course',price:12345,stock:1}});
