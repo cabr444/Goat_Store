@@ -17,9 +17,9 @@ export function homeProductRows<T extends { id: string; category: string }>(prod
       const cups = sorted.filter(product => product.category === 'Vasos');
       const shirts = sorted.filter(product => product.category === 'Camisetas');
       const alternating: T[] = [];
-      for (let index = 0; index < Math.max(cups.length, shirts.length) && alternating.length < 10; index++) {
+      for (let index = 0; index < Math.max(cups.length, shirts.length) && alternating.length < 20; index++) {
         if (cups[index]) alternating.push(cups[index]);
-        if (shirts[index] && alternating.length < 10) alternating.push(shirts[index]);
+        if (shirts[index] && alternating.length < 20) alternating.push(shirts[index]);
       }
       return { ...row, products: alternating };
     });
