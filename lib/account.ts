@@ -1,3 +1,4 @@
+import { categoryName, legacyStoreCategories } from "./category-names";
 import { courseCategories } from "./course-products";
 import { decryptPrivate } from "@/lib/private-delivery";
 import { Prisma } from "@prisma/client";
@@ -19,8 +20,8 @@ export { supportLink, rechargeLink, whatsappLink } from "./account-links";
 export function orderDepartment(
   category: string,
 ): "streaming" | "tienda" | "segunda" | "cursos" {
-  if (technologyCategories.some((c) => c === category)) return "tienda";
-  if (secondhandCategories.some((c) => c === category)) return "segunda";
+  if (technologyCategories.some((c) => c === categoryName(category))) return "tienda";
+  if (secondhandCategories.some((c) => c === categoryName(category))) return "segunda";
   if (category === "Cursos") return "cursos";
   return "streaming";
 }
@@ -40,7 +41,7 @@ export const orderSections = [
 export type OrderSection = (typeof orderSections)[number];
 const categoryGroups = {
   streaming: digitalCategories,
-  tienda: technologyCategories,
+  tienda: [...technologyCategories, ...legacyStoreCategories],
   segunda: secondhandCategories,
   cursos: courseCategories,
 };

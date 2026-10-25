@@ -1,3 +1,4 @@
+import { categoryName } from "./category-names";
 import type { Prisma } from "@prisma/client";
 export const publicProductSelect = {
   _count: { select: { streamingAccesses: { where: { soldAt: null, retiredAt: null } } } },
@@ -16,5 +17,5 @@ export const publicProductSelect = {
 
 export function publicProduct(product: Prisma.ProductGetPayload<{ select: typeof publicProductSelect }>) {
   const { _count, ...safe } = product;
-  return { ...safe, ...(product.category === "Combos" ? { configuredStock: product.stock } : {}), stock: product.category === "Streaming" ? _count.streamingAccesses : product.stock };
+  return { ...safe, category: categoryName(safe.category), ...(product.category === "Combos" ? { configuredStock: product.stock } : {}), stock: product.category === "Streaming" ? _count.streamingAccesses : product.stock };
 }

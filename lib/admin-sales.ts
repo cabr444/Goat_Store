@@ -1,3 +1,4 @@
+import { categoryAliases } from "./category-names";
 import { Prisma } from '@prisma/client';
 import { db } from './db';
 import { allCategories } from './technology-products';
@@ -23,7 +24,7 @@ export function salesWhere(filters: ReturnType<typeof salesFilters>): Prisma.Ord
     { items: { some: { name: { contains: filters.q, mode: 'insensitive' } } } },
   ] });
   if (filters.status) AND.push({ status: filters.status });
-  if (filters.category) AND.push({ items: { some: { OR: [{ category: filters.category }, { category: '', product: { category: filters.category } }] } } });
+  if (filters.category) AND.push({ items: { some: { OR: [{ category: { in: categoryAliases(filters.category) } }, { category: '', product: { category: { in: categoryAliases(filters.category) } } }] } } });
   if (filters.from || filters.to) AND.push({ createdAt: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lt: new Date(filters.to.getTime() + 86400000) } : {}) } });
   return AND.length ? { AND } : {};
 }

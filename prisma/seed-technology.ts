@@ -1,3 +1,4 @@
+import { categoryAliases, categoryName } from "../lib/category-names";
 import { PrismaClient } from "@prisma/client";
 import { technologyProducts } from "../lib/technology-products";
 const db = new PrismaClient();
@@ -9,11 +10,11 @@ async function main() {
       // PostgreSQL returns void here; cast it so Prisma can deserialize the result.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(719504)::text`;
       const existing = await tx.product.findMany({
-        where: {ownerId: null, category: {in: [...new Set(technologyProducts.map(p => p.category))]}},
+        where: {ownerId: null, category: {in: [...new Set(technologyProducts.flatMap(p => categoryAliases(p.category)))]}},
         select: {name: true, category: true},
       });
-      const keys = new Set(existing.map(p => JSON.stringify([p.category, p.name])));
-      const missing = technologyProducts.filter(p => !keys.has(JSON.stringify([p.category, p.name])));
+      const keys = new Set(existing.map(p => JSON.stringify([categoryName(p.category), p.name])));
+      const missing = technologyProducts.filter(p => !keys.has(JSON.stringify([categoryName(p.category), p.name])));
       if (missing.length) {
         const result = await tx.product.createMany({data: missing});
         added = result.count;

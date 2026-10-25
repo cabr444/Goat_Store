@@ -1,11 +1,11 @@
 import { courseCategories } from "./course-products";
 import { secondhandCategories } from "./secondhand-products";
 export const technologyCategories = [
-  "Computadores",
+  "Tecnología",
   "Periféricos",
   "Audio",
   "Accesorios",
-  "Redes",
+  "Juguetes",
   "Vasos",
   "Camisetas",
 ] as const;
@@ -26,7 +26,7 @@ const groups: {
   rows: [string, number, string][];
 }[] = [
   {
-    category: "Computadores",
+    category: "Tecnología",
     rows: [
       [
         "Portátil Essential 14",
@@ -202,7 +202,7 @@ const groups: {
     ],
   },
   {
-    category: "Redes",
+    category: "Juguetes",
     rows: [
       [
         "Router Wi-Fi 6",

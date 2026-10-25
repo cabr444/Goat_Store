@@ -1,3 +1,4 @@
+import { legacyStoreCategories } from "./category-names";
 import { db } from "@/lib/db";
 import { technologyCategories } from "./technology-products";
 import { secondhandCategories } from "./secondhand-products";
@@ -8,5 +9,5 @@ export async function getStoreOptions(client = db): Promise<StoreOptions> {
 }
 export function disabledClientCategories(role: string, options: StoreOptions): string[] {
   if (role !== "CLIENTE") return [];
-  return [ ...(!options.tiendaEnabled ? technologyCategories : []), ...(!options.segundaEnabled ? secondhandCategories : []) ];
+  return [ ...(!options.tiendaEnabled ? [...technologyCategories, ...legacyStoreCategories] : []), ...(!options.segundaEnabled ? secondhandCategories : []) ];
 }

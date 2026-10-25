@@ -325,7 +325,7 @@ export default function Storefront({
               : secondhand
               ? "Tecnología usada"
               : technology
-                ? "Computadores"
+                ? "Tecnología"
                 : "Streaming",
           },
     );
@@ -657,7 +657,7 @@ export default function Storefront({
                     secondhand
                       ? "Tecnología usada"
                       : technology
-                        ? "Computadores"
+                        ? "Tecnología"
                         : "Combos",
                   )
                 }
@@ -665,7 +665,7 @@ export default function Storefront({
                 {secondhand
                   ? "Explorar segunda mano"
                   : technology
-                    ? "Explorar computadores"
+                    ? "Explorar tecnología"
                     : "Explorar combos"}
               </button>
             </div>
@@ -691,7 +691,7 @@ export default function Storefront({
               {secondhand
                 ? "⌘ Tecnología"
                 : technology
-                  ? "⌘ Computadores"
+                  ? "⌘ Tecnología"
                   : "▶ Streaming"}
             </div>
             <div className="hero-feature two">
