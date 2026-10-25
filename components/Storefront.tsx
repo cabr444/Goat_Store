@@ -9,6 +9,7 @@ import StreamingHighlights from "@/components/StreamingHighlights";
 import { mergeCart, cartSignature } from "@/lib/cart";
 import StoreOptionsEditor from "@/components/StoreOptionsEditor";
 import type { StoreOptions } from "@/lib/store-settings";
+import ImageOptimizationPanel from "@/components/ImageOptimizationPanel";
 import CategoryImageManager from "@/components/CategoryImageManager";
 import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
@@ -721,6 +722,7 @@ export default function Storefront({
         {management && user?.role === "ADMIN" && <div className="container admin-manager-link"><Link className="button violet" href="/administracion/ventas">Ventas y panel de administración</Link></div>}
         {management && user?.role === "ADMIN" && <div id="secciones"><StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} /></div>}
         {management && user?.role === "ADMIN" && <div id="imagenes"><CategoryImageManager /></div>}
+        {management && user?.role === "ADMIN" && <ImageOptimizationPanel />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
         {!home && (!digitalCatalog || streamingLanding) && !courses && (
         <section className="container category-section" id="streaming">

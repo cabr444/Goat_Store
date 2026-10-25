@@ -1,3 +1,4 @@
+import { optimizeImage, catalogImageKind } from "@/lib/image-optimization";
 import { streamingHighlights, seriesImageKey } from "@/lib/streaming-highlights";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -30,10 +31,11 @@ export async function POST(req: Request) {
     if (!key) return fail("Imagen no reconocida.");
     const image = await readImageUpload(req);
     if (image instanceof Response) return image;
+    const optimized = await optimizeImage(image.data, image.contentType, catalogImageKind(key));
     await db.catalogImageAsset.upsert({
       where: { key },
-      create: { key, ...image },
-      update: image,
+      create: { key, ...optimized },
+      update: optimized,
     });
     return reply({ ok: true });
   } catch {
@@ -53,3 +55,5 @@ async function remove(req: Request) {
   return reply({ ok: true });
 }
 export const DELETE = secureMutation(remove);
+
+export const maxDuration = 60;

@@ -1,3 +1,4 @@
+import { optimizeImage } from "@/lib/image-optimization";
 export const dynamic = "force-dynamic";
 import { allowedMutationOrigin } from "@/lib/request-origin";
 import { NextResponse } from "next/server";
@@ -70,10 +71,11 @@ export async function POST(req: Request, { params }: Context) {
       contentType = bannerContentType(data);
     if (!contentType || contentType !== type)
       return fail("El archivo no es una imagen JPG, PNG, WebP o AVIF válida.");
+    const optimized = await optimizeImage(data, contentType, "banner");
     const image = await db.bannerImage.upsert({
       where: { slot: Number(slot) },
-      create: { slot: Number(slot), data, contentType },
-      update: { data, contentType },
+      create: { slot: Number(slot), ...optimized },
+      update: optimized,
       select: { slot: true, updatedAt: true },
     });
     return NextResponse.json(image, {
@@ -99,3 +101,5 @@ async function remove(_req: Request, { params }: Context) {
   );
 }
 export const DELETE = secureMutation(remove);
+
+export const maxDuration = 60;

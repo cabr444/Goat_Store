@@ -1,4 +1,5 @@
 "use client";
+import { compressUpload } from "@/lib/compress-upload";
 import { useEffect, useState } from "react";
 import { Pause, Play, Upload } from "lucide-react";
 import {
@@ -134,10 +135,11 @@ export function BannerEditor() {
     setBusy(slot);
     setMessage("");
     try {
+      const upload = await compressUpload(file, "banner");
       const response = await fetch("/api/banners/" + slot, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": upload.type },
+        body: upload,
       });
       const result = await response.json();
       if (!response.ok) throw Error(result.error);

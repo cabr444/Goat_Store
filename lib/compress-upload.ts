@@ -1,10 +1,11 @@
 // Resize new administrator uploads in the browser; server validation still applies.
-export async function compressUpload(file: File, kind: "category" | "product" | "series" | "platform"): Promise<Blob> {
+export async function compressUpload(file: File, kind: "category" | "product" | "series" | "platform" | "banner"): Promise<Blob> {
   if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) return file;
   let bitmap: ImageBitmap | undefined;
   try {
     bitmap = await createImageBitmap(file);
-    const maximum = kind === "platform" ? 128 : kind === "series" ? 960 : 1400;
+    const maximum = kind === "banner" ? 2000 : kind === "platform" ? 256 : 1600;
+    if (Math.max(bitmap.width, bitmap.height) <= maximum) return file;
     const ratio = Math.min(1, maximum / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
