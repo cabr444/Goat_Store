@@ -3,7 +3,7 @@ import { streamingHighlights } from "@/lib/streaming-highlights";
 import { digitalCategories } from "@/lib/technology-products";
 import Storefront from "@/components/Storefront";
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Catálogo digital | Goat" };
+export const metadata: Metadata = { title: "Catálogo digital | Goats" };
 export default async function Page({ searchParams }: { searchParams: Promise<{ categoria?: string; plataforma?: string }> }) {
   const { categoria, plataforma } = await searchParams;
   const initialCategory = digitalCategories.some(category => category === categoria) ? categoria! : "Todos";

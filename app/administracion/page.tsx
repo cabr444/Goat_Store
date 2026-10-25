@@ -3,7 +3,7 @@ import { getUser } from "@/lib/auth";
 import Storefront from "@/components/Storefront";
 import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: "Administrar catálogo | Goat",
+  title: "Administrar catálogo | Goats",
   robots: { index: false, follow: false },
 };
 export default async function Page() {

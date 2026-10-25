@@ -27,7 +27,7 @@ export default function StreamingHighlights({ admin = false }: { admin?: boolean
       </button>)}
     </div>
     <div className="highlights-shelf" style={{"--platform-accent": platform.color} as CSSProperties}>
-      <header><div><span>SELECCIÓN GOAT</span><h3>{platform.name}</h3></div>
+      <header><div><span>SELECCIÓN GOATS</span><h3>{platform.name}</h3></div>
         <div className="highlights-arrows"><button type="button" onClick={() => scroll(-1)} aria-label="Ver series anteriores"><ArrowLeft size={19} /></button><button type="button" onClick={() => scroll(1)} aria-label="Ver más series"><ArrowRight size={19} /></button></div>
       </header>
       {admin && editing && <div className="highlights-image-editor"><p>Logo de {platform.name} · JPG, PNG o WebP, máximo 2 MB.</p><ImageUploadButton kind="platform" imageKey={platform.id} /></div>}

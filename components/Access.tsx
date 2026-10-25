@@ -92,7 +92,7 @@ export default function Access({
           <Sparkles size={15} /> TU MUNDO DIGITAL
         </span>
         <h1>
-          Goat<span>.</span>
+          Goats<span>.</span>
         </h1>
         <h2>
           Todo lo que te gusta,
@@ -103,7 +103,7 @@ export default function Access({
           Streaming, música, productividad y combos con precios en pesos
           colombianos.
         </p>
-        <div className="access-orb">GOAT ✦</div>
+        <div className="access-orb">GOATS ✦</div>
       </div>
       <div className="access-panel">
         <div className="access-form-scene">
@@ -126,7 +126,7 @@ export default function Access({
               ? "Te enviaremos un enlace a tu correo electrónico."
               : mode === "reset"
                 ? "Elige una contraseña de entre 10 y 128 caracteres."
-                : "Para ingresar a Goat, inicia sesión o regístrate."}
+                : "Para ingresar a Goats, inicia sesión o regístrate."}
           </p>
           {(mode === "login" || mode === "register") && (
             <div className="auth-tabs">
@@ -254,7 +254,7 @@ export default function Access({
                 : mode === "reset"
                   ? "Guardar contraseña"
                   : mode === "login"
-                    ? "Entrar a Goat"
+                    ? "Entrar a Goats"
                     : "Crear cuenta"}
             <ArrowRight size={17} />
           </button>

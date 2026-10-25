@@ -17,7 +17,7 @@ export default function AccountHeader({
     <header className="header">
       <div className="container nav account-nav">
         <a className="logo" href="/">
-          Goat<span>.</span>
+          Goats<span>.</span>
         </a>
         <nav className="account-page-links" aria-label="Navegación de cuenta">
           <a href="/">Inicio</a>

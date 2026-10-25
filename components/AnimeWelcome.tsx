@@ -50,10 +50,10 @@ export default function AnimeWelcome({ onComplete }: { onComplete?: () => void }
           <path d="M190 233Q200 241 210 233M181 250Q200 269 219 250" fill="none" stroke="#49214e" strokeWidth="5" strokeLinecap="round" />
           <path d="M288 337Q300 298 327 291Q346 296 335 318L321 349" fill="#fff6ff" stroke="#21103f" strokeWidth="7" />
           <path d="M320 289L332 270M326 299L348 288" stroke="#fff6ff" strokeWidth="9" strokeLinecap="round" />
-          <text x="200" y="376" textAnchor="middle" fill="white" fontSize="27" fontWeight="900" fontFamily="Arial,sans-serif">GOAT ✦</text>
+          <text x="200" y="376" textAnchor="middle" fill="white" fontSize="27" fontWeight="900" fontFamily="Arial,sans-serif">GOATS ✦</text>
         </svg>
         <div className="anime-welcome-copy">
-          <span>BIENVENIDO A GOAT</span>
+          <span>BIENVENIDO A GOATS</span>
           <h2 id="welcome-title">Tu mundo digital<br /><em>te espera.</em></h2>
           <p>Streaming, tecnología y nuevas aventuras.</p>
         </div>

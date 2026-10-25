@@ -14,7 +14,7 @@ import AccountHeader from "@/components/AccountHeader";
 import CatalogImage from "@/components/CatalogImage";
 import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: "Mi perfil | Goat",
+  title: "Mi perfil | Goats",
   robots: { index: false, follow: false },
 };
 export default async function Page() {
@@ -78,7 +78,7 @@ export default async function Page() {
         </a>
         <div className="account-title">
           <div>
-            <span className="overline">MI CUENTA GOAT</span>
+            <span className="overline">MI CUENTA GOATS</span>
             <h1>Hola, {profile.name}.</h1>
             <p>Tu perfil, saldo y actividad en un solo lugar.</p>
           </div>

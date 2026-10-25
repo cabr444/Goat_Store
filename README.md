@@ -1,4 +1,4 @@
-# Goat Store — tienda con usuarios, saldos y combos
+# Goats Store — tienda con usuarios, saldos y combos
 
 Documentación profesional editable: [English](docs/goat-store-en.md) · [Español](docs/goat-store-es.md). Para generar ambos archivos Word, consulta [docs/README.md](docs/README.md).
 

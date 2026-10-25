@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import Storefront from "@/components/Storefront";
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Tienda · Tecnología | Goat" };
+export const metadata: Metadata = { title: "Tienda · Tecnología | Goats" };
 export default async function Page() {
   const user = await getUser();
   if ((!user || user.role === "CLIENTE") && !(await getStoreOptions()).tiendaEnabled) redirect("/");

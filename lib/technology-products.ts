@@ -257,7 +257,7 @@ export const technologyProducts = groups.flatMap((group, index) =>
     price,
     category: group.category,
     description,
-    mark: "GOAT TECH",
+    mark: "GOATS TECH",
     gradient: [
       "linear-gradient(135deg,#e7ddff,#c3a5ff)",
       "linear-gradient(135deg,#dcf4ff,#9dc9fb)",

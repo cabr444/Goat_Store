@@ -34,7 +34,7 @@ export async function sendResetEmail(email: string, token: string) {
     body: JSON.stringify({
       from: config.from,
       to: [email],
-      subject: "Restablece tu contraseña de Goat",
+      subject: "Restablece tu contraseña de Goats",
       text: `Para restablecer tu contraseña, abre este enlace:\n${url}\n\nEl enlace vence en 30 minutos y solo se puede usar una vez. Si no lo solicitaste, ignora este correo.`,
     }),
     signal: AbortSignal.timeout(10000),

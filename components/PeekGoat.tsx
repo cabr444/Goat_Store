@@ -1,6 +1,6 @@
 export default function PeekGoat() {
   return (
-    <aside className="peek-goat" aria-label="Mascota Goat">
+    <aside className="peek-goat" aria-label="Mascota Goats">
       <div className="peek-goat-window" aria-hidden="true">
         <div className="peek-goat-character">
           <span className="peek-goat-bubble">¡Beeenvenido!</span>
@@ -23,7 +23,7 @@ export default function PeekGoat() {
               <path d="M126 179Q145 176 151 144Q155 133 161 140Q176 156 158 186L147 196" fill="#fff8fc" stroke="#39244e" strokeWidth="5" strokeLinecap="round" />
               <path d="M151 135L151 126M162 135L167 128" stroke="#9164ed" strokeWidth="3" strokeLinecap="round" />
             </g>
-            <text x="90" y="201" textAnchor="middle" fill="white" fontFamily="Arial,sans-serif" fontSize="15" fontWeight="800">GOAT</text>
+            <text x="90" y="201" textAnchor="middle" fill="white" fontFamily="Arial,sans-serif" fontSize="15" fontWeight="800">GOATS</text>
           </svg>
         </div>
       </div>

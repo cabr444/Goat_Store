@@ -17,7 +17,7 @@ import CatalogImage from "@/components/CatalogImage";
 import { supportLink } from "@/lib/account-links";
 import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: "Mis pedidos | Goat",
+  title: "Mis pedidos | Goats",
   robots: { index: false, follow: false },
 };
 export default async function Page({

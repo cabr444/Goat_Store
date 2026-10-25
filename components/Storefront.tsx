@@ -377,7 +377,7 @@ export default function Storefront({
       await request("/api/admin/recharge", "POST", {
         userId: creditId,
         amount: Number(credit),
-        note: "Recarga manual desde panel Goat",
+        note: "Recarga manual desde panel Goats",
       });
       setCredit("");
       setNotice("Saldo recargado correctamente");
@@ -499,17 +499,17 @@ export default function Storefront({
     <div className={home ? "storefront marketplace-home" : "storefront"}>
       <div className="announcement">
         {courses
-          ? "✦ GOAT CURSOS — Aprende y descubre nuevas habilidades"
+          ? "✦ GOATS CURSOS — Aprende y descubre nuevas habilidades"
           : secondhand
-          ? "✦ GOAT SEGUNDA — Una nueva vida para tus favoritos"
+          ? "✦ GOATS SEGUNDA — Una nueva vida para tus favoritos"
           : technology
-            ? "✦ GOAT TIENDA — Tecnología para tu día a día"
-            : "✦ Bienvenido a GOAT — Streaming, música, productividad y combos"}
+            ? "✦ GOATS TIENDA — Tecnología para tu día a día"
+            : "✦ Bienvenido a GOATS — Streaming, música, productividad y combos"}
       </div>
       <header className="header">
         <div className="container nav">
           <a className="logo" href={technology || secondhand || courses || digitalCatalog || management ? "/" : "#inicio"}>
-            Goat<span>.</span>
+            Goats<span>.</span>
           </a>
           {home && <><form className="marketplace-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }); }}>
             <label className="sr-only" htmlFor="marketplace-search-input">Buscar en todos los productos</label>
@@ -590,7 +590,7 @@ export default function Storefront({
       <main id="inicio">
         {home && <MarketplaceHome tienda={!catalogLoading && Boolean(user && user.role !== "CLIENTE" || storeOptions.tiendaEnabled)} segunda={!catalogLoading && Boolean(user && user.role !== "CLIENTE" || storeOptions.segundaEnabled)} signedIn={Boolean(user)} featured={homeProductRows(products, user?.role || "CLIENTE", storeOptions, cardOrders.products.ids).map(row => row.products[0]).filter((product): product is Product => Boolean(product))} />}
         {courses && <section className="container courses-hero">
-          <div><span className="overline">GOAT ACADEMY / CURSOS</span><h1>Tu próxima habilidad<br /><em>empieza aquí.</em></h1><p>Descubre cursos de Office 365, Prime Video, YouTube, tarjetas temporales e ingresos extra. Consulta el temario y la modalidad de acceso de cada curso antes de comprar.</p><button className="button violet" onClick={() => jump("Todos")}>Explorar cursos <ArrowRight size={17} /></button></div>
+          <div><span className="overline">GOATS ACADEMY / CURSOS</span><h1>Tu próxima habilidad<br /><em>empieza aquí.</em></h1><p>Descubre cursos de Office 365, Prime Video, YouTube, tarjetas temporales e ingresos extra. Consulta el temario y la modalidad de acceso de cada curso antes de comprar.</p><button className="button violet" onClick={() => jump("Todos")}>Explorar cursos <ArrowRight size={17} /></button></div>
           <div className="courses-hero-art" aria-hidden="true"><span>APRENDE</span><strong>CREA.<br />CRECE.</strong><small>Nuevas ideas. Nuevas posibilidades.</small></div>
         </section>}
         {courses && user?.role === "ADMIN" && !catalogLoading && <section className="container course-sample-panel"><p>Carga o actualiza los cinco cursos del catálogo. Las actualizaciones conservan precios, stock, imágenes y títulos personalizados.</p><button type="button" className="button violet" disabled={courseSeedBusy} onClick={async () => { setCourseSeedBusy(true); try { const result = await request("/api/admin/courses/seed", "POST", {}); await load(); setNotice(`${result.added} cursos añadidos y ${result.updated} actualizados.`); } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudieron cargar los cursos."); } finally { setCourseSeedBusy(false); } }}>{courseSeedBusy ? "Añadiendo cursos…" : "Cargar / actualizar cursos"}</button></section>}
@@ -612,10 +612,10 @@ export default function Storefront({
             <span className="eyebrow">
               <Sparkles size={16} />{" "}
               {secondhand
-                ? "GOAT SEGUNDA / SEGUNDA MANO"
+                ? "GOATS SEGUNDA / SEGUNDA MANO"
                 : technology
-                  ? "GOAT TIENDA / TECNOLOGÍA"
-                  : "BIENVENIDO A GOAT"}
+                  ? "GOATS TIENDA / TECNOLOGÍA"
+                  : "BIENVENIDO A GOATS"}
             </span>
             <h1>
               {management
@@ -642,8 +642,8 @@ export default function Storefront({
                 : secondhand
                   ? "Tecnología, ropa y calzado de segunda mano. Encuentra piezas con historia y dales una nueva oportunidad."
                   : technology
-                    ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goat Tienda."
-                    : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goat de forma fácil y rápida."}
+                    ? "Computadores, audio y accesorios para trabajar, jugar y crear. Encuentra tu próximo equipo en Goats Tienda."
+                    : "Streaming, música y tus combos favoritos. Compra desde tu saldo Goats de forma fácil y rápida."}
             </p>
             <div className="hero-buttons">
               <button className="button dark" onClick={() => jump("Todos")}>
@@ -677,7 +677,7 @@ export default function Storefront({
             <div className="hero-orb orb-a" />
             <div className="hero-orb orb-b" />
             <div className="hero-center">
-              <span>GOAT</span>
+              <span>GOATS</span>
               <strong>
                 {secondhand
                   ? "DALES UNA NUEVA VIDA"
@@ -713,7 +713,7 @@ export default function Storefront({
         <section className="container category-section" id="streaming">
           <div className="section-heading">
             <div>
-              <span className="overline">EXPLORA GOAT</span>
+              <span className="overline">EXPLORA GOATS</span>
               <h2>
                 Elige una categoría <span>✳</span>
               </h2>
@@ -780,7 +780,7 @@ export default function Storefront({
                   products.filter((p) => catalogCategories.includes(p.category))
                     .length
                 }{" "}
-                {courses ? "cursos en Goat." : "productos disponibles en Goat."}
+                {courses ? "cursos en Goats." : "productos disponibles en Goats."}
               </p>
             </div>
             {canManage && (
@@ -825,7 +825,7 @@ export default function Storefront({
         </section>}
         <section className="container contact" id="contacto">
           <div>
-            <span className="overline">GOAT DIGITAL</span>
+            <span className="overline">GOATS DIGITAL</span>
             <h2>¿Necesitas ayuda?</h2>
             <p>
               Contacta con la administración para consultar recargas, pedidos,
@@ -920,7 +920,7 @@ export default function Storefront({
       </main>
       <footer className="footer">
         <div className="container footer-bottom">
-          © 2026 Goat · Tienda digital{" "}
+          © 2026 Goats · Tienda digital{" "}
           <span>
             La entrega de pedidos se gestiona manualmente. Confirma condiciones
             y derechos de comercialización.
@@ -996,7 +996,7 @@ export default function Storefront({
                 disabled={checkoutBusy || !cart.length || !user || catalogLoading}
                 onClick={() => void checkout()}
               >
-                {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goat"}
+                {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goats"}
               </button> : <><p>Crea una cuenta o inicia sesión para comprar. Conservaremos tu carrito.</p><Link className="button violet full" href={authHref()}>Iniciar sesión o crear cuenta</Link></>}
               {checkoutBusy && <p role="status">Estamos comprobando todos los productos y guardando tu compra. Espera un momento.</p>}
               {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
@@ -1029,7 +1029,7 @@ export default function Storefront({
             {buyNowProduct ? <>
               <strong>{buyNowProduct.name}</strong>
               <p>1 unidad · {cop(buyNowProduct.price)} COP</p>
-              {user && <p>Saldo Goat: {cop(user.balance)}</p>}
+              {user && <p>Saldo Goats: {cop(user.balance)}</p>}
               <p>{user ? "Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva." : "Crea una cuenta o inicia sesión para comprar. Tu carrito se conserva."}</p>
               {buyNowProduct.stock === 0 && <p role="status">Producto agotado.</p>}
               {user ? <button type="button" className="button violet full" autoFocus disabled={checkoutBusy || buyNowProduct.stock === 0 || !user} onClick={() => void checkout([{ id: buyNowProduct.id, qty: 1 }])}>
