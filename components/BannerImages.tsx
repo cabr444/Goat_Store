@@ -175,8 +175,8 @@ export function BannerEditor() {
       <span className="overline">ADMINISTRACIÓN</span>
       <h2>Imágenes del banner de Inicio</h2>
       <p>
-        Selecciona tus seis imágenes. El fondo cambia cada 7 segundos. JPG, PNG
-        o WebP, máximo 2 MB por imagen. Recomendado: 1600 × 700 px.
+        Selecciona tus seis imágenes. El fondo cambia cada 7 segundos. JPG, PNG,
+        WebP o AVIF, máximo 2 MB por imagen. Recomendado: 1600 × 700 px.
       </p>
       <div className="banner-upload-grid">
         {bannerSlots.map((slot, i) => (
@@ -188,7 +188,7 @@ export function BannerEditor() {
               <input
                 type="file"
                 aria-label={"Cambiar imagen " + slot}
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/avif,.avif"
                 disabled={busy !== null}
                 onChange={(e) => {
                   const file = e.currentTarget.files?.[0];

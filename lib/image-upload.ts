@@ -6,8 +6,8 @@ export async function readImageUpload(
 ): Promise<{ data: Uint8Array<ArrayBuffer>; contentType: string } | Response> {
   if (!allowedMutationOrigin(req)) return fail("Solicitud no autorizada.", 403);
   const type = req.headers.get("content-type")?.split(";")[0];
-  if (!["image/jpeg", "image/png", "image/webp"].includes(type || ""))
-    return fail("Usa JPG, PNG o WebP.", 415);
+  if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(type || ""))
+    return fail("Usa JPG, PNG, WebP o AVIF.", 415);
   if (Number(req.headers.get("content-length")) > maxBannerBytes)
     return fail("La imagen debe pesar máximo 2 MB.", 413);
   const reader = req.body?.getReader();

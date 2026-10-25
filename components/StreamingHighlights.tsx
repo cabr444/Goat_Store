@@ -30,7 +30,7 @@ export default function StreamingHighlights({ admin = false }: { admin?: boolean
       <header><div><span>SELECCIÓN GOATS</span><h3>{platform.name}</h3></div>
         <div className="highlights-arrows"><button type="button" onClick={() => scroll(-1)} aria-label="Ver series anteriores"><ArrowLeft size={19} /></button><button type="button" onClick={() => scroll(1)} aria-label="Ver más series"><ArrowRight size={19} /></button></div>
       </header>
-      {admin && editing && <div className="highlights-image-editor"><p>Logo de {platform.name} · JPG, PNG o WebP, máximo 2 MB.</p><ImageUploadButton kind="platform" imageKey={platform.id} /></div>}
+      {admin && editing && <div className="highlights-image-editor"><p>Logo de {platform.name} · JPG, PNG, WebP o AVIF, máximo 2 MB.</p><ImageUploadButton kind="platform" imageKey={platform.id} /></div>}
       <div ref={rail} className="highlights-rail" tabIndex={0} aria-label={"Series de " + platform.name}>
         {platform.shows.map(([title, genre, symbol], index) => <article className="series-card" key={platform.id + title}>
           <SeriesArt src={images["series:" + seriesImageKey(platform.id, title)]} title={title} genre={genre} symbol={symbol} index={index} />

@@ -64,7 +64,7 @@ export default function ImageUploadButton({
         <input
           type="file"
           aria-label={"Cambiar imagen " + imageKey}
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/avif,.avif"
           disabled={busy}
           onChange={(e) => {
             void change(e.currentTarget.files?.[0]);

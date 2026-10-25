@@ -22,5 +22,17 @@ export function bannerContentType(bytes: Uint8Array): string | null {
     String.fromCharCode(...bytes.slice(8, 12)) === "WEBP"
   )
     return "image/webp";
+  // AVIF uses an ISO BMFF file-type box. Check its declared bounds and brands;
+  // a .avif extension or an arbitrary occurrence of "avif" is insufficient.
+  if (bytes.length >= 16 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp") {
+    const boxSize = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0);
+    if (boxSize >= 16 && boxSize <= bytes.length && boxSize % 4 === 0) {
+      for (let offset = 8; offset + 4 <= boxSize; offset += 4) {
+        if (offset === 12) continue; // minor_version is not a brand
+        const brand = String.fromCharCode(...bytes.slice(offset, offset + 4));
+        if (brand === "avif" || brand === "avis") return "image/avif";
+      }
+    }
+  }
   return null;
 }

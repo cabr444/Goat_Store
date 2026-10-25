@@ -7,7 +7,7 @@ export default function CategoryImageManager() {
     <section className="container category-image-manager">
       <span className="overline">ADMINISTRACIÓN DE IMÁGENES</span>
       <h2>Imágenes de todas las categorías</h2>
-      <p>Sube JPG, PNG o WebP de hasta 2 MB. Se guardan en la base de datos.</p>
+      <p>Sube JPG, PNG, WebP o AVIF de hasta 2 MB. Se guardan en la base de datos.</p>
       <div className="category-image-admin-grid">
         {allCategories.map((category) => (
           <article key={category}>

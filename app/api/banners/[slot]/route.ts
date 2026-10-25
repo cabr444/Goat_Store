@@ -47,8 +47,8 @@ export async function POST(req: Request, { params }: Context) {
   if (!validSlot(slot)) return fail("Selecciona una imagen entre 1 y 6.");
   if (!allowedMutationOrigin(req)) return fail("Solicitud no autorizada.", 403);
   const type = req.headers.get("content-type")?.split(";")[0];
-  if (!["image/jpeg", "image/png", "image/webp"].includes(type || ""))
-    return fail("Usa una imagen JPG, PNG o WebP.", 415);
+  if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(type || ""))
+    return fail("Usa una imagen JPG, PNG, WebP o AVIF.", 415);
   if (Number(req.headers.get("content-length")) > maxBannerBytes)
     return fail("La imagen debe pesar máximo 2 MB.", 413);
   try {
@@ -69,7 +69,7 @@ export async function POST(req: Request, { params }: Context) {
     const data = Buffer.concat(chunks),
       contentType = bannerContentType(data);
     if (!contentType || contentType !== type)
-      return fail("El archivo no es una imagen JPG, PNG o WebP válida.");
+      return fail("El archivo no es una imagen JPG, PNG, WebP o AVIF válida.");
     const image = await db.bannerImage.upsert({
       where: { slot: Number(slot) },
       create: { slot: Number(slot), data, contentType },

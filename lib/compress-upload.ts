@@ -1,6 +1,6 @@
 // Resize new administrator uploads in the browser; server validation still applies.
 export async function compressUpload(file: File, kind: "category" | "product" | "series" | "platform"): Promise<Blob> {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return file;
+  if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) return file;
   let bitmap: ImageBitmap | undefined;
   try {
     bitmap = await createImageBitmap(file);
