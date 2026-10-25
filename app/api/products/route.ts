@@ -1,3 +1,4 @@
+import { catalogFailure } from "@/lib/catalog-failure";
 export const dynamic = "force-dynamic";
 import { withComboStocks } from "@/lib/combo-inventory";
 import { readCardOrders } from "@/lib/catalog-order";
@@ -10,16 +11,18 @@ import { publicProductSelect, publicProduct } from "@/lib/catalog-dto";
 import { productSchema } from "@/lib/product-schema";
 export async function GET() {
   const user = await getUser();
-  const storeOptions = await getStoreOptions();
-  return reply({
-    storeOptions,
-    cardOrders: readCardOrders(await db.catalogOrder.findMany()),
-    products: await withComboStocks((await db.product.findMany({
-      where: { category: { notIn: disabledClientCategories(user?.role || "CLIENTE", storeOptions) } },
-      select: publicProductSelect,
-      orderBy: { createdAt: "asc" },
-    })).map(publicProduct)),
-  });
+  try {
+    const storeOptions = await getStoreOptions();
+    return reply({
+      storeOptions,
+      cardOrders: readCardOrders(await db.catalogOrder.findMany()),
+      products: await withComboStocks((await db.product.findMany({
+        where: { category: { notIn: disabledClientCategories(user?.role || "CLIENTE", storeOptions) } },
+        select: publicProductSelect,
+        orderBy: { createdAt: "asc" },
+      })).map(publicProduct)),
+    });
+  } catch (error) { return catalogFailure(error, user?.role); }
 }
 async function handlePOST(req: Request) {
   const u = await getUser();

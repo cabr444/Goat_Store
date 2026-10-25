@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { readJsonResponse } from "@/lib/json-response";
 import PasswordInput from "@/components/PasswordInput";
 import AnimeWelcome from "@/components/AnimeWelcome";
 import PeekGoat from "@/components/PeekGoat";
@@ -52,6 +53,7 @@ export default function Access({
               : mode),
         {
           method: "POST",
+          signal: AbortSignal.timeout(20000),
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             mode === "forgot"
@@ -64,8 +66,8 @@ export default function Access({
           ),
         },
       );
-      const d = await r.json();
-      if (!r.ok) throw Error(d.error || "Error");
+      const d = await readJsonResponse(r);
+      if (mode === "login" && d.ok !== true) throw Error("No se pudo confirmar el inicio de sesión. Vuelve a intentarlo.");
       if (mode === "forgot" || mode === "reset") {
         setMessage(d.message);
         setPassword("");
@@ -78,7 +80,7 @@ export default function Access({
         setMessage(d.message || "Cuenta creada correctamente. Ya puedes iniciar sesión.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
+      setError(e instanceof DOMException && ["TimeoutError", "AbortError"].includes(e.name) ? "El servidor está tardando en responder. Vuelve a intentarlo." : e instanceof TypeError ? "No se pudo conectar con el servidor. Revisa tu conexión y vuelve a intentarlo." : e instanceof Error ? e.message : "No se pudo completar la solicitud.");
     } finally {
       setBusy(false);
     }

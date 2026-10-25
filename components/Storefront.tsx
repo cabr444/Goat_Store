@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { readJsonResponse } from "@/lib/json-response";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
 import MarketplaceHome from "@/components/MarketplaceHome";
@@ -93,9 +94,7 @@ async function request(url: string, method = "GET", body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
-  const d = await r.json();
-  if (!r.ok) throw Error(d.error || "Ocurrió un error");
-  return d;
+  return readJsonResponse(r);
 }
 export default function Storefront({
   courses = false,
