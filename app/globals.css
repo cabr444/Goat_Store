@@ -272,3 +272,12 @@
 .tienda-category-carousel .category-tile{width:100%}
 .tienda-category-carousel:focus-visible{outline:2px solid #7045ee;outline-offset:4px}
 @media(max-width:720px){.tienda-category-carousel>.category-order-card{flex-basis:200px}.category-grid.tienda-category-carousel{gap:14px}.category-section .section-heading:has(.tienda-category-arrows){flex-wrap:wrap;gap:14px}}
+
+/* Keep product actions aligned when titles and descriptions have different lengths. */
+.product-card{display:flex;flex-direction:column;align-self:stretch}
+.product-card>.product-photo{flex-shrink:0}
+.product-card>.product-info{display:flex;flex-direction:column;flex:1;min-width:0}
+.product-card .product-bottom{margin-top:auto;padding-top:9px}
+.marketplace-home .product-card .product-bottom{margin-top:auto;padding-top:12px}
+.product-card .buy-now-button{flex-shrink:0}
+.product-card .manage-buttons{align-items:stretch}
