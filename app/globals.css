@@ -154,7 +154,7 @@
 .marketplace-home .header .icon-button{color:#fff}.marketplace-home .header .profile-circle{background:#fff2;color:#fff;border-color:#cbb6ff}.marketplace-home .header .count{background:#fff;color:#6036d7}
 .marketplace-home .balance-chip{background:#bea0e41a;color:#f0e5ff;border:1px solid #ad8acf66}
 .marketplace-home .guest-sign-in{color:#fff;max-width:95px;font-size:12px}
-.marketplace-search{grid-area:search;display:flex;align-items:center;min-width:0;height:43px;background:#fff;border-radius:3px;box-shadow:0 1px 3px #0003;overflow:hidden}
+.marketplace-search{grid-area:search;display:flex;align-items:center;min-width:0;height:43px;background:#fff;border-radius:22px;box-shadow:0 1px 3px #0003;overflow:hidden}
 .marketplace-search input{width:100%;min-width:0;height:100%;border:0;border-radius:0;padding:0 17px;font-size:14px;background:white;color:#333;outline:0}
 .marketplace-search input::placeholder{color:#999}
 .marketplace-search:focus-within{outline:2px solid #ddd0ff;outline-offset:2px}
