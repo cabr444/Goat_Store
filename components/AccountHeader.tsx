@@ -24,6 +24,7 @@ export default function AccountHeader({
           {(role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a href="/store">Tienda</a>}
           {(role !== "CLIENTE" || storeOptions.segundaEnabled) && <a href="/segunda">Segunda</a>}
           <a href="/cursos">Cursos</a>
+          {role === "ADMIN" && <a href="/administracion/ventas">Administración</a>}
           <a href="/perfil">Perfil</a>
           <a href="/pedidos">Pedidos</a>
         </nav>
@@ -32,7 +33,7 @@ export default function AccountHeader({
             <Wallet size={17} />
             {cop(balance)}
           </span>
-          <ProfileMenu name={name} />
+          <ProfileMenu name={name} role={role} />
         </div>
       </div>
     </header>

@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { UserRound, Package, MessageCircle, Wallet } from "lucide-react";
+import { UserRound, Package, MessageCircle, Wallet, LayoutDashboard } from "lucide-react";
 import { supportLink, rechargeLink } from "@/lib/account-links";
-export default function ProfileMenu({ name }: { name?: string }) {
+export default function ProfileMenu({ name, role }: { name?: string; role?: string }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null),
     button = useRef<HTMLButtonElement>(null);
   const id = useId();
+  const openedByHover = useRef(false);
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => {
@@ -37,9 +38,10 @@ export default function ProfileMenu({ name }: { name?: string }) {
       ref={root}
       className="profile-menu"
       onMouseEnter={() => {
-        if (window.matchMedia("(hover: hover)").matches) setOpen(true);
+        if (window.matchMedia("(hover: hover)").matches) { openedByHover.current = true; setOpen(true); }
       }}
       onMouseLeave={() => {
+        openedByHover.current = false;
         if (!root.current?.contains(document.activeElement)) setOpen(false);
       }}
       onBlur={(e) => {
@@ -53,7 +55,7 @@ export default function ProfileMenu({ name }: { name?: string }) {
         aria-label="Abrir menú de cuenta"
         aria-expanded={open}
         aria-controls={id}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => { if (openedByHover.current) { openedByHover.current = false; setOpen(true); } else setOpen(value => !value); }}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -73,6 +75,7 @@ export default function ProfileMenu({ name }: { name?: string }) {
           aria-label="Opciones de cuenta"
         >
           <span className="profile-menu-name">{name || "Mi cuenta"}</span>
+          {role === "ADMIN" && <a href="/administracion/ventas"><LayoutDashboard size={17} />Administración</a>}
           <a href="/perfil">
             <UserRound size={17} />
             Perfil

@@ -249,3 +249,18 @@ Inicio utiliza una cabecera morada con los colores de Goat, buscador destacado, 
 Los seis fondos de banner configurados por administración continúan rotando en Inicio. Los paneles y accesos de Tienda y Segunda respetan las opciones de visibilidad de visitantes/clientes. Las cuentas de administración conservan acceso a las secciones deshabilitadas.
 
 El enlace Streaming abre `/catalogo?categoria=Streaming` y restaura allí la presentación anterior: banner, categorías digitales, Historias que enganchan, filtros y cuadrícula completa de productos. La selección editorial permanece visible al usar los filtros dentro de esa página. La navegación pública y la obligación de iniciar sesión para comprar se mantienen. No requiere cambios de esquema ni nuevos datos de producción.
+
+
+### Panel exclusivo de administración y ventas
+
+Abre el círculo de perfil → **Administración**, o el botón del perfil **Panel de ventas y administración**, para entrar a `/administracion/ventas`. Solo ADMIN puede consultar el panel, clientes, exportaciones y detalles privados. Visitantes deben iniciar sesión; CLIENTE y VENDEDOR regresan a su perfil. Los endpoints privados verifican el rol en servidor.
+
+- Historial de todos los pedidos de la tienda, con referencia/ID, fecha, comprador, correo, productos, cantidades, importe y entrega. La lista se pagina en grupos de 20 y permite buscar por pedido, cliente/correo o producto, además de filtrar estado, categoría y fechas. Los días completos se interpretan en `America/Bogota`.
+- Indicadores del conjunto filtrado: total vendido, pedidos, unidades y pendientes. Los filtros seleccionan pedidos completos; sus importes incluyen todos los artículos y no representan utilidad o ganancia.
+- Detalle de pedido con información del comprador, saldo actual, fecha de registro, precios/cantidades históricos y accesos asignados. Los comprobantes privados se abren en el detalle administrativo; no se incluyen en la lista ni en CSV.
+- Exportación CSV UTF-8 de los pedidos filtrados, con una fila por artículo y subtotal. Admite hasta 1000 pedidos por exportación; si se supera, el panel pide reducir los filtros. Los valores de usuarios se escapan y se neutralizan fórmulas de hojas de cálculo.
+- Control de entrega entre PENDIENTE_ENTREGA y ENTREGADO, con comprobación del estado esperado para evitar sobrescribir cambios concurrentes. Cambiar la entrega no cobra, reembolsa, devuelve stock, modifica importes ni libera accesos. No ofrece cancelación ni borrado de ventas.
+- `/administracion/clientes` muestra cuentas paginadas, búsqueda por nombre/correo, rol, registro, saldo, número y total de compras, y las últimas 20 recargas que coinciden con la búsqueda. «Ver compras» filtra las ventas del cliente y «Recargar saldo» preselecciona la cuenta en el formulario existente.
+- Accesos a productos/inventario, perfiles de streaming y combos, recargas, visibilidad de secciones e imágenes/banners en el administrador de catálogo existente. El menú de perfil admite hover, clic, toque y teclado.
+
+No requiere tablas ni migraciones nuevas. Validación: `npm test`, `npm run build` y `npm run test:admin` en PostgreSQL local descartable, con `DATABASE_URL`, `AUTH_SECRET` e `INVENTORY_TEST_URL` del entorno de pruebas. La prueba de integración comprueba autorización, filtros/fechas, exactitud de importes, privacidad de comprobantes, CSV, paginación y cambios de estado sin alterar saldo, stock o movimientos de billetera.

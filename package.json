@@ -22,7 +22,8 @@
     "db:seed:courses": "node --env-file=.env --import tsx prisma/seed-courses.ts",
     "test:courses": "node --import tsx tests/courses.integration.mjs",
     "test:combos": "node --import tsx tests/combo-inventory.integration.mjs",
-    "test:guests": "node --import tsx tests/guest-storefront.integration.mjs"
+    "test:guests": "node --import tsx tests/guest-storefront.integration.mjs",
+    "test:admin": "node --import tsx tests/admin-sales.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

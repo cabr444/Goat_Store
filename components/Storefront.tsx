@@ -290,6 +290,7 @@ export default function Storefront({
   }
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get("cliente")) setCreditId(params.get("cliente")!);
     if (params.get("comprar")) setBuyNowId(params.get("comprar"));
     else if (params.get("carrito") === "1") setCartOpen(true);
   }, []);
@@ -559,7 +560,7 @@ export default function Storefront({
               <Wallet size={17} />
               {cop(user?.balance || 0)}
             </span>
-            <ProfileMenu name={user.name} /></>}
+            <ProfileMenu name={user.name} role={user.role} /></>}
             {!user && !catalogLoading && <Link className="guest-sign-in" href="/acceso">Ingresar / Registrarse</Link>}
             <button
               className="icon-button"
@@ -706,8 +707,9 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
-        {management && user?.role === "ADMIN" && <CategoryImageManager />}
+        {management && user?.role === "ADMIN" && <div className="container admin-manager-link"><Link className="button violet" href="/administracion/ventas">Ventas y panel de administración</Link></div>}
+        {management && user?.role === "ADMIN" && <div id="secciones"><StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} /></div>}
+        {management && user?.role === "ADMIN" && <div id="imagenes"><CategoryImageManager /></div>}
         {management && user?.role === "ADMIN" && <BannerEditor />}
         {!home && (!digitalCatalog || streamingLanding) && !courses && (
         <section className="container category-section" id="streaming">
@@ -877,7 +879,7 @@ export default function Storefront({
           </div>
         </section>}
         {user?.role === "ADMIN" && (
-          <section className="container admin-section">
+          <section className="container admin-section" id="recargas">
             <span className="overline">ADMINISTRACIÓN EXCLUSIVA</span>
             <h2>Recargar saldo</h2>
             <p>

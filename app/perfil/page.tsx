@@ -92,8 +92,8 @@ export default async function Page() {
           </a>
         </div>
         {profile.role === "ADMIN" && (
-          <a className="button violet" href="/administracion">
-            Administrar productos, stock e imágenes
+          <a className="button violet" href="/administracion/ventas">
+            Panel de ventas y administración
           </a>
         )}
         <section className="account-stats" aria-label="Resumen de cuenta">
