@@ -264,3 +264,9 @@ Abre el círculo de perfil → **Administración**, o el botón del perfil **Pan
 - Accesos a productos/inventario, perfiles de streaming y combos, recargas, visibilidad de secciones e imágenes/banners en el administrador de catálogo existente. El menú de perfil admite hover, clic, toque y teclado.
 
 No requiere tablas ni migraciones nuevas. Validación: `npm test`, `npm run build` y `npm run test:admin` en PostgreSQL local descartable, con `DATABASE_URL`, `AUTH_SECRET` e `INVENTORY_TEST_URL` del entorno de pruebas. La prueba de integración comprueba autorización, filtros/fechas, exactitud de importes, privacidad de comprobantes, CSV, paginación y cambios de estado sin alterar saldo, stock o movimientos de billetera.
+
+### Productos personalizados
+
+Inicio muestra «¡Personaliza a tu manera!» después de Streaming, con hasta diez tarjetas alternadas de Vasos y Camisetas. Respeta la visibilidad de Tienda para clientes e invitados. «Ver personalizados» abre Tienda con ambas categorías filtradas.
+
+Como ADMIN, usa «Añadir 10 productos personalizados» en Inicio, Tienda o administración para guardar cinco vasos y cinco camisetas en la base de datos. También puedes ejecutar `npm run db:seed:personalized` con la conexión del entorno elegido. La carga utiliza IDs estables: repetirla no duplica productos ni sobrescribe precios, stock, nombres o imágenes editados. Los precios son ejemplos (vasos: 25.000 COP; camisetas: 45.000 COP), con stock cero. Ajusta precios, disponibilidad y condiciones de personalización antes de vender. No se necesita cambiar el esquema.

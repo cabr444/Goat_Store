@@ -19,6 +19,7 @@
     "db:migrate:apply": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts --apply",
     "test:migration": "node --import tsx tests/database-migration.integration.mjs",
     "test:duplicate": "node --import tsx tests/product-duplicate.integration.mjs",
+    "db:seed:personalized": "node --env-file=.env --import tsx prisma/seed-personalized.ts",
     "db:seed:courses": "node --env-file=.env --import tsx prisma/seed-courses.ts",
     "test:courses": "node --import tsx tests/courses.integration.mjs",
     "test:combos": "node --import tsx tests/combo-inventory.integration.mjs",

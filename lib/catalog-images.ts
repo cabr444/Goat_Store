@@ -17,7 +17,7 @@ export function categoryImage(category: string): string {
     Audio: "headphones.jpg",
     Accesorios: "hub.svg",
     Juguetes: "router.jpg",
-    Vasos: "generic.svg",
+    Vasos: "cup.svg",
     Camisetas: "tshirt.jpg",
     "Tecnología usada": "desktop.jpg",
     "Ropa usada": "clothes.jpg",
@@ -56,6 +56,7 @@ export function productImage(product: ImageProduct): string {
     );
   }
   const kinds: [RegExp, string][] = [
+    [/vaso/, "cup.svg"],
     [/sandalia/, "sandals.svg"],
     [/mocasin|formal/, "dress-shoes.svg"],
     [/bota|botin/, "boots.jpg"],

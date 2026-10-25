@@ -38,3 +38,15 @@ test("renamed store categories include existing products without changing other 
   assert.ok(technologyCategories.includes("Tecnología"));
   assert.ok(technologyCategories.includes("Juguetes"));
 });
+
+import { personalizedProducts } from "../lib/personalized-products";
+test("personalized catalog has ten editable products with distinct IDs and no invented stock", () => {
+  assert.equal(personalizedProducts.length, 10);
+  assert.equal(new Set(personalizedProducts.map(product => product.id)).size, 10);
+  assert.equal(personalizedProducts.filter(product => product.category === "Vasos").length, 5);
+  assert.equal(personalizedProducts.filter(product => product.category === "Camisetas").length, 5);
+  for (const product of personalizedProducts) {
+    assert.ok(productSchema.safeParse(product).success, product.name);
+    assert.equal(product.stock, 0);
+  }
+});

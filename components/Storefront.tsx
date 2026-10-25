@@ -124,6 +124,8 @@ export default function Storefront({
         ? technologyCategories
         : digitalCategories;
   const router = useRouter();
+  const [personalizedSeedBusy, setPersonalizedSeedBusy] = useState(false);
+  const [personalizedOnly, setPersonalizedOnly] = useState(false);
   const [courseSeedBusy, setCourseSeedBusy] = useState(false);
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
@@ -175,6 +177,7 @@ export default function Storefront({
   };
   useEffect(() => {
     load().catch((e) => setNotice(e.message)).finally(() => setCatalogLoading(false));
+    if (technology) setPersonalizedOnly(new URLSearchParams(window.location.search).get("personalizados") === "1");
     try {
       const data = JSON.parse(localStorage.getItem("goat-cart-v3") || "[]");
       if (Array.isArray(data))
@@ -208,12 +211,13 @@ export default function Storefront({
       sortCards(products.filter(
         (p) =>
           catalogCategories.includes(p.category) &&
+          (!personalizedOnly || ["Vasos", "Camisetas"].includes(p.category)) &&
           (filter === "Todos" || p.category === filter) &&
           (home ? [p.name, p.category, p.description].join(" ") : p.name)
             .toLocaleLowerCase("es")
             .includes(query.trim().toLocaleLowerCase("es")),
       ), cardOrders.products.ids, p => p.id),
-    [products, cardOrders, filter, query, technology, secondhand, courses, management, home],
+    [products, cardOrders, filter, query, technology, secondhand, courses, management, home, personalizedOnly],
   );
   const orderedCategories = sortCards(catalogCategories, cardOrders.categories.ids, category => category);
   async function move(kind: "products" | "categories", id: string, target: string, position: "before" | "after") {
@@ -277,6 +281,7 @@ export default function Storefront({
     setNotice("Producto agregado al carrito");
   };
   const jump = (cat: string) => {
+    setPersonalizedOnly(false);
     if (home && cat !== "Streaming" && cat !== "Todos") {
       router.push("/catalogo?categoria=" + encodeURIComponent(cat));
       return;
@@ -765,6 +770,8 @@ export default function Storefront({
         </section>
         )}
         {digitalCatalog && (streamingLanding || filter === "Streaming") && <StreamingHighlights admin={user?.role === "ADMIN"} />}
+        {(home || technology || management) && user?.role === "ADMIN" && !catalogLoading && <section className="container course-sample-panel"><p>Añade cinco vasos y cinco camisetas personalizadas. Precios de ejemplo y stock inicial en cero; conserva tus cambios si vuelves a cargar.</p><button type="button" className="button violet" disabled={personalizedSeedBusy} onClick={async () => { setPersonalizedSeedBusy(true); try { const result = await request("/api/admin/personalized/seed", "POST", {}); await load(); setNotice(`${result.added} productos personalizados añadidos.`); } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudieron añadir los productos."); } finally { setPersonalizedSeedBusy(false); } }}>{personalizedSeedBusy ? "Añadiendo productos…" : "Añadir 10 productos personalizados"}</button></section>}
+        {personalizedOnly && <div className="container"><p>Vasos y camisetas personalizados</p><button type="button" className="button outline" onClick={() => setPersonalizedOnly(false)}>Ver toda la Tienda</button></div>}
         {home && <div id="catalogo" className="home-product-showcase">
           {query.trim() ? <section className="container marketplace-results" aria-labelledby="marketplace-results-title"><div className="marketplace-section-title"><div><h2 id="marketplace-results-title">Resultados para «{query}»</h2><p role="status">{visible.length} productos encontrados</p></div><button type="button" className="button outline" onClick={() => setQuery("")}>Limpiar búsqueda</button></div><div className="product-grid">{visible.map(product => renderProduct(product, visible.map(item => item.id)))}</div>{!catalogLoading && visible.length === 0 && <p className="empty">No encontramos productos. Prueba con otra palabra.</p>}</section> : homeProductRows(products, user?.role || "CLIENTE", catalogLoading ? { tiendaEnabled: false, segundaEnabled: false } : storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
             {row.products.map(product => renderProduct(product, row.products.map(item => item.id)))}
