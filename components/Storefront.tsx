@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
+import MarketplaceHome from "@/components/MarketplaceHome";
 import ProductCarousel from "@/components/ProductCarousel";
 import { homeProductRows } from "@/lib/home-product-rows";
 import StreamingHighlights from "@/components/StreamingHighlights";
@@ -30,6 +31,7 @@ import {
   Pencil,
   Copy,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 import {
   technologyCategories,
@@ -110,7 +112,8 @@ export default function Storefront({
   initialQuery?: string;
 }) {
   const home = !courses && !technology && !secondhand && !management && !digitalCatalog;
-  const catalogCategories: readonly string[] = management
+  const streamingLanding = digitalCatalog && initialCategory === "Streaming";
+  const catalogCategories: readonly string[] = home || management
     ? allCategories
     : courses
       ? courseCategories
@@ -138,7 +141,7 @@ export default function Storefront({
     [products, setProducts] = useState<Product[]>([]),
     [catalogLoading, setCatalogLoading] = useState(true),
     [storeOptions, setStoreOptions] = useState<StoreOptions>({ tiendaEnabled: true, segundaEnabled: true }),
-    [filter, setFilter] = useState(home ? "Streaming" : initialCategory),
+    [filter, setFilter] = useState(home ? "Todos" : initialCategory),
     [query, setQuery] = useState(initialQuery),
     [cart, setCart] = useState<CartItem[]>([]),
     [cartReady, setCartReady] = useState(false),
@@ -200,9 +203,9 @@ export default function Storefront({
         (p) =>
           catalogCategories.includes(p.category) &&
           (filter === "Todos" || p.category === filter) &&
-          p.name
+          (home ? [p.name, p.category, p.description].join(" ") : p.name)
             .toLocaleLowerCase("es")
-            .includes(query.toLocaleLowerCase("es")),
+            .includes(query.trim().toLocaleLowerCase("es")),
       ), cardOrders.products.ids, p => p.id),
     [products, cardOrders, filter, query, technology, secondhand, courses, management, home],
   );
@@ -493,7 +496,7 @@ export default function Storefront({
   }
 
   return (
-    <>
+    <div className={home ? "storefront marketplace-home" : "storefront"}>
       <div className="announcement">
         {courses
           ? "✦ GOAT CURSOS — Aprende y descubre nuevas habilidades"
@@ -508,6 +511,11 @@ export default function Storefront({
           <a className="logo" href={technology || secondhand || courses || digitalCatalog || management ? "/" : "#inicio"}>
             Goat<span>.</span>
           </a>
+          {home && <><form className="marketplace-search" role="search" onSubmit={event => { event.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }); }}>
+            <label className="sr-only" htmlFor="marketplace-search-input">Buscar en todos los productos</label>
+            <input id="marketplace-search-input" type="search" placeholder="Buscar productos, plataformas y mucho más…" value={query} onChange={event => setQuery(event.target.value)} />
+            <button type="submit" aria-label="Buscar productos"><Search size={21}/></button>
+          </form><span className="marketplace-location"><MapPin size={20}/><span>Compra en Colombia<strong>Precios en pesos COP</strong></span></span></>}
           <nav className={`navlinks ${menu ? "expanded" : ""}`}>
             <a
               href={technology || secondhand || courses || digitalCatalog || management ? "/#inicio" : "#inicio"}
@@ -516,8 +524,8 @@ export default function Storefront({
               Inicio
             </a>
             <Link
-              href={home ? "#catalogo" : "/catalogo?categoria=Streaming"}
-              onClick={(event) => { if (home) { event.preventDefault(); setQuery(""); jump("Streaming"); } else setMenu(false); }}
+              href="/catalogo?categoria=Streaming"
+              onClick={() => setMenu(false)}
             >
               Streaming
             </Link>
@@ -570,6 +578,8 @@ export default function Storefront({
             </button>}
             <button
               className="icon-button mobile-toggle"
+              aria-label={menu ? "Cerrar navegación" : "Abrir navegación"}
+              aria-expanded={menu}
               onClick={() => setMenu(!menu)}
             >
               {menu ? <X /> : <Menu />}
@@ -578,6 +588,7 @@ export default function Storefront({
         </div>
       </header>
       <main id="inicio">
+        {home && <MarketplaceHome tienda={!catalogLoading && Boolean(user && user.role !== "CLIENTE" || storeOptions.tiendaEnabled)} segunda={!catalogLoading && Boolean(user && user.role !== "CLIENTE" || storeOptions.segundaEnabled)} signedIn={Boolean(user)} featured={homeProductRows(products, user?.role || "CLIENTE", storeOptions, cardOrders.products.ids).map(row => row.products[0]).filter((product): product is Product => Boolean(product))} />}
         {courses && <section className="container courses-hero">
           <div><span className="overline">GOAT ACADEMY / CURSOS</span><h1>Tu próxima habilidad<br /><em>empieza aquí.</em></h1><p>Descubre cursos de Office 365, Prime Video, YouTube, tarjetas temporales e ingresos extra. Consulta el temario y la modalidad de acceso de cada curso antes de comprar.</p><button className="button violet" onClick={() => jump("Todos")}>Explorar cursos <ArrowRight size={17} /></button></div>
           <div className="courses-hero-art" aria-hidden="true"><span>APRENDE</span><strong>CREA.<br />CRECE.</strong><small>Nuevas ideas. Nuevas posibilidades.</small></div>
@@ -589,7 +600,7 @@ export default function Storefront({
           {reorderMode && <p>Arrastra las tarjetas o usa las flechas para moverlas. Cada movimiento se guarda para todos.</p>}
         </div>}
 
-        {!digitalCatalog && !courses && (
+        {!home && (!digitalCatalog || streamingLanding) && !courses && (
         <section
           className={
             "container hero " +
@@ -698,7 +709,7 @@ export default function Storefront({
         {management && user?.role === "ADMIN" && <StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} />}
         {management && user?.role === "ADMIN" && <CategoryImageManager />}
         {management && user?.role === "ADMIN" && <BannerEditor />}
-        {!home && !digitalCatalog && !courses && (
+        {!home && (!digitalCatalog || streamingLanding) && !courses && (
         <section className="container category-section" id="streaming">
           <div className="section-heading">
             <div>
@@ -735,9 +746,9 @@ export default function Storefront({
           </div>
         </section>
         )}
-        {digitalCatalog && filter === "Streaming" && <StreamingHighlights admin={user?.role === "ADMIN"} />}
+        {digitalCatalog && (streamingLanding || filter === "Streaming") && <StreamingHighlights admin={user?.role === "ADMIN"} />}
         {home && <div id="catalogo" className="home-product-showcase">
-          {homeProductRows(products, user?.role || "CLIENTE", catalogLoading ? { tiendaEnabled: false, segundaEnabled: false } : storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
+          {query.trim() ? <section className="container marketplace-results" aria-labelledby="marketplace-results-title"><div className="marketplace-section-title"><div><h2 id="marketplace-results-title">Resultados para «{query}»</h2><p role="status">{visible.length} productos encontrados</p></div><button type="button" className="button outline" onClick={() => setQuery("")}>Limpiar búsqueda</button></div><div className="product-grid">{visible.map(product => renderProduct(product, visible.map(item => item.id)))}</div>{!catalogLoading && visible.length === 0 && <p className="empty">No encontramos productos. Prueba con otra palabra.</p>}</section> : homeProductRows(products, user?.role || "CLIENTE", catalogLoading ? { tiendaEnabled: false, segundaEnabled: false } : storeOptions, cardOrders.products.ids).map(row => <ProductCarousel key={row.id} id={row.id} title={row.title} href={row.href} count={row.products.length} loading={catalogLoading}>
             {row.products.map(product => renderProduct(product, row.products.map(item => item.id)))}
           </ProductCarousel>)}
         </div>}
@@ -1130,6 +1141,6 @@ export default function Storefront({
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
