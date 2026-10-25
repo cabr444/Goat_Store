@@ -244,7 +244,7 @@ Los endpoints públicos devuelven únicamente datos del catálogo: los visitante
 
 ### Inicio con diseño de marketplace
 
-Inicio utiliza una cabecera amarilla, buscador destacado, accesos rápidos por departamento, paneles promocionales y carruseles de tarjetas blancas, con la marca Goat. La búsqueda de Inicio consulta nombres, categorías y descripciones de todos los productos disponibles para el visitante y muestra resultados o un estado vacío con opción de limpiar. Las cantidades disponibles, imágenes personalizadas, orden administrativo, carrito y Comprar ahora siguen usando los mismos componentes y servicios. El buscador y la navegación funcionan en escritorio, tablet y móvil. No incorpora descuentos, cuotas ni envíos gratuitos ficticios.
+Inicio utiliza una cabecera morada con los colores de Goat, buscador destacado, accesos rápidos por departamento, paneles promocionales y carruseles de tarjetas blancas, con la marca Goat. La búsqueda de Inicio consulta nombres, categorías y descripciones de todos los productos disponibles para el visitante y muestra resultados o un estado vacío con opción de limpiar. Las cantidades disponibles, imágenes personalizadas, orden administrativo, carrito y Comprar ahora siguen usando los mismos componentes y servicios. El buscador y la navegación funcionan en escritorio, tablet y móvil. No incorpora descuentos, cuotas ni envíos gratuitos ficticios.
 
 Los seis fondos de banner configurados por administración continúan rotando en Inicio. Los paneles y accesos de Tienda y Segunda respetan las opciones de visibilidad de visitantes/clientes. Las cuentas de administración conservan acceso a las secciones deshabilitadas.
 
