@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
+  ArrowLeft,
   LogOut,
   Plus,
   ShoppingBag,
@@ -136,6 +137,11 @@ export default function Storefront({
   const [cardOrders, setCardOrders] = useState<CardOrders>(emptyCardOrders);
   const [reorderMode, setReorderMode] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
+  const categoryRail = useRef<HTMLDivElement>(null);
+  function scrollCategories(direction: number) {
+    const rail = categoryRail.current;
+    if (rail) rail.scrollBy({ left: direction * Math.max(240, rail.clientWidth * .8), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+  }
   const [dragged, setDragged] = useState<{kind: "products" | "categories"; id: string} | null>(null);
   const [user, setUser] = useState<User | null>(null),
     [products, setProducts] = useState<Product[]>([]),
@@ -719,10 +725,20 @@ export default function Storefront({
               <h2>
                 Elige una categoría <span>✳</span>
               </h2>
+              {technology && <p>Desliza para explorar todas las categorías →</p>}
             </div>
+            {technology && <div className="tienda-category-arrows">
+              <button type="button" className="button outline" aria-label="Categorías anteriores" aria-controls="tienda-category-carousel" onClick={() => scrollCategories(-1)}><ArrowLeft size={20} /></button>
+              <button type="button" className="button outline" aria-label="Más categorías" aria-controls="tienda-category-carousel" onClick={() => scrollCategories(1)}><ArrowRight size={20} /></button>
+            </div>}
           </div>
           <div
-            className={`category-grid ${secondhand ? "secondhand-categories" : technology ? "tech-categories" : ""}`}
+            ref={categoryRail}
+            id={technology ? "tienda-category-carousel" : undefined}
+            role={technology ? "region" : undefined}
+            aria-label={technology ? "Categorías de Tienda" : undefined}
+            tabIndex={technology ? 0 : undefined}
+            className={`category-grid ${secondhand ? "secondhand-categories" : technology ? "tech-categories tienda-category-carousel" : ""}`}
           >
             {orderedCategories.map((c, i) => (
               <div key={c} className="category-order-card" {...dragProps("categories", c)}>
