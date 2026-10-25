@@ -1,3 +1,4 @@
+import { streamingAccountIdentifier } from "./streaming-account-identifier";
 import {
   createCipheriv,
   createDecipheriv,
@@ -13,7 +14,7 @@ const line = (max: number) =>
     .refine((value) => !value.includes("\n") && !value.includes("\r"));
 export const deliverySchema = z.object({
   brand: line(80).min(1).default("STREAMING LT"),
-  email: z.email().max(190),
+  email: streamingAccountIdentifier,
   password: z
     .string()
     .min(1)

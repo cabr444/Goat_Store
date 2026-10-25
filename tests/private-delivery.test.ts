@@ -27,3 +27,11 @@ test('catalog excludes private fields and stock accepts zero but rejects negativ
  assert.ok(!productSchema.safeParse({...data,stock:1.5}).success);
  assert.ok(!deliverySchema.safeParse({email:'bad',password:'secret',profile:'1'}).success);
 });
+
+test('platform access accepts email or numeric ID while preserving numeric identifiers in receipts', () => {
+  const delivery = deliverySchema.parse({email:' 00123456789 ',password:'NumericAccess',profile:'1',pin:'0012'});
+  assert.equal(delivery.email,'00123456789');
+  assert.ok(receiptText(delivery,'Prime Video','P1',new Date(),1,5000).includes('📧 Correo: 00123456789'));
+  assert.ok(deliverySchema.safeParse({...delivery,email:'account@example.com'}).success);
+  assert.ok(!deliverySchema.safeParse({...delivery,email:'123abc'}).success);
+});

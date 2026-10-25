@@ -36,3 +36,12 @@ test('shared-account validation identifies the rejected field without exposing s
     const message = sharedAccountValidationMessage(result.error.issues); assert.match(message,expected); assert.ok(!message.includes('secret')); assert.ok(!message.includes('example.com'));
   }
 });
+
+test('numeric platform identifiers work in shared accounts and delivery receipts without losing zeros', () => {
+  const value = {productIds:['prime20','prime30'],account:{...account,email:' 00123456789 '},profiles:[{profile:'1',pin:'0007'}]};
+  const parsed = sharedAccountSchema.parse(value);
+  assert.equal(parsed.account.email,'00123456789');
+  for (const invalid of ['', '123 abc', '12.34', '+5712345', '123 456', '12\n34', '12-34', '123'.repeat(64)]) {
+    assert.ok(!sharedAccountSchema.safeParse({...value,account:{...account,email:invalid}}).success,invalid);
+  }
+});

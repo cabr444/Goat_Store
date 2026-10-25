@@ -43,8 +43,8 @@ export default function StreamingInventoryEditor({ productId, onStockChange }: {
       <h4>{editing ? "Editar acceso disponible" : "Añadir un acceso individual"}</h4>
       <label>Plataforma (usa el mismo nombre en todos sus planes)<input disabled={busy || Boolean(editing)} maxLength={100} value={platform} onChange={event => setPlatform(event.target.value)} /></label>
       {(["brand", "email", "password", "profile", "pin"] as const).map(field => <label key={field}>
-        {{ brand: "Encabezado del comprobante", email: "Correo de la plataforma", password: "Clave de la plataforma", profile: "Perfil", pin: "PIN (opcional)" }[field]}
-        <input type={field === "password" ? "password" : field === "email" ? "email" : "text"} disabled={busy || (Boolean(editing) && (field === "email" || field === "profile"))} autoComplete="off" value={values[field]} maxLength={field === "email" ? 190 : field === "password" ? 128 : field === "brand" ? 80 : field === "profile" ? 60 : 40} onChange={event => setValues({ ...values, [field]: event.target.value })} />
+        {{ brand: "Encabezado del comprobante", email: "Correo o ID numérico de la plataforma", password: "Clave de la plataforma", profile: "Perfil", pin: "PIN (opcional)" }[field]}
+        <input type={field === "password" ? "password" : "text"} disabled={busy || (Boolean(editing) && (field === "email" || field === "profile"))} autoComplete="off" value={values[field]} maxLength={field === "email" ? 190 : field === "password" ? 128 : field === "brand" ? 80 : field === "profile" ? 60 : 40} onChange={event => setValues({ ...values, [field]: event.target.value })} />
       </label>)}
       <button type="button" className="button violet full" disabled={busy || !platform.trim() || !values.email.trim() || !values.password || !values.profile.trim()} onClick={() => void save()}>{busy ? "Guardando…" : editing ? "Guardar cambios del acceso" : "Añadir acceso al inventario"}</button>
       {editing && <button type="button" disabled={busy} onClick={() => { setEditing(null); setValues(empty); }}>Cancelar edición</button>}

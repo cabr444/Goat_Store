@@ -3,7 +3,7 @@ import { deliverySchema } from './private-delivery';
 import { normalizeAccessIdentity } from './streaming-inventory';
 export const sharedAccountSchema = z.object({
   productIds: z.array(z.string().min(1).max(100)).min(1).max(20).refine(ids => new Set(ids).size === ids.length),
-  account: deliverySchema.omit({ profile: true, pin: true }).extend({ email: z.string().trim().max(190).pipe(z.email()) }),
+  account: deliverySchema.omit({ profile: true, pin: true }),
   profiles: z.array(deliverySchema.pick({ profile: true, pin: true })).min(1).max(7)
     .refine(rows => new Set(rows.map(row => normalizeAccessIdentity(row.profile))).size === rows.length),
 });
@@ -13,7 +13,7 @@ export function sharedAccountValidationMessage(issues: { path: PropertyKey[]; co
   if (!issue) return 'Revisa los datos de la cuenta.';
   const [section, field, detail] = issue.path;
   if (section === 'account') {
-    if (field === 'email') return 'Introduce un solo correo válido para esta cuenta. Coloca la contraseña en el campo Clave de la cuenta.';
+    if (field === 'email') return 'Introduce un solo correo válido o un ID formado únicamente por números. Coloca la contraseña en el campo Clave de la cuenta.';
     if (field === 'password') return 'La clave de la cuenta debe tener entre 1 y 128 caracteres, sin saltos de línea.';
     if (field === 'brand') return 'Completa el encabezado del comprobante (máximo 80 caracteres).';
   }

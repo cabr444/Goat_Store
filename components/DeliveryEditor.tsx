@@ -72,7 +72,7 @@ export default function DeliveryEditor({ productId }: { productId: string }) {
             {
               {
                 brand: "Encabezado del comprobante",
-                email: "Correo de la plataforma",
+                email: "Correo o ID numérico de la plataforma",
                 password: "Clave de la plataforma",
                 profile: "Perfil",
                 pin: "PIN (opcional)",
@@ -80,11 +80,7 @@ export default function DeliveryEditor({ productId }: { productId: string }) {
             }
             <input
               type={
-                field === "password"
-                  ? "password"
-                  : field === "email"
-                    ? "email"
-                    : "text"
+                field === "password" ? "password" : "text"
               }
               value={values[field]}
               autoComplete="off"
