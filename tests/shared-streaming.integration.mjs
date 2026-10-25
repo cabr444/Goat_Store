@@ -74,6 +74,13 @@ try {
   assert.equal((await request('/api/products/'+twenty.id,admin.token,'DELETE')).status,200);
   const catalog = (await request('/api/products',client.token)).data.products;
   assert.equal(catalog.find(p=>p.id===twenty.id).stock,0); assert.equal(catalog.find(p=>p.id===twentyEight.id).stock,1); assert.equal(catalog.find(p=>p.id===thirtyThree.id).stock,1);
+  // Prime Video supports the same account sharing; pasted email whitespace is accepted.
+  const primeOther = await product('Amazon Prime Video x30 días');
+  const primeShared = await request(endpoint,admin.token,'POST',{productIds:[prime.id,primeOther.id],account:{...account,email:`  prime-shared-${suffix}@example.com  `},profiles:[{profile:'1',pin:'0001'},{profile:'2',pin:''}]});
+  assert.equal(primeShared.status,201,JSON.stringify(primeShared)); assert.equal(primeShared.data.added,2);
+  const primeBuy = await buy(client,[{id:primeOther.id,qty:1}]); assert.equal(primeBuy.status,201,JSON.stringify(primeBuy));
+  const primeCatalog = (await request('/api/products',client.token)).data.products;
+  for (const id of [prime.id,primeOther.id]) assert.equal(primeCatalog.find(product=>product.id===id).stock,1);
   console.log('PASS shared streaming: seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement and plan detachment.');
 } finally {
   const pids = products.map(p=>p.id), uids = users.map(u=>u.id);

@@ -3,7 +3,7 @@ import { getUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { reply, fail } from '@/lib/http';
 import { secureMutation } from '@/lib/security';
-import { sharedAccountSchema } from '@/lib/shared-streaming-schema';
+import { sharedAccountSchema, sharedAccountValidationMessage } from '@/lib/shared-streaming-schema';
 import { accessFingerprint, platformForProduct, availableAccess } from '@/lib/streaming-inventory';
 import { accessProductIds, syncStreamingStocks } from '@/lib/shared-streaming';
 import { deliverySchema, encryptPrivate, decryptPrivate } from '@/lib/private-delivery';
@@ -12,7 +12,7 @@ class InventoryError extends Error {}
 export const POST = secureMutation(async (req: Request) => {
   if ((await getUser())?.role !== 'ADMIN') return fail('Solo el administrador puede añadir cuentas compartidas entre planes.', 403);
   const parsed = sharedAccountSchema.safeParse(await req.json());
-  if (!parsed.success) return fail('Selecciona de 1 a 20 planes y de 1 a 7 perfiles distintos con sus PIN. Revisa el correo y la clave.');
+  if (!parsed.success) return fail(sharedAccountValidationMessage(parsed.error.issues));
   const { productIds, account, profiles } = parsed.data;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
