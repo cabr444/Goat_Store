@@ -1,3 +1,5 @@
+import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
+import { platformForProduct } from "@/lib/streaming-platform";
 import { comboPools, loadComboInventory, withComboStocks } from "@/lib/combo-inventory";
 import { availableAccess } from "@/lib/streaming-inventory";
 import { secureMutation } from "@/lib/security";
@@ -30,10 +32,10 @@ async function handlePATCH(
   const updated = await db.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
-    const inventoryCount = await tx.streamingAccess.count({ where: { productId: id } });
-    if (inventoryCount && v.data.category !== "Streaming") return null;
+    const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
+    if (inventoryCount && (v.data.category !== "Streaming" || platformForProduct(current.name) !== platformForProduct(v.data.name))) return null;
     const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
-    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : current.category === "Streaming" ? await tx.streamingAccess.count({ where: { productId: id, ...availableAccess } }) : current.stock;
+    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : current.category === "Streaming" ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
     if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
     await tx.product.update({ where: { id }, data: { ...v.data, stock: v.data.category === "Streaming" ? (current.category === "Streaming" ? stock : 0) : v.data.stock } });
     return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
@@ -54,7 +56,17 @@ async function handleDELETE(
     return fail("No autorizado.", 403);
   await db.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
-    await tx.streamingAccess.updateMany({ where: { productId: id, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
+    const rows = await tx.streamingAccess.findMany({ where: { ...accessForProduct(id), ...availableAccess } });
+    const affected = new Set([id]);
+    for (const row of rows) {
+      accessProductIds(row).forEach(id => affected.add(id));
+      const remaining = accessProductIds(row).filter(productId => productId !== id);
+      const changed = await tx.streamingAccess.updateMany({ where: { id: row.id, version: row.version, ...availableAccess }, data: remaining.length
+        ? { productId: remaining[0], productIds: remaining.slice(1), version: { increment: 1 } }
+        : { retiredAt: new Date(), version: { increment: 1 } } });
+      if (changed.count !== 1) throw Error("El acceso cambió durante la operación.");
+    }
+    await syncStreamingStocks(tx, [...affected]);
     await tx.product.update({ where: { id }, data: { stock: 0, active: true } });
   });
   return reply({ ok: true });

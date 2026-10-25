@@ -151,6 +151,7 @@ model CheckoutAttempt {
 }
 
 model StreamingAccess {
+  productIds String[] @default([])
   id String @id @default(cuid())
   productId String
   product Product @relation(fields: [productId], references: [id])
@@ -163,5 +164,6 @@ model StreamingAccess {
   retiredAt DateTime?
   orderItemId String?
   orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+  @@index([productIds], type: Gin)
   @@index([productId, soldAt, retiredAt, createdAt])
 }

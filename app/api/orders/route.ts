@@ -1,3 +1,4 @@
+import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { comboPools, loadComboInventory } from "@/lib/combo-inventory";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -64,7 +65,7 @@ async function handlePOST(req: Request) {
           const product = byId.get(item.id)!;
           if (blocked.includes(product.category)) throw new PurchaseError("Esta sección está deshabilitada temporalmente para clientes.");
           if (product.category === "Streaming") {
-            const rows = await tx.streamingAccess.findMany({ where: { productId: product.id, ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: item.qty });
+            const rows = await tx.streamingAccess.findMany({ where: { ...accessForProduct(product.id), ...availableAccess, id: { notIn: [...selectedAccesses] } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: item.qty });
             if (rows.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes accesos individuales disponibles. Ajusta la cantidad o contacta con soporte.`);
             try { accesses.set(product.id, rows.map(row => deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher))))); }
             catch { throw new PurchaseError(`${product.name}: no se pudo preparar el acceso. Contacta con soporte.`, 503); }
@@ -102,7 +103,7 @@ async function handlePOST(req: Request) {
         // Sync source stock, then reserve aggregate quantities shared by singles and all bundles.
         const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] }, category: "Streaming" }, select: { id: true } });
         for (const source of streamingSources) {
-          const stock = await tx.streamingAccess.count({ where: { productId: source.id, ...availableAccess } });
+          const stock = await tx.streamingAccess.count({ where: { ...accessForProduct(source.id), ...availableAccess } });
           await tx.product.update({ where: { id: source.id }, data: { stock } });
         }
         const values = Prisma.join([...reservations].sort(([a], [b]) => a.localeCompare(b)).map(([id, qty]) => Prisma.sql`(${id}::text, ${qty}::integer)`));
@@ -124,6 +125,10 @@ async function handlePOST(req: Request) {
           if (!ids.length) continue;
           const claimed = await tx.streamingAccess.updateMany({ where: { id: { in: ids }, ...availableAccess }, data: { soldAt: date, orderItemId: itemIds.get(item.id)!, version: { increment: 1 } } });
           if (claimed.count !== ids.length) throw new PurchaseError("Un acceso acaba de venderse. Inténtalo de nuevo.", 409);
+        }
+        if (assignments.length) {
+          const soldRows = await tx.streamingAccess.findMany({ where: { id: { in: assignments.map(row => row.id) } }, select: { productId: true, productIds: true } });
+          await syncStreamingStocks(tx, soldRows.flatMap(accessProductIds));
         }
         if (checkoutKey) await tx.checkoutAttempt.create({ data: { key: checkoutKey, orderId: order.id } });
         await tx.walletEvent.create({ data: { userId: user.id, amount: -total, type: "COMPRA", note: `Pedido ${reference}` } });

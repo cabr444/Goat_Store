@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 const empty = { brand: "STREAMING LT", email: "", password: "", profile: "", pin: "" };
-type Access = { id: string; version: number; platform: string; delivery: typeof empty };
+type Access = { id: string; version: number; platform: string; productIds: string[]; delivery: typeof empty };
 export default function StreamingInventoryEditor({ productId, onStockChange }: { productId: string; onStockChange: (stock: number) => void }) {
   const [rows, setRows] = useState<Access[]>([]), [values, setValues] = useState(empty), [platform, setPlatform] = useState(""), [editing, setEditing] = useState<Access | null>(null);
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [message, setMessage] = useState(""), [available, setAvailable] = useState(0), [sold, setSold] = useState(0), [legacy, setLegacy] = useState(false);
@@ -15,7 +15,7 @@ export default function StreamingInventoryEditor({ productId, onStockChange }: {
   useEffect(() => { setLoading(true); void load().catch(error => setMessage(error.message)).finally(() => setLoading(false)); }, [productId]);
   async function save(remove?: Access) {
     if (busy) return;
-    if (remove && !window.confirm("¿Retirar este acceso? Dejará de estar disponible y no podrá añadirse de nuevo.")) return;
+    if (remove && !window.confirm("¿Retirar este perfil de todos sus planes? Dejará de estar disponible y no podrá añadirse de nuevo.")) return;
     setBusy(true); setMessage("");
     try {
       const target = remove || editing;
@@ -28,13 +28,13 @@ export default function StreamingInventoryEditor({ productId, onStockChange }: {
   }
   return <fieldset className="delivery-editor">
     <legend>Inventario privado de streaming</legend>
-    <p>Una fila por perfil disponible. Cada unidad comprada recibe un acceso distinto. El stock se calcula automáticamente.</p>
+    <p>Una fila por perfil disponible. Cada unidad comprada recibe un acceso distinto. Los perfiles vinculados a varios planes se venden una sola vez y se descuentan en todos ellos. El stock se calcula automáticamente.</p>
     {legacy && <p>El antiguo acceso compartido ya no se entrega. Añade únicamente perfiles sin vender; los comprobantes anteriores se conservan.</p>}
     <p><strong>{available} disponibles · {sold} vendidos</strong></p>
     {loading ? <p role="status">Cargando inventario…</p> : <>
       <div className="streaming-inventory-list" aria-label="Accesos disponibles">
         {rows.map(row => <div className="streaming-inventory-row" key={row.id}>
-          <span><strong>{row.platform}</strong> · {row.delivery.email} · Perfil {row.delivery.profile}</span>
+          <span><strong>{row.platform}</strong> · {row.delivery.email} · Perfil {row.delivery.profile}{row.productIds.length > 0 && <small> · {row.productIds.length + 1} planes vinculados</small>}</span>
           <button type="button" disabled={busy} onClick={() => { setEditing(row); setPlatform(row.platform); setValues(row.delivery); setMessage(""); }}>Editar</button>
           <button type="button" disabled={busy} onClick={() => void save(row)}>Retirar</button>
         </div>)}

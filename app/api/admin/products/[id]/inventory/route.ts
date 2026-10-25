@@ -1,3 +1,4 @@
+import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUser } from "@/lib/auth";
@@ -16,9 +17,9 @@ export async function GET(_req: Request, { params }: Context) {
   if (!product) return fail("Producto no encontrado.", 404);
   if (product.category !== "Streaming") return fail("Este inventario es para streaming.");
   const [available, sold, rows] = await Promise.all([
-    db.streamingAccess.count({ where: { productId: id, ...availableAccess } }),
-    db.streamingAccess.count({ where: { productId: id, soldAt: { not: null } } }),
-    db.streamingAccess.findMany({ where: { productId: id, ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }),
+    db.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }),
+    db.streamingAccess.count({ where: { ...accessForProduct(id), soldAt: { not: null } } }),
+    db.streamingAccess.findMany({ where: { ...accessForProduct(id), ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }),
   ]);
   return reply({ platform: platformForProduct(product.name), available, sold, legacy: Boolean(product.deliveryCipher), accesses: rows.map(({ cipher, fingerprint, ...row }) => ({ ...row, delivery: deliverySchema.parse(JSON.parse(decryptPrivate(cipher))) })) });
 }
@@ -37,7 +38,7 @@ async function mutate(req: Request, { params }: Context) {
       const product = await tx.product.findUnique({ where: { id } });
       if (!product || product.category !== "Streaming") throw Error("PRODUCT");
       if (removing && removal.success) {
-        const changed = await tx.streamingAccess.updateMany({ where: { id: removal.data.accessId, productId: id, version: removal.data.version, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
+        const changed = await tx.streamingAccess.updateMany({ where: { id: removal.data.accessId, ...accessForProduct(id), version: removal.data.version, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
         if (changed.count !== 1) throw Error("CHANGED");
       } else if (parsed.success) {
         const { delivery, platform, accessId, version } = parsed.data;
@@ -55,11 +56,13 @@ async function mutate(req: Request, { params }: Context) {
         const data = { platform: platformForProduct(platform), fingerprint, cipher: encryptPrivate(JSON.stringify(delivery)) };
         if (accessId) {
           // Identity is immutable, so editing a password cannot free a previously registered profile for reuse.
-          const changed = await tx.streamingAccess.updateMany({ where: { id: accessId, productId: id, fingerprint, version, ...availableAccess }, data: { cipher: data.cipher, version: { increment: 1 } } });
+          const changed = await tx.streamingAccess.updateMany({ where: { id: accessId, ...accessForProduct(id), fingerprint, version, ...availableAccess }, data: { cipher: data.cipher, version: { increment: 1 } } });
           if (changed.count !== 1) throw Error("CHANGED");
         } else await tx.streamingAccess.create({ data: { productId: id, ...data } });
       }
-      const stock = await tx.streamingAccess.count({ where: { productId: id, ...availableAccess } });
+      const linked = await tx.streamingAccess.findMany({ where: accessForProduct(id), select: { productId: true, productIds: true } });
+      await syncStreamingStocks(tx, [id, ...linked.flatMap(accessProductIds)]);
+      const stock = await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } });
       await tx.product.update({ where: { id }, data: { stock } });
       return { stock };
     }, { timeout: 30000 });

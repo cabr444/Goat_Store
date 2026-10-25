@@ -14,6 +14,7 @@
     "db:seed:secondhand": "node --env-file=.env --import tsx prisma/seed-secondhand.ts",
     "test:inventory": "node --import tsx tests/inventory.integration.mjs",
     "email:check": "node --env-file=.env --import tsx scripts/check-email.ts",
+    "test:shared-streaming": "node --import tsx tests/shared-streaming.integration.mjs",
     "test:streaming": "node --import tsx tests/streaming-inventory.integration.mjs",
     "db:migrate:check": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts",
     "db:migrate:apply": "node --env-file=.env --env-file=.env.migration --import tsx scripts/migrate-database.ts --apply",
