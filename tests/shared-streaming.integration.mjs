@@ -88,7 +88,33 @@ try {
   const numericLink = await request(endpoint,admin.token,'POST',{productIds:[prime.id,primeOther.id],account:{...account,email:numericIdentifier},profiles:[{profile:'3',pin:'0003'}]});
   assert.equal(numericLink.status,201,JSON.stringify(numericLink)); assert.equal(numericLink.data.linked,1);
 
-  console.log('PASS shared streaming: seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement and plan detachment.');
+  // Whole accounts are one exclusive unit, shared only between whole-account plans.
+  const fullThirty = await product('Prime Video cuenta completa x30 días'), fullSixty = await product('Prime Video cuenta completa x60 días');
+  const fullIds = [fullThirty.id,fullSixty.id], fullAccount = {...account,email:`whole-${suffix}@example.com`};
+  const wholeBody = {productIds:fullIds,account:fullAccount,profiles:[{profile:'1',pin:''}]};
+  assert.equal((await request(endpoint,admin.token,'POST',{...wholeBody,productIds:[fullThirty.id,prime.id]})).status,409);
+  assert.equal((await request(endpoint,admin.token,'POST',{...wholeBody,profiles:[{profile:'1',pin:''},{profile:'2',pin:''}]})).status,409);
+  assert.equal((await request(endpoint,admin.token,'POST',{...wholeBody,account:{...account,email:numericIdentifier}})).status,409);
+  const wholeCreated = await request(endpoint,admin.token,'POST',wholeBody); assert.equal(wholeCreated.status,201,JSON.stringify(wholeCreated)); assert.equal(wholeCreated.data.added,1); assert.equal(wholeCreated.data.fullAccount,true);
+  assert.equal((await request(endpoint,admin.token,'POST',{productIds:[prime.id],account:fullAccount,profiles:[{profile:'2',pin:''}]})).status,409);
+  assert.equal((await request(`/api/admin/products/${prime.id}/inventory`,admin.token,'POST',{platform:'Prime Video',delivery:{...fullAccount,profile:'3',pin:''}})).status,409);
+  const wholeBuy = await buy(client,[{id:fullThirty.id,qty:1}]); assert.equal(wholeBuy.status,201,JSON.stringify(wholeBuy));
+  const wholeItem = await db.orderItem.findFirstOrThrow({where:{orderId:wholeBuy.data.orderId}}); assert.ok(decryptPrivate(wholeItem.receiptCipher).includes('Perfil: Cuenta completa'));
+  const wholeCatalog = (await request('/api/products',client.token)).data.products;
+  for (const id of fullIds) assert.equal(wholeCatalog.find(product=>product.id===id).stock,0);
+  assert.equal((await request(endpoint,admin.token,'POST',wholeBody)).status,409);
+  const singleWhole = {...account,email:`whole-single-${suffix}@example.com`,profile:'7',pin:'0007'};
+  assert.equal((await request(`/api/admin/products/${fullThirty.id}/inventory`,admin.token,'POST',{platform:'Prime Video',delivery:singleWhole})).status,201);
+  const singleWholeInventory = await request(`/api/admin/products/${fullThirty.id}/inventory`,admin.token);
+  assert.equal(singleWholeInventory.data.fullAccount,true); assert.equal(singleWholeInventory.data.accesses[0].delivery.profile,'Cuenta completa');
+  assert.equal((await request(`/api/admin/products/${fullThirty.id}/inventory`,admin.token,'POST',{platform:'Prime Video',delivery:{...singleWhole,profile:'8'}})).status,409);
+  const raceAccount = {...account,email:`whole-race-${suffix}@example.com`};
+  const modeRace = await Promise.all([
+    request(endpoint,admin.token,'POST',{...wholeBody,account:raceAccount}),
+    request(endpoint,admin.token,'POST',{productIds:[prime.id],account:raceAccount,profiles:[{profile:'1',pin:''}]}),
+  ]);
+  assert.deepEqual(modeRace.map(result=>result.status).sort(),[201,409]);
+  console.log('PASS shared streaming: seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement plan detachment, exclusive full accounts and concurrent mode protection.');
 } finally {
   const pids = products.map(p=>p.id), uids = users.map(u=>u.id);
   await db.streamingAccess.deleteMany({where:{OR:[{productId:{in:pids}},{productIds:{hasSome:pids}}]}});

@@ -45,3 +45,11 @@ test('numeric platform identifiers work in shared accounts and delivery receipts
     assert.ok(!sharedAccountSchema.safeParse({...value,account:{...account,email:invalid}}).success,invalid);
   }
 });
+
+import { isFullAccount, fullAccountProfile } from '../lib/streaming-product-kind';
+test('whole-account mode recognizes Spanish Prime Video products without treating individual plans as whole accounts', () => {
+  assert.ok(isFullAccount('Amazon Prime Video cuenta completa'));
+  assert.ok(isFullAccount('Prime Video FULL x30 días'));
+  assert.ok(!isFullAccount('Prime Video x30 días'));
+  assert.equal(fullAccountProfile,'Cuenta completa');
+});

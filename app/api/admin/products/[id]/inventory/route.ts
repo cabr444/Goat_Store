@@ -1,3 +1,5 @@
+import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
+import { isFullAccount, fullAccountProfile } from "@/lib/streaming-product-kind";
 import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -21,7 +23,7 @@ export async function GET(_req: Request, { params }: Context) {
     db.streamingAccess.count({ where: { ...accessForProduct(id), soldAt: { not: null } } }),
     db.streamingAccess.findMany({ where: { ...accessForProduct(id), ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }),
   ]);
-  return reply({ platform: platformForProduct(product.name), available, sold, legacy: Boolean(product.deliveryCipher), accesses: rows.map(({ cipher, fingerprint, ...row }) => ({ ...row, delivery: deliverySchema.parse(JSON.parse(decryptPrivate(cipher))) })) });
+  return reply({ fullAccount: isFullAccount(product.name), platform: platformForProduct(product.name), available, sold, legacy: Boolean(product.deliveryCipher), accesses: rows.map(({ cipher, fingerprint, ...row }) => ({ ...row, delivery: deliverySchema.parse(JSON.parse(decryptPrivate(cipher))) })) });
 }
 async function mutate(req: Request, { params }: Context) {
   const user = await getUser();
@@ -41,18 +43,14 @@ async function mutate(req: Request, { params }: Context) {
         const changed = await tx.streamingAccess.updateMany({ where: { id: removal.data.accessId, ...accessForProduct(id), version: removal.data.version, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
         if (changed.count !== 1) throw Error("CHANGED");
       } else if (parsed.success) {
-        const { delivery, platform, accessId, version } = parsed.data;
+        const { platform, accessId, version } = parsed.data;
+        const fullAccount = isFullAccount(product.name);
+        const delivery = req.method === "POST" && fullAccount ? { ...parsed.data.delivery, profile: fullAccountProfile } : parsed.data.delivery;
+        if (platformForProduct(platform) !== platformForProduct(product.name)) throw new AccountModeError("La plataforma del acceso debe coincidir con la del producto.");
+        if (!fullAccount && isFullAccount(delivery.profile)) throw new AccountModeError("Para vender una cuenta completa, selecciona un producto de cuenta completa.");
         if ((req.method === "PATCH" && (!accessId || version === undefined)) || (req.method === "POST" && accessId)) throw Error("CHANGED");
         const fingerprint = accessFingerprint(platform, delivery);
-        // Old receipts stay authoritative: never reintroduce an access already delivered before inventory existed.
-        const historic = await tx.orderItem.findMany({ where: { receiptCipher: { not: null }, streamingAccesses: { none: {} }, OR: [{ category: "Streaming" }, { category: "", product: { category: "Streaming" } }] }, select: { name: true, receiptCipher: true } });
-        for (const item of historic) {
-          if (platformForProduct(item.name) !== platformForProduct(platform)) continue;
-          const receipt = decryptPrivate(item.receiptCipher!);
-          const email = receipt.match(/📧 Correo: ([^\r\n]+)/)?.[1];
-          const profile = receipt.match(/👤 Perfil: ([^\r\n]+)/)?.[1];
-          if (email && profile && accessFingerprint(platform, { email, profile }) === fingerprint) throw Error("HISTORIC");
-        }
+        await assertAccountMode(tx, platform, [delivery], fullAccount, accessId);
         const data = { platform: platformForProduct(platform), fingerprint, cipher: encryptPrivate(JSON.stringify(delivery)) };
         if (accessId) {
           // Identity is immutable, so editing a password cannot free a previously registered profile for reuse.
@@ -65,9 +63,10 @@ async function mutate(req: Request, { params }: Context) {
       const stock = await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } });
       await tx.product.update({ where: { id }, data: { stock } });
       return { stock };
-    }, { timeout: 30000 });
+    }, { isolationLevel: "Serializable", timeout: 30000 });
     return reply({ ok: true, ...result }, req.method === "POST" ? 201 : 200);
   } catch (error) {
+    if (error instanceof AccountModeError) return fail(error.message, 409);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return fail("Este correo y perfil ya están registrados para esa plataforma, incluso en otro producto o como vendidos/retirados.", 409);
     if (error instanceof Error && error.message === "HISTORIC") return fail("Este acceso ya fue entregado en una compra anterior y no puede volver a venderse.", 409);
     if (error instanceof Error && error.message === "CHANGED") return fail("El acceso cambió, fue vendido o intentaste cambiar su identidad. Actualiza el inventario.", 409);

@@ -1,3 +1,5 @@
+import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
+import { fullAccountProfile } from "@/lib/streaming-product-kind";
 import { Prisma } from '@prisma/client';
 import { getUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -18,19 +20,15 @@ export const POST = secureMutation(async (req: Request) => {
     try {
       const result = await db.$transaction(async tx => {
         const products = await tx.product.findMany({ where: { id: { in: productIds }, category: 'Streaming' } });
-        if (products.length !== productIds.length || products.some(product => isFullAccount(product.name))) throw new InventoryError('Selecciona únicamente planes de perfiles individuales de streaming.');
+        if (products.length !== productIds.length) throw new InventoryError('Selecciona únicamente productos de streaming.');
+        const fullAccount = products.every(product => isFullAccount(product.name));
+        if (!fullAccount && products.some(product => isFullAccount(product.name))) throw new InventoryError('Selecciona planes de cuenta completa o de perfiles, sin mezclarlos.');
+        if (fullAccount && profiles.length !== 1) throw new InventoryError('Una cuenta completa se vende como una sola unidad. Añade únicamente un acceso.');
         const platform = platformForProduct(products[0].name);
         if (products.some(product => platformForProduct(product.name) !== platform)) throw new InventoryError('Todos los planes deben pertenecer a la misma plataforma.');
-        const deliveries = profiles.map(profile => deliverySchema.parse({ ...account, ...profile }));
-        if (deliveries.some(delivery => isFullAccount(delivery.profile))) throw new InventoryError('Añade perfiles individuales, no cuentas completas.');
-        const historic = await tx.orderItem.findMany({ where: { receiptCipher: { not: null }, streamingAccesses: { none: {} }, OR: [{ category: 'Streaming' }, { category: '', product: { category: 'Streaming' } }] }, select: { name: true, receiptCipher: true } });
-        const fingerprints = new Set(deliveries.map(delivery => accessFingerprint(platform, delivery)));
-        for (const item of historic) {
-          if (platformForProduct(item.name) !== platform) continue;
-          const receipt = decryptPrivate(item.receiptCipher!);
-          const email = receipt.match(/📧 Correo: ([^\r\n]+)/)?.[1], profile = receipt.match(/👤 Perfil: ([^\r\n]+)/)?.[1];
-          if (email && profile && fingerprints.has(accessFingerprint(platform, { email, profile }))) throw new InventoryError('Uno de estos perfiles ya fue entregado en una compra anterior.');
-        }
+        const deliveries = profiles.map(profile => deliverySchema.parse({ ...account, ...profile, ...(fullAccount ? {profile:fullAccountProfile} : {}) }));
+        if (!fullAccount && deliveries.some(delivery => isFullAccount(delivery.profile))) throw new InventoryError('Para vender una cuenta completa, selecciona un producto de cuenta completa.');
+        await assertAccountMode(tx, platform, deliveries, fullAccount);
         let added = 0, linked = 0;
         const affected = new Set(productIds);
         for (const delivery of deliveries) {
@@ -54,12 +52,12 @@ export const POST = secureMutation(async (req: Request) => {
           }
         }
         await syncStreamingStocks(tx, [...affected]);
-        return { added, linked, profiles: deliveries.length };
+        return { added, linked, profiles: deliveries.length, fullAccount };
       }, { isolationLevel: 'Serializable', maxWait: 10000, timeout: 30000 });
       return reply(result, 201);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && ['P2034', 'P2002'].includes(error.code) && attempt < 2) continue;
-      if (error instanceof InventoryError) return fail(error.message, 409);
+      if (error instanceof InventoryError || error instanceof AccountModeError) return fail(error.message, 409);
       return fail('No se pudo guardar la cuenta. Revisa el inventario e inténtalo nuevamente.', 503);
     }
   }

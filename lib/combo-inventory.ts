@@ -1,3 +1,5 @@
+import { isFullAccount } from "./streaming-product-kind";
+export { isFullAccount } from "./streaming-product-kind";
 import { accessForProducts, accessProductIds, withStreamingStocks } from "./shared-streaming";
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
@@ -11,9 +13,6 @@ const platforms: [string, RegExp][] = [
   ['crunchyroll', /\bcrunchyroll\b/gi], ['youtube', /\byoutube(?:\s+premium)?\b/gi],
   ['vix', /\bvix\b/gi], ['plex', /\bplex\b/gi], ['iptv', /\biptv\b/gi],
 ];
-export function isFullAccount(value: string) {
-  return /\b(?:complet[ao]s?|full|entera?s?|entero?s?|total|principal|owner|titular)\b/.test(normalize(value));
-}
 // Fail closed for unknown platforms, repeated platforms, mismatched sizes or full-account bundles.
 export function comboPlatforms(name: string): string[] {
   if (isFullAccount(name)) return [];

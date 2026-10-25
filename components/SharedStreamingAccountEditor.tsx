@@ -1,6 +1,7 @@
 "use client";
 import { readJsonResponse } from "@/lib/json-response";
 import { useEffect, useRef, useState } from 'react';
+import { isFullAccount, fullAccountProfile } from '@/lib/streaming-product-kind';
 import { platformForProduct } from '@/lib/streaming-platform';
 type Product = { id: string; name: string; category: string };
 export default function SharedStreamingAccountEditor({ products, onSaved }: { products: Product[]; onSaved: () => Promise<void> }) {
@@ -15,23 +16,30 @@ export default function SharedStreamingAccountEditor({ products, onSaved }: { pr
   }, [message, failed]);
   const plans = products.filter(product => product.category === 'Streaming');
   const platform = selected.length ? platformForProduct(plans.find(product => product.id === selected[0])?.name || '') : '';
+  const fullAccount = selected.length > 0 && isFullAccount(plans.find(product => product.id === selected[0])?.name || '');
+  function selectPlan(product: Product, checked: boolean) {
+    const next = checked ? [...selected, product.id] : selected.filter(id => id !== product.id);
+    if (next.length && isFullAccount(plans.find(plan => plan.id === next[0])?.name || '')) setProfiles(current => [{ profile: fullAccountProfile, pin: current[0]?.pin || '' }]);
+    else if (fullAccount) setProfiles([{ profile: '1', pin: '' }]);
+    setSelected(next);
+  }
   async function save() {
     setBusy(true); setMessage(''); setFailed(false);
     try {
       const response = await fetch('/api/admin/streaming-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productIds: selected, account: { ...account, email: account.email.trim() }, profiles }), signal: AbortSignal.timeout(45000) });
       const result = await readJsonResponse(response);
-      setMessage(`${result.added} perfiles nuevos y ${result.linked} perfiles vinculados a más planes. Cada perfil se venderá una sola vez.`);
-      setAccount({ brand: 'STREAMING LT', email: '', password: '' }); setProfiles([{ profile: '1', pin: '' }]);
+      setMessage(fullAccount ? `Cuentas completas añadidas: ${result.added}. Accesos vinculados a más planes: ${result.linked}. Cada cuenta se vende una sola vez.` : `${result.added} perfiles nuevos y ${result.linked} accesos vinculados a más planes. Cada acceso se vende una sola vez.`);
+      setAccount({ brand: 'STREAMING LT', email: '', password: '' }); setProfiles([{ profile: fullAccount ? fullAccountProfile : '1', pin: '' }]);
       await onSaved();
     } catch (error) { setFailed(true); setMessage(error instanceof Error ? error.message : 'No se pudo guardar la cuenta.'); }
     finally { setBusy(false); }
   }
-  return <section className="container shared-streaming-editor" id="cuentas-streaming"><h2>Una cuenta, varios planes</h2><p>Añade correo o ID numérico y clave una sola vez. Selecciona sus planes (por ejemplo Netflix x20, x28 y x33) y hasta siete perfiles con PIN. Al vender un perfil, deja de estar disponible en todos los planes vinculados.</p>
+  return <section className="container shared-streaming-editor" id="cuentas-streaming"><h2>Una cuenta, varios planes</h2><p>Añade correo o ID numérico y clave una sola vez. Selecciona sus planes (por ejemplo Netflix x20, x28 y x33) y hasta siete perfiles con PIN, o una cuenta completa como unidad única. Al vender un acceso, deja de estar disponible en todos los planes vinculados.</p>
     <p>Registra una cuenta por vez: un correo o ID numérico y su contraseña en campos separados. Los perfiles pertenecen a esa misma cuenta. Para otra cuenta, vuelve a completar el formulario.</p>
-    <fieldset disabled={busy}><legend>Planes que ofrecen esta cuenta</legend><div className="shared-streaming-plans">{plans.map(product => <label key={product.id}><input type="checkbox" checked={selected.includes(product.id)} disabled={busy || (!selected.includes(product.id) && (selected.length >= 20 || Boolean(platform && platform !== platformForProduct(product.name))))} onChange={event => setSelected(event.target.checked ? [...selected, product.id] : selected.filter(id => id !== product.id))} />{product.name}</label>)}</div>{!plans.length && <p>Primero crea los productos de streaming.</p>}
+    <fieldset disabled={busy}><legend>Planes que ofrecen esta cuenta</legend><div className="shared-streaming-plans">{plans.map(product => <label key={product.id}><input type="checkbox" checked={selected.includes(product.id)} disabled={busy || (!selected.includes(product.id) && (selected.length >= 20 || Boolean(platform && platform !== platformForProduct(product.name)) || (selected.length > 0 && fullAccount !== isFullAccount(product.name))))} onChange={event => selectPlan(product, event.target.checked)} />{product.name}</label>)}</div><button type="button" className="button outline" disabled={busy || !selected.length} onClick={() => { setSelected([]); setProfiles([{profile:"1",pin:""}]); }}>Cambiar selección de planes</button>{!plans.length && <p>Primero crea los productos de streaming.</p>}
       <div className="shared-streaming-fields">{(['brand', 'email', 'password'] as const).map(field => <label key={field}>{({ brand: 'Encabezado del comprobante', email: 'Correo o ID numérico de la cuenta', password: 'Clave de la cuenta' })[field]}<input autoComplete="off" type={field === 'password' ? 'password' : 'text'} maxLength={field === 'email' ? 190 : field === 'password' ? 128 : 80} value={account[field]} onBlur={() => { if (field === "email") setAccount(current => ({ ...current, email: current.email.trim() })); }} onChange={event => setAccount({ ...account, [field]: event.target.value })} /></label>)}</div>
-      <h3>Perfiles disponibles ({profiles.length}/7)</h3>{profiles.map((profile, index) => <div className="shared-streaming-profile" key={index}><label>Perfil<input autoComplete="off" maxLength={60} value={profile.profile} onChange={event => setProfiles(profiles.map((row, i) => i === index ? { ...row, profile: event.target.value } : row))} /></label><label>PIN (opcional)<input autoComplete="off" maxLength={40} value={profile.pin} onChange={event => setProfiles(profiles.map((row, i) => i === index ? { ...row, pin: event.target.value } : row))} /></label><button type="button" className="button outline" disabled={busy || profiles.length === 1} onClick={() => setProfiles(profiles.filter((_, i) => i !== index))}>Quitar perfil</button></div>)}
-      <button type="button" className="button outline" disabled={busy || profiles.length >= 7} onClick={() => { let next = 1; while (profiles.some(row => row.profile === String(next))) next++; setProfiles([...profiles, { profile: String(next), pin: '' }]); }}>Añadir perfil</button>
+      <h3>{fullAccount ? "Cuenta completa · 1 unidad" : `Perfiles disponibles (${profiles.length}/7)`}</h3>{fullAccount && <p>Esta cuenta se vende completa una sola vez. No añadas sus perfiles a otros productos.</p>}{profiles.map((profile, index) => <div className="shared-streaming-profile" key={index}><label>Perfil<input readOnly={fullAccount} autoComplete="off" maxLength={60} value={profile.profile} onChange={event => setProfiles(profiles.map((row, i) => i === index ? { ...row, profile: event.target.value } : row))} /></label><label>PIN (opcional)<input autoComplete="off" maxLength={40} value={profile.pin} onChange={event => setProfiles(profiles.map((row, i) => i === index ? { ...row, pin: event.target.value } : row))} /></label>{!fullAccount && <button type="button" className="button outline" disabled={busy || profiles.length === 1} onClick={() => setProfiles(profiles.filter((_, i) => i !== index))}>Quitar perfil</button>}</div>)}
+      {!fullAccount && <button type="button" className="button outline" disabled={busy || profiles.length >= 7} onClick={() => { let next = 1; while (profiles.some(row => row.profile === String(next))) next++; setProfiles([...profiles, { profile: String(next), pin: '' }]); }}>Añadir perfil</button>}
       <button type="button" className="button violet" disabled={busy || !selected.length || !account.brand.trim() || !account.email.trim() || !account.password || profiles.some(profile => !profile.profile.trim())} onClick={() => void save()}>{busy ? 'Guardando…' : 'Guardar cuenta y vincular planes'}</button>
       {message && <p ref={feedback} className={`shared-account-feedback ${failed ? 'failed' : 'saved'}`} role={failed ? 'alert' : 'status'} tabIndex={-1}>{failed && <strong>No se pudo guardar la cuenta. </strong>}{message}</p>}
     </fieldset><p>Si un perfil ya está disponible en otro plan, usa el mismo correo o ID numérico, perfil, clave y PIN para vincularlo sin duplicarlo. Los perfiles vendidos o retirados no se pueden reutilizar. Las claves y los PIN se guardan cifrados.</p></section>;

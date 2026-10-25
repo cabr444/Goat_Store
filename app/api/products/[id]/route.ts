@@ -1,3 +1,4 @@
+import { isFullAccount } from "@/lib/streaming-product-kind";
 import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { platformForProduct } from "@/lib/streaming-platform";
 import { comboPools, loadComboInventory, withComboStocks } from "@/lib/combo-inventory";
@@ -33,7 +34,7 @@ async function handlePATCH(
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
     const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
-    if (inventoryCount && (v.data.category !== "Streaming" || platformForProduct(current.name) !== platformForProduct(v.data.name))) return null;
+    if (inventoryCount && (v.data.category !== "Streaming" || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
     const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
     const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : current.category === "Streaming" ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
     if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
