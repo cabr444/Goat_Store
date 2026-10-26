@@ -1,4 +1,4 @@
-"""Build the editable English and Spanish Goat Store manuals.
+"""Build the editable English and Spanish Goats Store manuals.
 
 Requires python-docx. Run from the repository root:
   python scripts/build-documentation.py --output-dir work/documentation
@@ -6,6 +6,8 @@ Requires python-docx. Run from the repository root:
 from __future__ import annotations
 import argparse
 import re
+import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
@@ -25,10 +27,10 @@ CONFIG = {
         'tagline': 'Streaming commerce • Administration • Deployment • Maintenance',
         'edition': 'ENGLISH EDITION', 'contents': 'Contents',
         'guide': 'Select a section to navigate. All content, tables and procedures are editable.',
-        'summary': 'A complete reference for operating, administering and maintaining Goat Store. Based on the implemented application, with clear separation between current capabilities, operating procedures and future improvements.',
-        'version': 'Document version 1.1', 'date': '18 October 2026',
-        'baseline': 'Application 2.0.0  |  Source 56f7f83  |  password-reset',
-        'footer': 'GOAT STORE  •  Documentation 1.1', 'page': 'Page', 'of': 'of',
+        'summary': 'A complete reference for operating, administering and maintaining Goats Store. Based on the implemented application, with clear separation between current capabilities, operating procedures and future improvements.',
+        'version': 'Document version 2.0', 'date': '26 October 2026',
+        'baseline': 'Application 2.0.0  |  Source 22cd272  |  password-reset',
+        'footer': 'GOATS STORE  •  Documentation 2.0', 'page': 'Page', 'of': 'of',
         'lang': 'en-US',
     },
     'es': {
@@ -37,10 +39,10 @@ CONFIG = {
         'tagline': 'Comercio de streaming • Administración • Despliegue • Mantenimiento',
         'edition': 'EDICIÓN EN ESPAÑOL', 'contents': 'Contenido',
         'guide': 'Selecciona una sección para navegar. Todo el contenido, tablas y procedimientos son editables.',
-        'summary': 'Referencia completa para operar, administrar y mantener Goat Store. Basada en la aplicación implementada, con una distinción clara entre capacidades actuales, procedimientos operativos y mejoras futuras.',
-        'version': 'Versión documental 1.1', 'date': '18 de octubre de 2026',
-        'baseline': 'Aplicación 2.0.0  |  Código 56f7f83  |  password-reset',
-        'footer': 'GOAT STORE  •  Documentación 1.1', 'page': 'Página', 'of': 'de',
+        'summary': 'Referencia completa para operar, administrar y mantener Goats Store. Basada en la aplicación implementada, con una distinción clara entre capacidades actuales, procedimientos operativos y mejoras futuras.',
+        'version': 'Versión documental 2.0', 'date': '26 de octubre de 2026',
+        'baseline': 'Aplicación 2.0.0  |  Código 22cd272  |  password-reset',
+        'footer': 'GOATS STORE  •  Documentación 2.0', 'page': 'Página', 'of': 'de',
         'lang': 'es-CO',
     },
 }
@@ -106,10 +108,10 @@ def styles(document, language):
 
 def add_cover(document, config):
     p = document.add_paragraph(); p.paragraph_format.space_before = Pt(48)
-    run_style(p.add_run('Goat'), 45, INK, True); run_style(p.add_run('.'), 45, PURPLE, True)
+    run_style(p.add_run('Goats'), 45, INK, True); run_style(p.add_run('.'), 45, PURPLE, True)
     p = document.add_paragraph(config['edition']); p.paragraph_format.space_before = Pt(38)
     for run in p.runs: run_style(run, 10, PURPLE, True)
-    p = document.add_paragraph('GOAT STORE', 'Title'); p.paragraph_format.space_after = Pt(14)
+    p = document.add_paragraph('GOATS STORE', 'Title'); p.paragraph_format.space_after = Pt(14)
     p = document.add_paragraph(config['subtitle'], 'Subtitle'); p.paragraph_format.space_after = Pt(16)
     p = document.add_paragraph(config['tagline']); p.paragraph_format.space_after = Pt(25)
     for run in p.runs: run_style(run, 10.5, MUTED)
@@ -189,13 +191,16 @@ def build(source, destination, config):
     section.header_distance = Cm(.8); section.footer_distance = Cm(.8)
     section.different_first_page_header_footer = True
     styles(document, config['lang'])
-    document.core_properties.title = 'Goat Store — ' + config['subtitle']
+    document.core_properties.title = 'Goats Store — ' + config['subtitle']
     document.core_properties.subject = config['subtitle']
-    document.core_properties.author = 'Goat Store'
-    document.core_properties.keywords = 'Goat Store, streaming, administration, operations, documentation'
-    document.core_properties.comments = 'Editable documentation. Source baseline: 56f7f83; documentation 1.1.'
+    document.core_properties.author = 'Goats Store'
+    document.core_properties.keywords = 'Goats Store, streaming, administration, operations, documentation'
+    document.core_properties.created = datetime.now(timezone.utc)
+    document.core_properties.modified = datetime.now(timezone.utc)
+    document.core_properties.revision = 2
+    document.core_properties.comments = 'Editable documentation. Source baseline: 22cd272; documentation 2.0.'
     p = section.header.paragraphs[0]; p.paragraph_format.space_after = Pt(0)
-    run_style(p.add_run('Goat.'), 11, PURPLE, True)
+    run_style(p.add_run('Goats.'), 11, PURPLE, True)
     run_style(p.add_run('   /   ' + config['edition']), 8, MUTED)
     p = section.footer.paragraphs[0]; p.paragraph_format.tab_stops.add_tab_stop(Cm(12.1))
     run_style(p.add_run(config['footer'] + '\t' + config['page'] + ' '), 8, MUTED)
@@ -232,7 +237,8 @@ def build(source, destination, config):
         paragraph = [line.strip()]; index += 1
         while index < len(lines) and lines[index].strip() and not re.match(r'^(#|\||```|\d+\. |\- )', lines[index]):
             paragraph.append(lines[index].strip()); index += 1
-        document.add_paragraph(' '.join(paragraph))
+        p = document.add_paragraph(' '.join(paragraph))
+        if p.text.startswith(('Glossary:', 'Glosario:')): p.paragraph_format.keep_together = True
     destination.parent.mkdir(parents=True, exist_ok=True); document.save(destination)
     print(f'{destination.name}: {heading_number} sections; editable DOCX created.')
 
@@ -243,6 +249,14 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     args = parser.parse_args()
     for config in CONFIG.values(): build(args.source_dir / config['source'], args.output_dir / config['file'], config)
+    archive = args.output_dir / 'Goat_Store_Documentation_Sources.zip'
+    with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as output:
+        for config in CONFIG.values():
+            output.write(args.source_dir / config['source'], 'docs/' + config['source'])
+        readme = args.source_dir / 'README.md'
+        if readme.exists(): output.write(readme, 'docs/README.md')
+        output.write(Path(__file__), 'scripts/build-documentation.py')
+    print(f'{archive.name}: bilingual sources and generator packaged.')
 
 
 if __name__ == '__main__': main()

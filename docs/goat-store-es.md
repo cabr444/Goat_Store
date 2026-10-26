@@ -1,14 +1,14 @@
-# Goat Store
+# Goats Store
 ## 01. Control documental y propósito
-Este manual describe Goat Store según la revisión de código 56f7f83 de la rama password-reset. Es una referencia operativa y técnica para el propietario del negocio, administradores, personal de soporte, desarrolladores y responsables del despliegue. Versión del paquete de la aplicación: 2.0.0. Versión de la documentación: 1.1. Fecha de revisión: 18 de octubre de 2026.
+Este manual describe Goats Store según la revisión de código 22cd272 de la rama password-reset. Es una referencia operativa y técnica para el propietario del negocio, administradores, personal de soporte, desarrolladores y responsables del despliegue. Versión del paquete de la aplicación: 2.0.0. Versión de la documentación: 2.0. Fecha de revisión: 26 de octubre de 2026.
 
 El documento distingue el funcionamiento implementado de las recomendaciones operativas y las mejoras futuras. No afirma que una base de datos de producción, remitente de correo, dominio o política de respaldos específicos estén configurados. Estos valores deben comprobarse en los paneles de los proveedores. No contiene registros de clientes, contraseñas, conexiones ni claves de API.
 
 | Control | Valor |
 |---|---|
 | Repositorio | github.com/cabr444/Goat_Store |
-| Código de referencia | password-reset / 56f7f83 |
-| Responsable documental | Administrador del proyecto Goat Store |
+| Código de referencia | password-reset / 22cd272 |
+| Responsable documental | Administrador del proyecto Goats Store |
 | Uso previsto | Administración, soporte, despliegue y mantenimiento |
 | Formatos maestros | Documento Word editable y fuente Markdown versionada |
 | Motivos de revisión | Cambios en flujos, permisos, esquema, dependencias o alojamiento |
@@ -16,18 +16,16 @@ El documento distingue el funcionamiento implementado de las recomendaciones ope
 El archivo Word puede editarse en Microsoft Word, LibreOffice Writer u otra aplicación compatible con DOCX. Para actualizarlo de forma reproducible, modifica la fuente Markdown correspondiente, actualiza el registro de revisiones y regenera el documento. Las pantallas, políticas y configuraciones de producción pueden cambiar después de esta versión.
 
 ## 02. Resumen ejecutivo y alcance
-Goat Store es una tienda web en español para planes de streaming y otros productos digitales, con catálogos opcionales de tecnología y segunda mano. Los clientes compran con un saldo interno prepagado en pesos colombianos (COP). Los administradores gestionan el catálogo, inventario de accesos, recargas, imágenes, orden de presentación y disponibilidad de secciones para clientes.
+Goats Store es una tienda en español para planes de streaming, servicios digitales, cursos y departamentos opcionales de productos físicos. Los clientes pagan con saldo interno prepagado en pesos colombianos (COP). Los visitantes pueden navegar y llenar el carrito sin registrarse; comprar requiere una cuenta autenticada.
 
-La prioridad comercial actual es la venta de streaming. Los productos tecnológicos de Tienda y los artículos usados de Segunda siguen implementados como módulos que pueden deshabilitarse para cuentas CLIENTE. Deshabilitarlos no elimina productos, no oculta compras históricas ni retira el acceso de administradores y vendedores.
+Inicio utiliza una presentación de marketplace con marca Goats, buscador, banners y carruseles por departamento. Streaming tiene una experiencia de descubrimiento y catálogo propia. ADMIN gestiona productos, precios, imágenes, orden, saldos, ventas e inventario privado. Tienda y Segunda pueden ocultarse para visitantes y CLIENTE sin eliminar compras anteriores.
 
-La protección principal del streaming es el inventario individual. Cada unidad vendida de un producto Streaming recibe una entrada disponible de cuenta/perfil. Esa entrada se asigna al pedido y no puede venderse de nuevo. Las compras de varias unidades reciben accesos diferentes. El comprobante conserva los datos entregados al comprar, en lugar de consultar posteriormente credenciales modificables del producto.
+El inventario de streaming usa un registro único por acceso. Un perfil individual puede ofrecerse en varios planes de una misma plataforma. Al venderse en cualquiera, se descuenta de todos sus planes vinculados. La cuenta completa es un modo separado de una sola unidad y no puede registrarse también como perfiles vendibles independientes. Los combos reservan perfiles individuales elegibles del mismo inventario.
 
-El registro crea la cuenta inmediatamente y no exige confirmación de correo ni una cuenta de Resend. La recuperación de contraseña es un servicio independiente que sí utiliza correo. La aplicación desplegada funciona sin depender del computador del desarrollador; únicamente el entorno local requiere que ese equipo permanezca encendido.
-
-Los módulos implementados incluyen autenticación, filtros, selección editorial de series, carrito persistente, compra transaccional, perfil e historial, herramientas administrativas, permisos por rol y migración de datos de la aplicación. No están implementados los pagos bancarios automáticos, reembolsos, integraciones de transporte ni liquidaciones a vendedores.
+El registro es inmediato y no exige confirmar correo. La recuperación de contraseña usa un servicio de correo separado. La aplicación funciona en su alojamiento independientemente del PC del desarrollador. La conciliación bancaria automática, los reembolsos, la integración de envíos, el alojamiento de cursos y los pagos a vendedores quedan fuera del alcance implementado.
 
 ## 03. Roles y modelo de permisos
-Los permisos se comprueban en el servidor. Ocultar un botón es una medida de interfaz y no sustituye la autorización de la API. ADMIN se crea de forma privada mediante el proceso seed y no puede elegirse en el registro público. CLIENTE y VENDEDOR sí pueden seleccionarse al registrarse.
+Los permisos se comprueban en el servidor. Ocultar un botón es una medida de interfaz y no sustituye la autorización de la API. ADMIN se crea de forma privada mediante el proceso seed y no puede elegirse en el registro público. CLIENTE y VENDEDOR sí pueden seleccionarse al registrarse. Los visitantes pueden navegar el catálogo público permitido y llenar el carrito local, pero no comprar, ver datos privados ni administrar.
 
 | Función | CLIENTE | VENDEDOR | ADMIN |
 |---|---|---|---|
@@ -47,27 +45,33 @@ El registro de vendedores es abierto; todavía no existe un flujo de aprobación
 Los administradores deben utilizar una cuenta privada, contraseña exclusiva y acceso restringido a los paneles de base de datos y alojamiento. Se recomienda autenticación multifactor en los proveedores; la aplicación no incorpora actualmente su propio flujo de MFA.
 
 ## 04. Navegación y experiencia del cliente
-La tienda ofrece Inicio, Streaming, Combos y accesos opcionales a Tienda y Segunda, junto con funciones de contacto y cuenta. Las secciones Productos y Beneficios retiradas no forman parte del menú principal actual. El inicio y los catálogos requieren iniciar sesión; todavía no constituyen un catálogo SEO de consulta anónima.
+La navegación pública incluye Inicio, Streaming, Combos, Tienda, Segunda, Cursos y contacto, según la visibilidad configurada. Productos y Beneficios ya no son secciones independientes de Inicio. Los visitantes ven el acceso para ingresar/registrarse; saldo, perfil y cierre de sesión aparecen solo a usuarios autenticados.
 
 | Ruta | Propósito y acceso |
 |---|---|
-| /acceso | Inicio de sesión, registro directo y entrada a recuperación de contraseña |
-| / | Inicio autenticado con banner, selección editorial y filtros digitales |
-| /catalogo | Catálogo digital autenticado; filtros por categoría y plataforma |
-| /store | Catálogo tecnológico; redirige al cliente si está deshabilitado |
-| /segunda | Catálogo de segunda mano; redirige al cliente si está deshabilitado |
-| /perfil | Perfil privado, saldo, gasto y actividad reciente |
-| /pedidos | Historial privado paginado y comprobantes |
-| /administracion | Gestión de catálogo y operaciones exclusiva de ADMIN |
-| /restablecer-contrasena | Formulario de cambio mediante token recibido por correo |
-| /confirmar-correo | Aviso de compatibilidad; ya no se exige confirmar correo |
+| / | Inicio público de marketplace, buscador y carruseles |
+| /catalogo?categoria=Streaming | Descubrimiento de streaming, selección editorial y filtros digitales públicos |
+| /catalogo?categoria=Combos | Catálogo público de combos |
+| /store | Tienda pública; redirige a visitantes/clientes si está deshabilitada |
+| /store?personalizados=1 | Tienda filtrada a Vasos y Camisetas |
+| /segunda | Catálogo usado público; redirige a visitantes/clientes si se deshabilita |
+| /cursos | Catálogo público de cursos |
+| /acceso | Inicio de sesión, registro inmediato y recuperación |
+| /perfil | Perfil autenticado, saldo, gasto y actividad reciente |
+| /pedidos | Compras paginadas y comprobantes privados |
+| /administracion/ventas | Panel de ventas y accesos operativos ADMIN |
+| /administracion/ventas/[id] | Detalle ADMIN de pedido y comprobantes privados |
+| /administracion/clientes | Usuarios, saldos, compras y recargas recientes para ADMIN |
+| /administracion | Catálogo, cuentas de streaming, imágenes y opciones ADMIN |
+| /restablecer-contrasena | Recuperación mediante token enviado por correo |
+| /confirmar-correo | Aviso de compatibilidad; confirmación retirada |
 
-El círculo junto al saldo abre Perfil, Pedidos, Soporte y Recargas. Funciona mediante mouse, clic, teclado y toque. Los enlaces de soporte y recarga abren WhatsApp con un mensaje preparado al +57 3223037790. El usuario decide si lo envía.
+El círculo de perfil funciona con hover, clic, toque y teclado. Perfil y Pedidos abren páginas privadas; ADMIN también ve Administración. Soporte y Recargas abren WhatsApp al +57 3223037790 con mensajes preparados según la opción. El usuario decide enviarlos.
 
-La disponibilidad de secciones para clientes también se aplica al encabezado de Perfil/Pedidos y al acceso de compra cuando no hay pedidos. Los filtros históricos pueden seguir mostrando departamentos comprados anteriormente: deshabilitar una sección de ventas no elimina el historial.
+El carrito del visitante se conserva durante el registro/acceso. Comprar como visitante abre autenticación y devuelve al carrito o a la confirmación de compra directa; autenticarse no cobra automáticamente. Los interruptores de Tienda/Segunda se aplican a enlaces/carruseles de Inicio, cabeceras de cuenta, respuestas del catálogo, páginas y checkout. Las compras anteriores siguen disponibles en el historial privado.
 
 ## 05. Registro, acceso y recuperación de contraseña
-Para registrarse, abre Registrarse, escribe nombre, correo, contraseña y tipo de cuenta, y pulsa Crear cuenta. Si la operación es correcta se crea inmediatamente el User y el formulario vuelve al inicio de sesión con un mensaje de éxito. La contraseña del formulario se borra. Después se utiliza Entrar a Goat con las nuevas credenciales; la bienvenida animada solo aparece tras un acceso válido.
+Para registrarse, abre Registrarse, escribe nombre, correo, contraseña y tipo de cuenta, y pulsa Crear cuenta. Si la operación es correcta se crea inmediatamente el User y el formulario vuelve al inicio de sesión con un mensaje de éxito. La contraseña del formulario se borra. Después se utiliza Entrar a Goats con las nuevas credenciales; la bienvenida animada solo aparece tras un acceso válido.
 
 Los correos se recortan y convierten a minúsculas en registro e inicio de sesión. Una restricción única en base de datos impide duplicados, incluso cuando dos solicitudes llegan simultáneamente. La contraseña de registro debe tener entre 10 y 128 caracteres y no superar 72 bytes UTF-8, evitando el truncamiento de bcrypt. Se guarda un hash bcrypt, no la contraseña legible. Un control permite mostrar u ocultar la contraseña introducida.
 
@@ -78,17 +82,25 @@ La recuperación utiliza ¿Olvidaste tu contraseña? y requiere una API de Resen
 Para enviar recuperación a clientes reales se necesita un dominio remitente verificado. El remitente de pruebas de Resend está limitado al correo del propietario de la cuenta. Quitar la confirmación de registro no elimina este requisito del servicio de recuperación.
 
 ## 06. Catálogo, búsqueda y contenido editorial
-Inicio comienza con Streaming seleccionado. Los filtros digitales son Todos, Streaming, Música, Productividad y Combos. Todos se refiere al catálogo digital, no a todos los departamentos físicos. La búsqueda compara nombres de productos. Los enlaces de plataforma de la selección editorial pueden abrir Streaming filtrado por esa plataforma.
+Inicio muestra su banner de seis imágenes y estos carruseles, en orden: Streaming (hasta 10), ¡Personaliza a tu manera! (hasta 20), Tienda (hasta 10), Segunda (hasta 10) y Cursos (hasta 10; actualmente se suministran seis cursos). Si hay menos registros, se muestran menos tarjetas, sin inventar duplicados. Tienda y personalizados respetan el interruptor de Tienda; Segunda respeta el suyo.
 
-Tienda agrupa tecnología en Computadores, Periféricos, Audio, Accesorios y Redes. Segunda contiene Tecnología usada, Ropa usada y Calzado usado. Los scripts de ejemplo aportan 50 productos tecnológicos y 50 usados. Son registros demostrativos y no prueban disponibilidad real, condición, licencias o stock. Sustituye sus datos comerciales antes de ofrecerlos a la venta.
+El carrusel de personalizados alterna Vasos y Camisetas. Su cargador opcional aporta diez diseños de vasos y diez de camisetas: nombre, foto, frase, mascota, diseño propio, estilo anime, parejas, cumpleaños, gamer y logo empresarial. Son ejemplos editables con precios de muestra y stock inicial cero. Diseño, tallas, preparación y entrega se coordinan con soporte; el checkout no incluye carga/configuración de arte del cliente ni motor de envíos.
 
-Historias que enganchan es un componente editorial de descubrimiento en Inicio/Streaming, anterior a las tarjetas de planes. Ofrece desplazamiento horizontal, flechas y selección para Netflix, Prime Video, Disney+, HBO Max, Apple TV+, Paramount+, Crunchyroll, ViX y YouTube. Sus títulos y géneros se mantienen en lib/streaming-highlights.ts; no consulta un servicio de popularidad o disponibilidad en tiempo real.
+La búsqueda de Inicio compara nombre, categoría y descripción en los departamentos visibles para el visitante. Los filtros digitales son Todos, Streaming, Música, Productividad y Combos. Búsqueda y Todos se limitan al catálogo actual y no permiten acceder a departamentos deshabilitados.
 
-Cada tarjeta tiene una imagen representativa y disponibilidad. Los productos con cero unidades siguen visibles con Agotado y no pueden agregarse al carrito. El stock positivo aparece en verde. El catálogo consulta actualizaciones aproximadamente cada 15 segundos mientras la pestaña está visible; la compra siempre valida el estado actual del servidor.
+Las categorías de Tienda son Tecnología, Periféricos, Audio, Accesorios, Juguetes, Vasos y Camisetas, con carrusel horizontal, deslizamiento y flechas. Los nombres anteriores Computadores y Redes mantienen compatibilidad mediante alias. Se conservan los productos existentes; no se sustituyen automáticamente por inventario real de juguetes. Segunda contiene Tecnología usada, Ropa usada y Calzado usado. Los seeds de tecnología y usados aportan 50 ejemplos cada uno; verifica nombres, stock, condición y precios antes de vender.
 
-El banner de Inicio utiliza seis fondos que cambian cada siete segundos, manteniendo texto y botones fijos. Incluye pausa y adaptación a movimiento reducido. El acceso incorpora un fondo animado local y una mascota; la bienvenida respeta la preferencia de movimiento reducido.
+Los seis cursos suministrados son Aprende a activar office 365 x siempre; Aprende a Sacar cuentas Prime Video; Aprende a Sacar cuentas youtube; Aprende a generar tarjetas temporales; Aprende a generar ingresos extra; y Aprende a activar Windows. Sus títulos están en español y son editables. Los seeds crean fichas comerciales, no lecciones, videos, suscripciones ni licencias. Confirma materiales legítimos, licencias requeridas, condiciones de acceso y entrega antes de habilitar stock.
+
+Historias que enganchan pertenece a Streaming, no a Inicio. Ofrece pestañas, desplazamiento horizontal y flechas para selecciones de Netflix, Prime Video, Disney+, HBO Max, Apple TV+, Paramount+, Crunchyroll, ViX y YouTube. Series y géneros son editoriales, no un ranking en tiempo real. ADMIN puede cambiar sus imágenes.
+
+Las tarjetas mantienen productos con stock cero y Agotado, muestran cantidades positivas en verde y permiten carrito y Comprar ahora cuando hay disponibilidad. Precios y botones se alinean por fila aunque los textos tengan distinta longitud. ADMIN controla el orden de tarjetas/categorías. El stock se consulta aproximadamente cada 15 segundos mientras la pestaña esté visible y no se esté ordenando; el checkout vuelve a validar el servidor.
+
+El fondo de Inicio cambia cada siete segundos manteniendo texto y acciones. Hay pausa y adaptación a movimiento reducido. El acceso incluye fondo animado, mascota y bienvenida tras un inicio de sesión válido; la pestaña del navegador usa la cara de la cabrita. La marca pública es Goats.; rutas técnicas del repositorio e identificadores existentes goat-* no se renombran.
 
 ## 07. Carrito, compra e integridad financiera
+Comprar ahora abre una confirmación separada de una unidad y conserva el carrito existente. Usa su propia intención de checkout. Agregar al carrito admite productos/cantidades múltiples. Los visitantes pasan por autenticación y regresan a su compra prevista; cobrar requiere confirmar explícitamente el checkout.
+
 El carrito guarda identificadores y cantidades en el almacenamiento local del navegador bajo goat-cart-v3. No contiene precios autorizados ni concede acceso a credenciales. Las filas repetidas se consolidan por producto. La API admite hasta 50 filas de entrada y hasta 50 unidades agregadas de un mismo producto, siempre sujetas a inventario y saldo.
 
 Al comprar se muestra el progreso y se impiden envíos simultáneos accidentales desde el navegador. El servidor comprueba precios, cantidades, permisos de sección, existencias y saldo. El saldo almacenado temporalmente en pantalla es informativo y no sustituye la consulta a la base de datos.
@@ -107,82 +119,122 @@ La transacción usa aislamiento Serializable y reintentos limitados para conflic
 Una clave de compra se guarda en session storage y se vincula al pedido mediante CheckoutAttempt. Reintentar el mismo carrito del mismo usuario puede recuperar ese pedido sin un segundo descuento ni otra asignación. Un carrito distinto u otra cuenta no pueden reutilizar la solicitud como una compra propia. Si se pierde la respuesta, conserva el carrito, revisa Mis pedidos y, si corresponde, reintenta la solicitud original; un error de red no significa necesariamente que el pago falló.
 
 ## 08. Inventario de streaming y entrega privada
-En un producto Streaming, el stock corresponde al número de filas StreamingAccess disponibles. La cantidad manual del producto no sustituye el inventario real de accesos. El antiguo Product.deliveryCipher compartido ya no se entrega para Streaming. Por eso un producto anterior puede mostrar Agotado hasta que se agreguen perfiles sin vender.
+La disponibilidad de Streaming se calcula con StreamingAccess disponibles, no con una cantidad manual ni con el antiguo Product.deliveryCipher. Cada fila tiene una identidad única de plataforma/cuenta/perfil. productId es el producto principal y productIds contiene planes adicionales. Son vínculos a una unidad, no copias. Cambiar clave, PIN o etiqueta no reactiva identidades vendidas/retiradas.
 
-Procedimiento del administrador:
-1. Abre Perfil y después Administrar productos, stock e imágenes.
-2. Crea o busca el producto de streaming y pulsa Editar.
-3. Abre Inventario privado de streaming.
-4. Añade una fila por perfil sin vender: plataforma, encabezado, correo, clave, perfil y PIN opcional.
-5. Usa una identidad de plataforma consistente entre planes; Netflix x28 y x33, por ejemplo, pertenecen a netflix.
-6. Comprueba que aumente la cantidad disponible. Primero hay que guardar un producto nuevo para poder asociarle accesos.
+### Perfiles individuales compartidos
+1. Ingresa como ADMIN y abre Perfil → Administración → Cuentas de streaming, o /administracion#cuentas-streaming.
+2. En Una cuenta, varios planes selecciona planes de perfiles individuales de una misma plataforma, por ejemplo Netflix x20, x28 y x33. Se permiten hasta 20 planes distintos.
+3. Introduce un identificador de cuenta y su clave en campos separados. El identificador admite correo o solo dígitos, hasta 190 caracteres; se quitan espacios exteriores y se conservan ceros iniciales. El registro de usuarios de la tienda sigue requiriendo correo.
+4. Añade de uno a siete perfiles con nombre/número distinto y PIN opcional para cada uno. Cada envío corresponde a una cuenta, no a una lista de correos y claves diferentes.
+5. Pulsa Guardar cuenta y vincular planes y revisa el resultado visible. Los errores aparecen en rojo junto a Guardar, reciben foco y se desplazan a la vista sin borrar los valores rechazados.
 
-La identidad se obtiene de plataforma, correo y perfil normalizados, protegidos con HMAC y una restricción única. Cambiar la clave o el PIN no convierte un perfil ya registrado en una identidad nueva vendible. Los duplicados se bloquean entre productos y también respecto a filas vendidas o retiradas. Al añadir inventario se comprueban además los comprobantes históricos de streaming.
+Ejemplo: siete perfiles vinculados a x20/x28/x33 muestran siete disponibles en cada plan, pero solo existen siete accesos reales. Si una compra x20 recibe el perfil 1, los tres planes quedan en seis; los perfiles 2–7 continúan disponibles. Un carrito con planes distintos debe recibir perfiles canónicos distintos, y dos compradores concurrentes no pueden obtener el mismo registro.
 
-En filas disponibles se pueden corregir clave, PIN y encabezado. Plataforma/correo/perfil son una identidad inmutable en el editor. Retirar una fila es definitivo en el flujo actual y la excluye del stock. Los accesos vendidos quedan vinculados a su línea de pedido y no se pueden editar, retirar ni revender. No existe renovación automática, reposición por vencimiento ni reasignación de perfiles.
+Para vincular un perfil sin vender a más planes, envía su mismo identificador, perfil, clave y PIN. Se reutiliza el registro existente; si sus credenciales difieren, corrígelas primero en el editor de inventario. Las identidades vendidas o retiradas no se reincorporan.
 
-Si se compran varias unidades, el comprobante guardado incluye una sección por acceso. Las filas se asignan de forma atómica junto con el pedido y el descuento. El administrador ve cantidades disponibles/vendidas y las primeras 100 filas disponibles que devuelve la API. Las otras categorías digitales conservan la entrega manual/antigua; la garantía de inventario individual descrita corresponde a la categoría Streaming.
+### Cuentas completas
+Selecciona un producto Streaming llamado, por ejemplo, Prime Video cuenta completa. El formulario cambia a una unidad con el perfil fijo Cuenta completa. Introduce correo/ID numérico y clave, con PIN opcional. Los otros productos vinculados deben ser planes de cuenta completa de la misma plataforma. Otra cuenta requiere otro envío.
+
+Una cuenta completa no puede registrarse simultáneamente como perfiles individuales independientes con el mismo identificador/plataforma. Las altas comprueban inventario e historial mediante transacciones serializables. Las cuentas completas siguen excluidas de los combos. Revisa registros manuales antiguos antes de ofrecerlos como inventario de cuentas completas; esta actualización no convierte automáticamente credenciales compartidas antiguas del producto en unidades nuevas.
+
+### Edición individual y retiro
+Editar producto → Inventario privado de streaming permite gestionar perfiles y unidades de cuenta completa. ADMIN ve conteos y los primeros 100 registros disponibles. La identidad de identificador/plataforma/perfil es inmutable en el editor; se pueden corregir encabezado, clave o PIN de accesos disponibles. Corregir una fila compartida afecta esa fila en todos sus planes, sin cambiar comprobantes guardados.
+
+Retirar elimina la disponibilidad del perfil en todos sus planes. Agotar un producto quita sus vínculos disponibles compartidos sin vaciar los demás planes; el acceso sin planes restantes se retira. Los retirados y vendidos conservan su identidad reservada. No existe renovación, reciclaje ni reposición automática por vencimiento.
+
+### Combos
+Configura cantidad y precio del combo sin copiarle credenciales. Ejemplos reconocidos: Combo x2: Netflix + Prime Video y Combo x3: Netflix + Prime Video + Paramount. Cada combo vendido consume un perfil individual elegible por plataforma y una unidad de la cantidad configurada. Netflix debe ofrecer x28 días; se excluyen cuentas completas. Un perfil cuyo producto principal sea x20 puede abastecer un combo solo si también está vinculado a un plan x28 elegible.
+
+El stock del combo es el mínimo entre cantidad configurada y cada inventario requerido. Diez combos con siete Netflix y cuatro Prime muestran cuatro disponibles. Si Netflix no está disponible, Prime solo no permite completar la compra: falla toda la transacción sin cobro ni reserva parcial. Los combos de vendedor usan fuentes elegibles del propietario; los generales/ADMIN pueden usar inventario de tienda. Las compras individuales y los combos comparten un conjunto de exclusión de perfiles dentro del checkout.
 
 ## 09. Pedidos, comprobantes y perfil
-Al terminar la compra se abre Pedidos y aparece un comprobante centrado del pedido completado. Cerrarlo no elimina la compra ni su contenido. Los comprobantes siguen disponibles únicamente en el historial del comprador propietario. Conocer o adivinar otro identificador no da acceso a los comprobantes de otra cuenta.
+Al terminar la compra se abre Pedidos y aparece un comprobante centrado del pedido completado. Cerrarlo no elimina la compra ni su contenido. Los comprobantes siguen disponibles en el historial privado del comprador y en el detalle autorizado para ADMIN. Conocer o adivinar otro identificador no da acceso a los comprobantes de otra cuenta.
 
 | Contenido | Significado |
 |---|---|
 | Encabezado y plataforma | Encabezado configurado por ADMIN y nombre del producto comprado |
-| Correo, clave, perfil y PIN | Acceso de plataforma asignado al momento de comprar |
+| Correo/ID numérico, clave, perfil y PIN | Acceso de plataforma asignado al momento de comprar |
 | Referencia y fecha | Referencia guardada y momento de la compra |
 | Cantidad e importe | Información por unidad o línea, según el tipo de entrega |
 | Aviso de uso | Instrucción de no modificar cuenta o perfil de la plataforma |
 
 El comprobante se cifra como una copia inmutable de la entrega. Cambiar precios o credenciales posteriormente no reescribe comprobantes anteriores. Los asteriscos de énfasis se presentan como negrita; no se interpreta HTML arbitrario. Es un registro de entrega de acceso y no una factura electrónica tributaria integrada.
 
-Los pedidos con entrega configurada en todas las líneas reciben ENTREGADO. Los pedidos físicos, manuales o mixtos pueden permanecer en PENDIENTE_ENTREGA. La aplicación no implementa todavía un flujo administrativo completo de despacho, cancelación o reembolso.
+Los pedidos con entrega configurada en todas las líneas reciben ENTREGADO. Los pedidos físicos, manuales o mixtos pueden permanecer en PENDIENTE_ENTREGA. ADMIN puede cambiar el estado de entrega desde el panel de ventas. No hay cancelación, reembolso, envío ni reversión financiera automatizados.
 
 El historial ofrece 20 pedidos por página, filtros de departamento y subtotales agrupados para compras mixtas. La API de resumen devuelve una lista reciente limitada; la página privada ofrece el historial paginado completo. Las fechas de cuenta/comprobantes se presentan en America/Bogota. Los importes son valores enteros COP.
 
 Perfil muestra nombre, correo, rol, saldo, gasto registrado, fecha de registro, número de pedidos y hasta diez productos comprados recientemente. Vendedores y administradores pueden ver también ventas recientes según propiedad. El gasto corresponde a la suma de compras guardadas y no se ajusta mediante un subsistema de reembolsos, porque dicho subsistema no existe.
 
 ## 10. Procedimientos de administración
-El panel se abre desde Perfil → Administrar productos, stock e imágenes o /administracion. Una cuenta no administrativa se redirige. La creación y edición se validan en el servidor; los permisos de API del vendedor se limitan a productos propios.
+Abre el círculo de perfil → Administración para entrar a /administracion/ventas. Los accesos operativos llevan a productos/inventario, Cuentas de streaming, clientes, recargas, secciones e imágenes. /administracion es el espacio de catálogo. Las páginas y modificaciones administrativas comprueban ADMIN en el servidor.
 
+### Ventas y clientes
+El panel muestra total vendido registrado, pedidos, unidades y entregas pendientes. Permite buscar referencia/pedido, nombre/correo del comprador y producto, con filtros de estado, categoría y fechas de Bogotá. Hay 20 pedidos por página. Los filtros seleccionan pedidos completos: los totales incluyen todas las líneas de un pedido mixto coincidente. Total vendido no significa utilidad.
+
+El detalle incluye identidad del comprador, fecha de registro, saldo actual, líneas/precios históricos y comprobantes privados. El control de entrega cambia ENTREGADO/PENDIENTE_ENTREGA comprobando el estado esperado. No cobra, reembolsa, repone stock, recicla accesos ni cambia el registro financiero.
+
+La exportación CSV respeta filtros, usa una fila por línea, excluye claves/PIN/comprobantes cifrados de plataformas y neutraliza prefijos de fórmulas de hojas de cálculo. Se limita a 1.000 pedidos; reduce los filtros si se supera ese límite. Nombres/correos de clientes siguen siendo datos personales y requieren manejo controlado.
+
+Clientes permite buscar y muestra 25 usuarios por página, con rol, fecha de alta, saldo, cantidad de compras y gasto registrado. Incluye los últimos 20 movimientos RECARGA coincidentes y accesos a historial/recarga. Las recargas son créditos administrativos, no confirmaciones bancarias: verifica el pago externo antes de registrarlas. La API admite enteros positivos hasta COP 10.000.000 y anota la referencia al administrador. No hay liquidación automática de comisiones a vendedores.
+
+### Operación de catálogo
 | Tarea | Procedimiento y resultado |
 |---|---|
-| Duplicar producto | Pulsar Duplicar; se crea inmediatamente una copia y se abre su editor |
-| Cambiar precio | Editar → Precio (COP) → Guardar producto; el valor nuevo se usa en compras futuras |
-| Editar nombre/descripción | Cambiar datos y guardar; las líneas históricas mantienen lo registrado |
-| Reponer Streaming | Añadir accesos individuales sin vender; la disponibilidad es automática |
-| Ajustar otro stock | Introducir cantidad real; un cambio concurrente puede exigir reabrir el editor |
-| Marcar agotado | Agotar lleva el stock manual a cero; retira accesos disponibles de streaming |
-| Recargar saldo | Seleccionar usuario e importe; comprobar el pago real por separado y registrar el crédito |
-| Cambiar acceso a secciones | Secciones disponibles para clientes → Tienda y Segunda por separado |
-| Ordenar tarjetas | Activar orden administrativo, arrastrar o usar flechas; se guarda para todos |
+| Precio/nombre/descripción | Editar → cambiar valores → Guardar producto; las líneas históricas no cambian |
+| Duplicar | Duplicar crea inmediatamente una copia independiente con stock cero y abre el editor |
+| Streaming compartido | Cuentas de streaming → elegir planes de igual plataforma/modo → guardar cuenta/accesos |
+| Inventario individual | Editar producto → Inventario privado de streaming |
+| Otro stock | Introducir cantidad real; recargar ante conflicto del stock esperado |
+| Agotar | Agotar lleva stock manual a cero o desvincula/retira accesos de streaming disponibles |
+| Habilitar departamentos | Secciones disponibles para clientes → Tienda/Segunda por separado |
+| Ordenar | Ordenar tarjetas arriba del catálogo → arrastrar/flechas → Terminar de ordenar |
+| Cursos de ejemplo | Cursos → Cargar / actualizar cursos |
+| Personalizados de ejemplo | Cargar / añadir productos personalizados en Inicio, Tienda o administración |
+| Comprimir imágenes guardadas | Espacio administrativo → Comprimir imágenes existentes |
 
-Duplicar copia nombre (con sufijo copia), categoría, precio, descripción, marca, fondo e imagen personalizada. El registro pertenece a la cuenta que lo crea y su imagen es independiente. ADMIN puede duplicar cualquier producto; VENDEDOR solo los propios. Cada copia comienza con stock cero y sin credenciales compartidas, accesos individuales, asociaciones a pedidos ni movimientos de saldo. Añade inventario real antes de venderla. Cerrar el editor no elimina la copia ya creada. El original permanece intacto; un fallo al copiar la imagen revierte la creación.
+Los movimientos se guardan automáticamente para todos los visitantes. El orden es global, incluido Inicio; personalizados conserva la alternancia vaso/camiseta. El orden utiliza versión para conflictos concurrentes: recarga si ocurre uno. En pantallas táctiles utiliza las flechas.
 
-Una recarga es un crédito administrativo, no una transacción bancaria ni confirmación de pasarela. La API permite un entero positivo de hasta COP 10.000.000 por solicitud y guarda un WalletEvent RECARGA con referencia al administrador en la nota. Las compras guardan eventos COMPRA. No existe conciliación automática de pagos ni liquidación a vendedores.
+Duplicar copia campos públicos e imagen personalizada de manera independiente, sin credenciales, inventario de accesos, pedidos ni movimientos. La copia pertenece a su creador. ADMIN puede copiar cualquier producto; VENDEDOR solo los propios. Cerrar el editor no deshace la creación ya guardada.
 
-Cuando no hay configuración guardada, ambas secciones comienzan habilitadas. Para CLIENTE, los interruptores ocultan enlaces de tienda/cuenta, redirigen páginas deshabilitadas, excluyen productos y bloquean compras nuevas, incluso desde carritos antiguos. ADMIN y VENDEDOR conservan acceso. Las compras anteriores siguen visibles.
+Los cargadores de cursos/personalizados conservan IDs existentes, precios, stock y cambios administrativos; pueden actualizar nombres antiguos de cursos de muestra que aún no se hayan personalizado. Personalizados aporta 20 fichas y Cursos seis. Los ejemplos comienzan con stock cero. No entregan lecciones, generan cuentas ni fabrican productos.
 
-Los cambios de orden incluyen una versión para detectar edición concurrente. Si hay conflicto, recarga antes de continuar. Las modificaciones de producto también comprueban el stock esperado. No eludas estas protecciones restaurando cantidades antiguas directamente en la base.
+Tienda/Segunda comienzan habilitadas si no hay configuración. Para visitantes/CLIENTE los interruptores ocultan navegación y carruseles afectados, excluyen productos y bloquean checkout de esos artículos. ADMIN/VENDEDOR conservan acceso. Las compras anteriores permanecen visibles.
 
 ## 11. Imágenes, marca y mantenimiento de interfaz
-ADMIN puede reemplazar fondos del banner, imágenes de productos/categorías y contenido visual de series/plataformas. Las cargas JPEG, PNG y WebP admiten hasta 2 MB por archivo; se comprueban el tamaño real del flujo y su firma. No se aceptan SVG subidos. Las ilustraciones y ejemplos integrados son archivos locales.
+La marca visible es Goats., con tonos morados/ciruela, buscador redondeado e icono de pestaña con la cabrita. Las rutas técnicas, claves de almacenamiento y nombre del repositorio conservan compatibilidad. ADMIN puede sustituir seis fondos, imágenes de productos/categorías y series/plataformas editoriales.
 
-| Recurso | Ubicación | Método de edición |
-|---|---|---|
-| Seis fondos de Inicio | BannerImage en PostgreSQL | Controles de banner; Restaurar elimina la sustitución |
-| Imágenes de productos/categorías | CatalogImageAsset | Cargas de imagen de administración |
-| Series y plataformas | CatalogImageAsset con claves lógicas | Editar imágenes de series en la selección editorial |
-| Recursos predeterminados | public/images y helpers de selección | Cambio en repositorio y nuevo despliegue |
+Se admiten JPEG, PNG, WebP y AVIF de hasta 2 MB por archivo seleccionado. El servidor comprueba bytes reales, tipo declarado y firma; rechaza SVG/HTML subidos. El optimizador limita la entrada decodificada a 40 millones de píxeles. Las ilustraciones SVG integradas siguen siendo recursos estáticos versionados.
 
-Las imágenes cargadas en base de datos permanecen tras desplegar si se conserva esa base y sus registros. Un archivo del computador del administrador no queda publicado al escribir su ruta local; utiliza el control de carga. Los archivos versionados en public se despliegan con la aplicación.
+| Recurso | Almacenamiento / control |
+|---|---|
+| Seis fondos | BannerImage; controles de carga/restauración del banner |
+| Sustituciones de producto/categoría/serie/plataforma | CatalogImageAsset; controles ADMIN correspondientes |
+| Imágenes predeterminadas e icono | public/images y app/icon.svg; despliegue del repositorio |
 
-Algunas cargas nuevas se redimensionan y convierten a WebP en el navegador si resulta conveniente; la validación del servidor sigue siendo obligatoria. Los endpoints autenticados usan revalidación privada y ETags. Los metadatos se actualizan con un intervalo corto y se usan imágenes predeterminadas cuando no hay una sustitución.
+Las imágenes de base de datos sobreviven a despliegues si se conserva la base y sus registros. Una ruta local no es una URL pública: carga el archivo o versiona el recurso adecuado. Los GET de imágenes son públicos y usan ETag/revalidación privada. Las credenciales privadas de streaming nunca forman parte de esos metadatos.
 
-Utiliza recursos representativos con permiso de uso, descripciones útiles y fotografías reales del estado de los productos usados. Para el banner se recomiendan aproximadamente 1600 × 700 píxeles. Revisa el resultado en móvil y escritorio. Las dimensiones de estantes y tarjetas se definen en código; no hay un editor administrativo general de tamaños.
+### Compresión automática
+Las cargas nuevas se optimizan en servidor con Sharp. El navegador puede reducir primero entradas grandes. El servidor corrige orientación, conserva transparencia, elimina metadatos originales y compara AVIF calidad 45 con WebP calidad 65 para elegir la codificación menor. Sustituye el archivo solo si el candidato pesa más de un 5% menos; conserva originales pequeños. Se mantienen imágenes animadas admitidas y versiones marcadas como optimizadas para evitar romper animaciones o degradar repetidamente.
+
+| Uso | Lado mayor máximo del candidato redimensionado |
+|---|---|
+| Producto | 900 px |
+| Categoría o serie | 700 px |
+| Logo de plataforma | 128 px |
+| Banner de Inicio | 1600 px |
+
+La compresión tiene pérdida y el ahorro depende del original. No se garantiza un porcentaje fijo ni un mínimo matemático de bytes. Conserva originales fuera de la aplicación si necesitas editarlos/restaurarlos después. Para banner se recomienda una composición aproximada de 1600 × 700; revisa legibilidad de textos/logos en móvil y escritorio.
+
+### Optimizar imágenes ya subidas
+1. Entra como ADMIN a /administracion y busca Optimizar imágenes.
+2. Pulsa Comprimir imágenes existentes y mantén la pestaña abierta.
+3. Se procesa un archivo guardado por solicitud y se muestran progreso, cantidad modificada y ahorro de bytes. Se conservan versiones menores/ya optimizadas.
+4. Revisa fallos y reintenta si hace falta. Las cargas/eliminaciones concurrentes se protegen comprobando updatedAt y no se sobrescriben.
+
 
 ## 12. Arquitectura y organización del repositorio
-Goat Store utiliza Next.js App Router con React y TypeScript. Los manejadores del servidor controlan identidad, permisos, validación y operaciones financieras. Prisma accede a PostgreSQL. El estado del navegador mejora la experiencia, pero nunca autoriza saldos, precios o asignaciones de acceso.
+Goats Store utiliza Next.js App Router con React y TypeScript. Los manejadores del servidor controlan identidad, permisos, validación y operaciones financieras. Prisma accede a PostgreSQL. El estado del navegador mejora la experiencia, pero nunca autoriza saldos, precios o asignaciones de acceso.
 
 | Capa | Responsabilidad e implementación |
 |---|---|
@@ -193,7 +245,7 @@ Goat Store utiliza Next.js App Router con React y TypeScript. Los manejadores de
 | Correo opcional | Resend para recuperar contraseñas, no para registrarse |
 | Contacto externo | Enlaces de WhatsApp; no envíos automáticos de mensajes de soporte |
 
-Las dependencias principales son Next.js 15, React 19, Prisma 6, Zod 4, bcryptjs, jose y lucide-react; package-lock.json fija las versiones instaladas. package.json declara rangos compatibles. Usa una versión de Node.js con soporte y compatible con las dependencias; los scripts con archivo de entorno necesitan Node.js 20.6 o superior.
+Las dependencias principales son Next.js 15, React 19, Prisma 6, Zod 4, bcryptjs, jose, lucide-react y Sharp; package-lock.json fija las versiones instaladas. package.json declara rangos compatibles. Usa una versión de Node.js con soporte y compatible con las dependencias; Sharp requiere Node.js 20.9 o superior. Utiliza una versión LTS con soporte que cumpla todos los requisitos de dependencias.
 
 | Directorio/archivo | Responsabilidad de mantenimiento |
 |---|---|
@@ -221,6 +273,8 @@ El esquema contiene 15 modelos de aplicación. Los identificadores son generalme
 | User → PasswordReset | Autorizaciones temporales de recuperación |
 
 La descripción, precio y configuración de credenciales del producto pueden cambiar; OrderItem conserva nombre, precio unitario, cantidad, categoría y vendedor registrados al comprar. El comprobante cifrado guarda el contenido entregado por separado. Esta diferencia es fundamental al investigar una compra anterior.
+
+StreamingAccess.productIds es un array PostgreSQL de strings con índice GIN. Las consultas cuentan una fila canónica una vez por plan vinculado. Es una lista de vínculos lógicos, no una relación Prisma con clave foránea por cada ID adicional; las operaciones administrativas validan productos y sincronizan stock.
 
 BannerImage y CatalogImageAsset guardan archivos binarios en PostgreSQL y deben incluirse en respaldos. CatalogOrder contiene el orden en JSON y su versión. StoreSettings conserva la disponibilidad para clientes. RateLimit guarda contadores de autenticación con vencimiento; es estado operativo, no un libro financiero.
 
@@ -257,7 +311,7 @@ Supabase y Neon son alternativas para PostgreSQL. La aplicación no necesita amb
 
 El desarrollo local lee .env; Vercel utiliza las variables configuradas en su panel. Si las conexiones apuntan a bases distintas, usuarios, saldos, stock y pedidos son independientes. Compartir una base también comparte el impacto de los cambios locales. Siempre que sea posible, separa los datos de desarrollo y prueba.
 
-No se han inspeccionado independientemente para este manual el proveedor activo, la rama de producción ni los secretos. Durante la configuración se utilizó https://goat-goat-8011.vercel.app; verifica el dominio vigente en Vercel antes de cambiar APP_URL.
+El proyecto utiliza goats.win como dominio público y Vercel + Neon en su flujo de despliegue. Comprueba proveedores, secretos, DNS y despliegue activo en sus paneles: esta revisión de código no es una auditoría de infraestructura en vivo.
 
 ## 16. Instalación local y administrador inicial
 Clona o abre el repositorio, selecciona la rama prevista e instala las dependencias fijadas por el archivo de bloqueo. Crea .env a partir de .env.example y proporciona las conexiones y secretos en privado. Aplica el esquema únicamente sobre la base correcta. db:push crea o actualiza estructura; no copia registros desde Supabase a Neon.
@@ -277,27 +331,36 @@ node --env-file=.env --import tsx prisma/seed.ts
 
 El seed rechaza promover un correo que ya pertenezca a una cuenta no administrativa. Al ejecutarlo para un administrador existente actualiza la contraseña e incrementa sessionVersion. Añade productos de ejemplo faltantes sin duplicar nombres coincidentes de la tienda. No lo ejecutes antes de migrar a un destino vacío: la migración rechaza destinos con registros del negocio.
 
-Los catálogos opcionales se cargan con npm run db:seed:technology y npm run db:seed:secondhand. No interpretes cantidades o descripciones de ejemplo como inventario comercial verificado.
+Los ejemplos opcionales se cargan con npm run db:seed:technology, npm run db:seed:secondhand, npm run db:seed:courses y npm run db:seed:personalized. Los últimos dos también tienen controles ADMIN. No interpretes cantidades o descripciones de ejemplo como inventario comercial verificado.
 
 Para probar producción localmente, ejecuta npm run build y después npm run start. El desarrollo compila páginas bajo demanda y no representa el rendimiento de producción. Nunca publiques .env, sus conexiones o las credenciales administrativas.
 
 ## 17. Despliegue Vercel y operación de dominios
-La versión de referencia está en password-reset. Desplegar un main antiguo puede impedir detectar Next.js u omitir funciones recientes. Comprueba rama y commit de cada despliegue; volver a desplegar una ejecución antigua reutiliza su código anterior.
+La rama mantenida es password-reset. Confirma el commit real en Vercel: volver a desplegar una ejecución antigua no descarga código nuevo. El dominio público del proyecto es https://goats.win; comprueba DNS, certificado, entorno y rama actuales en los proveedores, sin asumir que el manual verifica su estado en vivo.
 
-1. Importa cabr444/Goat_Store en Vercel.
-2. Configura la rama de producción mantenida, actualmente password-reset.
-3. Selecciona Next.js, directorio raíz ./ y comando npm run build.
-4. Configura las variables del entorno Production/Preview correspondiente.
-5. Aplica el esquema Prisma sobre PostgreSQL y decide si inicializar o migrar datos.
-6. Crea un despliegue con la referencia Git correcta y espera Ready.
-7. Define APP_URL con la dirección HTTPS pública canónica; vuelve a desplegar al cambiar variables.
-8. Comprueba registro, acceso, secciones, saldo, inventario, compra y comprobantes privados.
+1. Importa cabr444/Goat_Store y selecciona rama correcta, preset Next.js, raíz ./ y npm run build.
+2. Configura variables privadas para Production/Preview. DATABASE_URL debe seleccionar la base PostgreSQL prevista y APP_URL el origen HTTPS canónico.
+3. Respalda datos pertinentes y aplica cambios de esquema revisados antes de exponer código que los necesite. Los perfiles compartidos requieren StreamingAccess.productIds y su índice GIN.
+4. Ejecuta controles, sube la versión, espera Ready y verifica el commit del despliegue.
+5. Prueba navegación/carrito anónimos, acceso, administración, una compra controlada, stock compartido y privacidad de comprobantes.
 
-Vercel aloja la aplicación y el proveedor PostgreSQL aloja la base; la web publicada no depende de que el PC del propietario permanezca encendido. localhost:3000 es una dirección local. Para clientes externos, verifica que la protección del despliegue no exija una cuenta de Vercel. Comparte la dirección pública, no un enlace del panel.
+Los comandos de esquema pueden ejecutarse en la terminal de VS Code del PC del propietario. Actualizan la base seleccionada por DATABASE_URL; ejecutarlos localmente no implica que la base sea local. Con la conexión de Neon prevista configurada privadamente en .env, utiliza:
 
-El dominio propio es opcional. Configúralo en Vercel y en su proveedor DNS y actualiza APP_URL. Tener una página vercel.app no permite verificar vercel.app como dominio remitente de Resend. Correo y alojamiento web son configuraciones independientes.
+```sh
+git switch password-reset
+git pull origin password-reset
+npm install
+npm run db:push
+```
 
-La visibilidad en buscadores no es automática. El catálogo que exige sesión limita la indexación pública. Un catálogo abierto, sitemap/robots y alta en buscadores son mejoras posibles; desplegar no garantiza posición o indexación en Google.
+Esto sincroniza estructura, no registros. npm run build genera Prisma Client pero no aplica el esquema. Cambiar .env local no modifica variables de Vercel. Un cambio solo de esquema normalmente requiere recargar; cambiar variables de Vercel exige nuevo despliegue. Conserva los secretos de cifrado originales.
+
+### Dominio y descubrimiento
+Añade goats.win y el alias www deseado en Domains del proyecto. En Cloudflare utiliza el registro/destino exacto indicado por Vercel y DNS only cuando se solicite; no copies una IP antigua de un ejemplo. Espera configuración válida y certificado HTTPS. Conectar dominio no exige recompilar por sí mismo; cambiar APP_URL sí exige desplegar la nueva configuración. SSL web y autorización del remitente de correo son independientes.
+
+Vercel aloja la aplicación, PostgreSQL los datos y Cloudflare registra/administra dominio y DNS. La web pública no depende del PC encendido. Revisa protección de acceso para visitantes, renovaciones, consumo y condiciones comerciales del alojamiento. Este manual no establece garantías de capacidad ni de un año de alojamiento gratuito.
+
+Un catálogo público permite descubrimiento, pero comprar dominio no garantiza indexación ni posición en Google para «goats». Verificar Search Console, implementar sitemap/robots, redactar descripciones útiles y facilitar descubrimiento externo requieren trabajo/configuración propios. Esta referencia no tiene rutas implementadas de sitemap/robots; no deben comunicarse como ya enviadas.
 
 ## 18. Migración de datos de Supabase a Neon
 El repositorio incluye una herramienta de copia única de datos hacia Neon vacío. A diferencia de db:push, transfiere registros. Conserva hashes bcrypt y saldos; incluye productos, pedidos, movimientos, imágenes, configuración, inventario privado y comprobantes cifrados. Auth/Storage/roles internos de Supabase quedan fuera del alcance de datos de la aplicación. Los contadores RateLimit del destino se conservan y los del origen no se importan.
@@ -341,24 +404,29 @@ Si una clave de cifrado se pierde o cambia por accidente, restaura la clave efec
 Ante una caída, identifica si falla el despliegue, conexión/esquema, origen, permiso, límite de intentos, inventario o correo. Recoge registros sin secretos, hora, ruta y commit. No solicites contraseñas de clientes o accesos privados de streaming mediante capturas.
 
 ## 20. Pruebas, diagnóstico y límites conocidos
-Las pruebas unitarias se ejecutan con npm test; los tipos se verifican con npx tsc --noEmit; la compilación de producción usa npm run build. npm audit --omit=dev informa vulnerabilidades conocidas en el momento de ejecución, no una garantía permanente. No se repitieron pruebas únicamente para redactar este manual; ejecútalas para la versión que se vaya a publicar.
+Utiliza npm test, npx tsc --noEmit y npm run build para pruebas unitarias, tipos y compilación. Durante la implementación también se probaron PostgreSQL aislado y navegador para perfiles compartidos, cuentas completas, IDs numéricos, combos, checkout de visitantes, optimización de imágenes y administración. Esta revisión documental no certifica el estado de producción ni repite una auditoría de carga/seguridad.
 
-Las pruebas PostgreSQL cubren inventario, asignación única, compras múltiples/reintentos, registro directo y acceso, secciones, orden y migración. Las relacionadas con inventario requieren una base local desechable goat_inventory_test y servidor coincidente. Las de migración necesitan dos bases locales desechables de origen/destino. Nunca ejecutes datos sintéticos de integración sobre bases de clientes.
+Las pruebas de integración deben usar bases locales desechables y un servidor local coincidente. Los suites compartido/streaming/combos utilizan goat_inventory_test, DATABASE_URL, AUTH_SECRET y la URL de pruebas correspondiente. Migración usa origen/destino desechables separados. No apuntes estos fixtures a registros de clientes de Neon.
 
-| Síntoma | Investigación o acción |
+| Síntoma | Revisión / acción |
 |---|---|
-| NEXT_NO_VERSION | Verificar rama/commit, raíz ./ y Next.js en package.json |
-| Solicitud no autorizada | Revisar versión desplegada, origen, APP_URL y alias; desplegar la corrección de orígenes |
-| No fue posible procesar la solicitud | Revisar logs sin secretos, conexión y tablas como RateLimit |
-| Correo o contraseña incorrectos | Comprobar la cuenta en la base exacta activa; recuperar contraseña, no editar passwordHash |
-| Faltan usuarios al cambiar base | Cambiar URL no copia datos; migrar o registrar deliberadamente en la nueva base |
-| Remitente no autorizado | Afecta a recuperación: verificar dominio EMAIL_FROM y Resend; el registro ya no envía correo |
-| Streaming muestra Agotado | Agregar perfiles individuales; credenciales compartidas/stock manual no reponen Streaming |
-| Conflicto de stock/orden | Recargar versión actual; no sobrescribir ventas recientes con valores anteriores |
-| No aparece código nuevo | Comprobar commit Ready, dominio público correcto y actualizar página |
-| Tienda/Segunda visibles al cliente | Revisar interruptores y corrección de encabezado 42fd1ce o posterior |
+| NEXT_NO_VERSION | Comprobar rama, commit, raíz ./ y Next.js en package.json |
+| JSON vacío / Unexpected end of JSON input | Revisar estado HTTP y registros sin secretos; puede fallar el catálogo después del acceso y no las credenciales |
+| Falta actualizar el esquema de la base de datos | Descargar código y ejecutar db:push contra la misma base Neon usada por Vercel; verificar productIds |
+| Catálogo temporalmente no disponible | Revisar conexión/esquema/despliegue; visitantes reciben error genérico y ADMIN una indicación útil si falta esquema |
+| Solicitud no autorizada | Verificar origen, APP_URL, alias del despliegue y revisión actual |
+| Correo o ID numérico inválido | Un correo válido o solo dígitos; clave en campo separado; no pegar varias cuentas en un campo |
+| Perfiles repetidos / PIN inválido | Usar nombres/números distintos; PIN opcional de máximo 40 caracteres; revisar error rojo enfocado junto a Guardar |
+| Rechazo de cuenta completa | Comprobar versión, producto cuenta completa/full, un acceso y planes completos de la misma plataforma |
+| Cuenta vendida/retirada o modos mezclados | Revisar inventario; cambiar credenciales/etiqueta no recicla identidades ni divide una cuenta completa en perfiles |
+| Streaming / combo agotado | Reponer accesos elegibles sin vender; deben existir todas las plataformas del combo, incluido Netflix x28 |
+| Correo o contraseña incorrectos | Verificar usuario en la base activa; recuperar en vez de editar passwordHash |
+| Remitente de recuperación no autorizado | Revisar dominio verificado Resend y EMAIL_FROM; el registro no envía confirmación |
+| Conflicto de stock/estado/orden | Recargar versión y revisar pedido/movimientos confirmados antes de repetir |
+| Imagen rechazada | Comprobar firma/tipo, 2 MB, dimensiones decodificadas y permisos ADMIN |
+| Función nueva ausente | Verificar commit/Ready y recargar; un commit local no está publicado hasta subir/desplegar correctamente |
 
-Entre los límites están registro abierto de vendedores, ausencia de MFA propia, pasarela automática, motor de reembolsos, panel completo de cumplimiento y liquidación a vendedores, renovación/reciclaje de perfiles y catálogo público anónimo. Las series son editoriales, no un ranking en vivo. Tecnología y segunda mano exigen gestión operativa manual. Las mejoras deben priorizar las necesidades reales del negocio, soporte y obligaciones aplicables.
+Límites: registro abierto de vendedores; sin MFA propio, pagos/reembolsos automáticos, liquidación a vendedores, envíos, alojamiento de cursos, configurador de arte ni reciclaje de perfiles. Navegación pública y estado manual de entrega sí están implementados. Indexación, capacidad y retención requieren verificación independiente.
 
 ## 21. Mantenimiento y gobierno documental
 El esquema y la implementación del repositorio son la referencia técnica. Actualiza este manual si cambia una ruta, permiso, formulario, regla de inventario, variable, requisito de migración o procedimiento. Mantén sincronizadas las ediciones inglesa y española.
@@ -394,7 +462,7 @@ Los campos describen el esquema actual. El signo de interrogación indica un val
 | CatalogOrder | kind (clave primaria), ids (JSON), version | Orden compartido y control de conflictos |
 | PendingRegistration | email (clave primaria), name, passwordHash, role, tokenHash (único), statusHash (único), createdAt, expiresAt, confirmedAt? | Confirmaciones históricas; flujo inactivo |
 | CheckoutAttempt | key (clave primaria), orderId (único) | Recuperación idempotente de compra |
-| StreamingAccess | id, productId, fingerprint (único), platform, cipher, createdAt, version, soldAt?, retiredAt?, orderItemId? | Inventario individual de streaming de una sola venta |
+| StreamingAccess | id, productId, productIds[] (GIN), fingerprint (único), platform, cipher, createdAt, version, soldAt?, retiredAt?, orderItemId? | Unidad de perfil o cuenta completa de una venta con planes vinculados opcionales |
 
 Un StreamingAccess disponible tiene soldAt y retiredAt en null. Los vendidos se asocian a una línea; los retirados conservan su identidad reservada. La disponibilidad pública de Streaming se calcula con las filas disponibles. Existe Product.active, pero Agotar mantiene deliberadamente el producto visible con cero disponibilidad y no funciona como un interruptor general de publicación.
 
@@ -412,12 +480,12 @@ Las rutas son relativas al origen de la aplicación. Las modificaciones ordinari
 | POST /api/auth/resend-verification | Retirado | HTTP 410; no envía confirmaciones |
 | POST /api/auth/registration-status | Retirado | HTTP 410; flujo pendiente deshabilitado |
 | GET /api/me | Público | Usuario actual o null |
-| GET /api/storefront | Autenticado | Usuario, productos permitidos, compras recientes, opciones y orden; lista de usuarios solo ADMIN |
-| GET /api/products | Autenticado | Campos públicos de productos permitidos y configuración |
+| GET /api/storefront | Público | Productos/opciones/orden permitidos; visitante user null sin datos privados; usuarios solo ADMIN |
+| GET /api/products | Público | Campos públicos de productos permitidos y configuración |
 | POST /api/products | ADMIN / VENDEDOR | Crear producto validado con propiedad del usuario actual |
 | PATCH /api/products/[id] | ADMIN / VENDEDOR propietario | Datos y expectedStock; actualización protegida |
 | POST /api/products/[id]/duplicate | ADMIN / VENDEDOR propietario | Crear copia independiente de catálogo/imagen, sin stock ni datos privados de entrega |
-| DELETE /api/products/[id] | ADMIN / VENDEDOR propietario | Agotar; retirar streaming disponible |
+| DELETE /api/products/[id] | ADMIN / VENDEDOR propietario | Agotar; desvincular planes compartidos y retirar accesos sin planes restantes |
 | GET /api/orders | Autenticado | Últimos 50 pedidos propios y líneas seguras |
 | POST /api/orders | Autenticado | items[{id,qty}], checkoutKey opcional; compra/recuperación transaccional |
 | GET /api/admin/users | ADMIN | Listado de identidad, rol y saldo |
@@ -426,13 +494,20 @@ Las rutas son relativas al origen de la aplicación. Las modificaciones ordinari
 | PUT /api/admin/card-order | ADMIN | kind, id, target, position, version |
 | GET, PUT /api/admin/products/[id]/delivery | ADMIN | Entrega digital antigua; PUT rechazado para Streaming |
 | GET /api/admin/products/[id]/inventory | ADMIN | Filas disponibles, cantidades, plataforma e indicador antiguo |
-| POST, PATCH, DELETE /api/admin/products/[id]/inventory | ADMIN | Añadir, editar o retirar perfiles; comprobar versión al cambiar |
-| GET /api/banners | Autenticado | Metadatos del banner |
-| GET /api/banners/[slot] | Autenticado | Bytes de imagen y revalidación privada ETag |
+| POST, PATCH, DELETE /api/admin/products/[id]/inventory | ADMIN | Añadir/editar/retirar perfiles o cuentas completas; identidad inmutable y comprobación de versión |
+| GET /api/banners | Público | Metadatos del banner |
+| GET /api/banners/[slot] | Público | Bytes de imagen y revalidación privada ETag |
 | POST, DELETE /api/banners/[slot] | ADMIN | Cargar o eliminar sustitución del banner |
-| GET /api/catalog-images | Autenticado | Metadatos de imágenes del catálogo |
-| GET /api/catalog-images/file | Autenticado | Bytes de imagen por clave lógica |
+| GET /api/catalog-images | Público | Metadatos de imágenes del catálogo |
+| GET /api/catalog-images/file | Público | Bytes de imagen por clave lógica |
 | POST, DELETE /api/admin/images | ADMIN | Cargar/eliminar imagen de categoría, producto, serie o plataforma |
+| POST /api/admin/streaming-accounts | ADMIN | productIds, account{brand,email,password}, profiles[{profile,pin}]; perfiles compartidos o una cuenta completa |
+| POST /api/admin/courses/seed | ADMIN | Añadir cursos faltantes y actualizaciones compatibles de ejemplos sin personalizar |
+| POST /api/admin/personalized/seed | ADMIN | Añadir vasos/camisetas personalizados faltantes sin sobrescribir registros |
+| GET /api/admin/images/optimize | ADMIN | Listar identificadores de imágenes de catálogo/banner guardadas |
+| POST /api/admin/images/optimize | ADMIN | type: catalog/banner, id; optimizar un archivo protegiendo cambios concurrentes |
+| GET /api/admin/sales/export | ADMIN | CSV filtrado, máximo 1.000 pedidos, sin credenciales de plataformas |
+| PATCH /api/admin/orders/[id]/status | ADMIN | expectedStatus y status; solo estado manual de entrega |
 
 Las respuestas importantes son 400 para validación/rechazo de negocio, 401 para falta de sesión o acceso incorrecto, 403 para permisos/origen, 409 para conflictos, 410 para confirmación retirada, 413/415 para tamaño/tipo, 429 para exceso de intentos y 503 para fallos temporales. Un pedido nuevo devuelve 201; recuperar una compra coincidente puede devolver 200. Los comprobantes descifrados se muestran al comprador en páginas privadas, no en el catálogo público de productos.
 
@@ -455,12 +530,23 @@ Las respuestas importantes son 400 para validación/rechazo de negocio, 401 para
 | npm run test:inventory / npm run test:streaming | Integración aislada de inventario/asignación |
 | npm run test:duplicate | Pruebas aisladas de copia, propiedad, imagen y rollback |
 | npm run test:migration | Pruebas con dos bases desechables |
+| npm run db:seed:courses | Cargar seis fichas editables de cursos |
+| npm run db:seed:personalized | Cargar 20 productos personalizados editables |
+| npm run test:courses | Pruebas aisladas de catálogo/compra de cursos |
+| npm run test:combos | Elegibilidad, asignación, concurrencia y rollback de combos |
+| npm run test:guests | Navegación pública, retorno de carrito/acceso y visibilidad |
+| npm run test:admin | Ventas/clientes, privacidad CSV y conflictos de estado |
+| npm run test:shared-streaming | Perfiles compartidos, IDs numéricos, cuentas completas y concurrencia |
+| python scripts/build-documentation.py --output-dir docs/exports | Regenerar ambos Word editables y su ZIP de fuentes |
 
 Lista de publicación: comprobar rama/commit; proteger datos y secretos; aplicar solo cambios de esquema revisados; configurar entorno y correo si corresponde; ejecutar controles; esperar Ready; verificar dominio público; probar recorrido de cliente; confirmar secciones ocultas; revisar privacidad de comprobantes y monitorizar registros sin secretos.
 
+### Glosario y registro de revisiones
 Glosario: COP significa peso colombiano; saldo es el crédito interno prepagado; pedido es una compra; perfil puede ser el panel de cuenta o un perfil de plataforma según contexto; agotado indica cero disponibilidad; checkout key identifica una intención de compra recuperable; ciphertext es contenido cifrado; la conexión selecciona una base y una clave API autoriza un servicio.
 
 Registro de revisión: 1.0 — 17 de octubre de 2026 — Primera edición española basada en 42fd1ce; incluye registro directo, inventario individual, migración y corrección de visibilidad en cuenta. Actualiza esta entrada y la edición inglesa al cambiar el comportamiento.
 
 
 1.1 — 18 de octubre de 2026 — Actualización a 56f7f83: duplicación de productos, imagen independiente, stock cero, protección de datos privados, permisos de propiedad y guía dentro del editor móvil.
+
+2.0 — 26 de octubre de 2026 — Código 22cd272: marca/dominio Goats, compras públicas, cursos/personalizados, ventas/clientes ADMIN, compra directa, perfiles compartidos, cuentas completas, IDs numéricos, combos, AVIF/compresión y diagnóstico de esquema/validación.
