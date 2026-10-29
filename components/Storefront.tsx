@@ -128,6 +128,7 @@ export default function Storefront({
   const [personalizedSeedBusy, setPersonalizedSeedBusy] = useState(false);
   const [personalizedOnly, setPersonalizedOnly] = useState(false);
   const [courseSeedBusy, setCourseSeedBusy] = useState(false);
+  const [inventoryPending, setInventoryPending] = useState(false);
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
@@ -314,6 +315,7 @@ export default function Storefront({
     router.refresh();
   }
   function startEdit(p?: Product) {
+    setInventoryPending(false);
     setNotice("");
     setDuplicateHint("");
     setEditId(p?.id || null);
@@ -345,15 +347,24 @@ export default function Storefront({
   }
   async function save(e: FormEvent) {
     e.preventDefault();
+    if (inventoryPending) {
+      setDuplicateHint("Primero pulsa Añadir acceso al inventario o Guardar cambios del acceso para guardar la cuenta. Guardar producto solo guarda los datos del producto.");
+      return;
+    }
     setBusy(true);
     try {
-      await request(
+      const result = await request(
         editId ? `/api/products/${editId}` : "/api/products",
         editId ? "PATCH" : "POST",
         form,
       );
-      setNotice(editId ? "Producto actualizado" : "Producto creado");
-      setEditor(false);
+      if (!editId && user?.role === "ADMIN" && form.category === "Streaming") {
+        startEdit(result.product);
+        setDuplicateHint("Producto creado. Añade y guarda sus cuentas en el inventario privado de abajo. Dejará de aparecer agotado cuando tenga accesos disponibles.");
+      } else {
+        setNotice(editId ? "Producto actualizado" : "Producto creado");
+        setEditor(false);
+      }
       await load();
     } catch (e) {
       setNotice((e as Error).message);
@@ -1139,7 +1150,7 @@ export default function Storefront({
                   <>
                     <ImageUploadButton kind="product" imageKey={editId} />
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : form.category === "Streaming" ? <StreamingInventoryEditor productId={editId} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : form.category === "Streaming" ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}
