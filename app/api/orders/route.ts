@@ -1,4 +1,4 @@
-import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
+import { managedAccountProductIds, accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { comboPools, loadComboInventory } from "@/lib/combo-inventory";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -49,6 +49,7 @@ async function handlePOST(req: Request) {
         const blocked = disabledClientCategories(user.role, settings || { tiendaEnabled: true, segundaEnabled: true });
         const products = await tx.product.findMany({ where: { id: { in: items.map(item => item.id) } } });
         if (products.length !== items.length) throw new PurchaseError("Hay productos que ya no están disponibles. Actualiza tu carrito.");
+        const managedAccounts = await managedAccountProductIds(tx, products);
         const byId = new Map(products.map(product => [product.id, product]));
         let total = 0;
         const accesses = new Map<string, z.infer<typeof deliverySchema>[]>();
@@ -64,7 +65,7 @@ async function handlePOST(req: Request) {
         for (const item of allocationItems) {
           const product = byId.get(item.id)!;
           if (blocked.includes(product.category)) throw new PurchaseError("Esta sección está deshabilitada temporalmente para clientes.");
-          if (product.category === "Streaming") {
+          if (managedAccounts.has(product.id)) {
             const rows = await tx.streamingAccess.findMany({ where: { ...accessForProduct(product.id), ...availableAccess, id: { notIn: [...selectedAccesses] } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: item.qty });
             if (rows.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes accesos individuales disponibles. Ajusta la cantidad o contacta con soporte.`);
             try { accesses.set(product.id, rows.map(row => deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher))))); }
@@ -101,8 +102,9 @@ async function handlePOST(req: Request) {
         const counter = await tx.orderCounter.upsert({ where: { id: "orders" }, create: { id: "orders", value: 1 }, update: { value: { increment: 1 } } });
         const reference = "P" + counter.value, date = new Date();
         // Sync source stock, then reserve aggregate quantities shared by singles and all bundles.
-        const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] }, category: "Streaming" }, select: { id: true } });
-        for (const source of streamingSources) {
+        const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] } }, select: { id: true, category: true } });
+        const managedSources = await managedAccountProductIds(tx, streamingSources);
+        for (const source of streamingSources.filter(source => managedSources.has(source.id))) {
           const stock = await tx.streamingAccess.count({ where: { ...accessForProduct(source.id), ...availableAccess } });
           await tx.product.update({ where: { id: source.id }, data: { stock } });
         }
@@ -117,7 +119,7 @@ async function handlePOST(req: Request) {
           status: accesses.size === items.length ? "ENTREGADO" : "PENDIENTE_ENTREGA",
           items: { createMany: { data: items.map(item => {
             const product = byId.get(item.id)!, access = accesses.get(item.id);
-            return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate((product.category === "Combos" ? `*Combo: ${product.name}*\nCantidad: ${item.qty}\nTotal del combo: $${new Intl.NumberFormat("es-CO").format(product.price * item.qty)} COP\n\n` : "") + access.map((unit, index) => (product.category === "Streaming" && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, comboLabels.get(product.id)?.[index] || product.name, reference, date, ["Streaming", "Combos"].includes(product.category) ? 1 : item.qty, product.category === "Combos" ? null : product.category === "Streaming" ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
+            return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate((product.category === "Combos" ? `*Combo: ${product.name}*\nCantidad: ${item.qty}\nTotal del combo: $${new Intl.NumberFormat("es-CO").format(product.price * item.qty)} COP\n\n` : "") + access.map((unit, index) => (managedAccounts.has(product.id) && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, comboLabels.get(product.id)?.[index] || product.name, reference, date, (managedAccounts.has(product.id) || product.category === "Combos") ? 1 : item.qty, product.category === "Combos" ? null : managedAccounts.has(product.id) ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
           }) } },
         } });
         for (const item of items) {

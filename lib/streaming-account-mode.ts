@@ -1,3 +1,4 @@
+import { accountCategories } from "./account-categories";
 import type { Prisma } from '@prisma/client';
 import { deliverySchema, decryptPrivate, type Delivery } from './private-delivery';
 import { accessFingerprint, normalizeAccessIdentity, platformForProduct } from './streaming-inventory';
@@ -22,7 +23,7 @@ export async function assertAccountMode(tx: Prisma.TransactionClient, platform: 
     if ((full && (!existingFull || !fingerprints.has(row.fingerprint))) || (!full && existingFull))
       throw new AccountModeError('Esta cuenta ya está registrada como cuenta completa o por perfiles. No puede venderse de las dos maneras ni duplicarse con otro perfil.');
   }
-  const historic = await tx.orderItem.findMany({ where: { receiptCipher: { not: null }, streamingAccesses: { none: {} }, OR: [{ category: 'Streaming' }, { category: '', product: { category: 'Streaming' } }] }, select: { name: true, receiptCipher: true } });
+  const historic = await tx.orderItem.findMany({ where: { receiptCipher: { not: null }, streamingAccesses: { none: {} }, OR: [{ category: { in: [...accountCategories] } }, { category: '', product: { category: { in: [...accountCategories] } } }] }, select: { name: true, receiptCipher: true } });
   for (const item of historic) {
     if (platformForProduct(item.name) !== platformForProduct(platform)) continue;
     const receipt = decryptPrivate(item.receiptCipher!);

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { isAccountCategory } from "@/lib/account-categories";
 import { readJsonResponse } from "@/lib/json-response";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
@@ -13,6 +14,7 @@ import type { StoreOptions } from "@/lib/store-settings";
 import ImageOptimizationPanel from "@/components/ImageOptimizationPanel";
 import CategoryImageManager from "@/components/CategoryImageManager";
 import SharedStreamingAccountEditor from "@/components/SharedStreamingAccountEditor";
+import AdminProductList from "@/components/AdminProductList";
 import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
@@ -54,6 +56,7 @@ type User = {
   balance: number;
 };
 type Product = {
+  inventoryManaged?: boolean;
   configuredStock?: number;
   id: string;
   name: string;
@@ -358,7 +361,7 @@ export default function Storefront({
         editId ? "PATCH" : "POST",
         form,
       );
-      if (!editId && user?.role === "ADMIN" && form.category === "Streaming") {
+      if (!editId && user?.role === "ADMIN" && isAccountCategory(form.category)) {
         startEdit(result.product);
         setDuplicateHint("Producto creado. Añade y guarda sus cuentas en el inventario privado de abajo. Dejará de aparecer agotado cuando tenga accesos disponibles.");
       } else {
@@ -731,6 +734,7 @@ export default function Storefront({
         </section>
         )}
         {management && user?.role === "ADMIN" && <div className="container admin-manager-link"><Link className="button violet" href="/administracion/ventas">Ventas y panel de administración</Link></div>}
+        {management && user?.role === "ADMIN" && <AdminProductList products={products} loading={catalogLoading} onEdit={startEdit} />}
         {management && user?.role === "ADMIN" && <div id="secciones"><StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} /></div>}
         {management && user?.role === "ADMIN" && <div id="imagenes"><CategoryImageManager /></div>}
         {management && user?.role === "ADMIN" && <SharedStreamingAccountEditor products={products} onSaved={load} />}
@@ -1133,14 +1137,14 @@ export default function Storefront({
                   />
                 </label>
                 <label>
-                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : form.category === "Streaming" ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
+                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : (form.category === "Streaming" || products.find(product => product.id === editId)?.inventoryManaged) ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
                   <input
                     type="number"
                     min={0}
                     max={1000000}
                     required
                     value={form.stock}
-                    disabled={form.category === "Streaming"}
+                    disabled={form.category === "Streaming" || Boolean(products.find(product => product.id === editId)?.inventoryManaged)}
                     onChange={(e) =>
                       setForm({ ...form, stock: Number(e.target.value) })
                     }
@@ -1149,8 +1153,9 @@ export default function Storefront({
                 {user?.role === "ADMIN" && editId && (
                   <>
                     <ImageUploadButton kind="product" imageKey={editId} />
+                    {isAccountCategory(form.category) && form.category !== "Streaming" && !products.find(product => product.id === editId)?.inventoryManaged && <details><summary>Configurar entrega anterior (acceso compartido)</summary><DeliveryEditor productId={editId} /></details>}
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : form.category === "Streaming" ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}

@@ -10,6 +10,8 @@ test('access identity spans plans and ignores password, PIN and cosmetic changes
  assert.notEqual(a,accessFingerprint('Prime Video',{email:'account@example.com',profile:'1'}));
  assert.equal(platformForProduct('Amazon Prime Video x30 días'),'prime');
  assert.equal(platformForProduct('HBO Max Standard'),'max');
+ assert.equal(platformForProduct('Chat GPT x27 Dias'), platformForProduct('Chat GPT x20 Dias'));
+ assert.equal(platformForProduct('Spotify x30 días'), 'spotify');
  assert.ok(!a.includes('account'));
  } finally { if(old===undefined)delete process.env.DELIVERY_SECRET;else process.env.DELIVERY_SECRET=old; }
 });

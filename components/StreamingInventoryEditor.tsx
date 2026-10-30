@@ -24,7 +24,7 @@ export default function StreamingInventoryEditor({ productId, onStockChange, onP
     const data = await readJsonResponse(response);
     setFullAccount(Boolean(data.fullAccount));
     if (data.fullAccount) setValues(current => ({ ...current, profile: current.profile || fullAccountProfile }));
-    setRows(data.accesses); setAvailable(data.available); setSold(data.sold); setLegacy(data.legacy); setPlatform(data.platform); onStockChange(data.available);
+    setRows(data.accesses); setAvailable(data.available); setSold(data.sold); setLegacy(data.legacy); setPlatform(data.platform); if (data.managed) onStockChange(data.available);
   }
   useEffect(() => { setLoading(true); void load().catch(error => { setFailed(true); setMessage(error.message); }).finally(() => setLoading(false)); }, [productId]);
   async function save(remove?: Access) {
@@ -46,10 +46,10 @@ export default function StreamingInventoryEditor({ productId, onStockChange, onP
       event.preventDefault();
     }
   }}>
-    <legend>Inventario privado de streaming</legend>
+    <legend>Inventario privado de cuentas</legend>
     <p>Los datos de la cuenta se guardan con el botón Añadir acceso al inventario (o Guardar cambios del acceso), no con Guardar producto.</p>
     <p>{fullAccount ? "Una cuenta completa equivale a una unidad. Se entrega una sola vez y no puede registrarse también por perfiles." : "Una fila por perfil disponible. Cada unidad comprada recibe un acceso distinto. Los perfiles vinculados a varios planes se venden una sola vez y se descuentan en todos ellos. El stock se calcula automáticamente."}</p>
-    {legacy && <p>El antiguo acceso compartido ya no se entrega. Añade únicamente perfiles sin vender; los comprobantes anteriores se conservan.</p>}
+    {legacy && <p>Hay un acceso compartido anterior. Al añadir inventario individual se usarán únicamente sus perfiles disponibles. Añade perfiles sin vender; los comprobantes anteriores se conservan.</p>}
     <p><strong>{available} disponibles · {sold} vendidos</strong></p>
     {loading ? <p role="status">Cargando inventario…</p> : <>
       <div className="streaming-inventory-list" aria-label="Accesos disponibles">

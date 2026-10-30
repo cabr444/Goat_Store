@@ -1,3 +1,4 @@
+import { isAccountCategory } from "@/lib/account-categories";
 import { isFullAccount } from "@/lib/streaming-product-kind";
 import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { platformForProduct } from "@/lib/streaming-platform";
@@ -34,11 +35,11 @@ async function handlePATCH(
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
     const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
-    if (inventoryCount && (v.data.category !== "Streaming" || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
+    if (inventoryCount && (!isAccountCategory(v.data.category) || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
     const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
-    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : current.category === "Streaming" ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
+    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : (current.category === "Streaming" || inventoryCount > 0) ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
     if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
-    await tx.product.update({ where: { id }, data: { ...v.data, stock: v.data.category === "Streaming" ? (current.category === "Streaming" ? stock : 0) : v.data.stock } });
+    await tx.product.update({ where: { id }, data: { ...v.data, stock: (v.data.category === "Streaming" || inventoryCount > 0) ? (isAccountCategory(current.category) ? stock : 0) : v.data.stock } });
     return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
   });
   if (!updated) return fail("El inventario cambió o el producto tiene accesos registrados. Actualiza el producto antes de guardar.", 409);

@@ -1,3 +1,4 @@
+import { accountCategories } from "@/lib/account-categories";
 import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
 import { fullAccountProfile } from "@/lib/streaming-product-kind";
 import { Prisma } from '@prisma/client';
@@ -19,8 +20,8 @@ export const POST = secureMutation(async (req: Request) => {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const result = await db.$transaction(async tx => {
-        const products = await tx.product.findMany({ where: { id: { in: productIds }, category: 'Streaming' } });
-        if (products.length !== productIds.length) throw new InventoryError('Selecciona únicamente productos de streaming.');
+        const products = await tx.product.findMany({ where: { id: { in: productIds }, category: { in: [...accountCategories] } } });
+        if (products.length !== productIds.length) throw new InventoryError('Selecciona productos de Streaming, Música o Productividad.');
         const fullAccount = products.every(product => isFullAccount(product.name));
         if (!fullAccount && products.some(product => isFullAccount(product.name))) throw new InventoryError('Selecciona planes de cuenta completa o de perfiles, sin mezclarlos.');
         if (fullAccount && profiles.length !== 1) throw new InventoryError('Una cuenta completa se vende como una sola unidad. Añade únicamente un acceso.');

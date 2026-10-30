@@ -114,7 +114,39 @@ try {
     request(endpoint,admin.token,'POST',{productIds:[prime.id],account:raceAccount,profiles:[{profile:'1',pin:''}]}),
   ]);
   assert.deepEqual(modeRace.map(result=>result.status).sort(),[201,409]);
-  console.log('PASS shared streaming: seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement plan detachment, exclusive full accounts and concurrent mode protection.');
+  // Duplicated productivity plans must offer the same unique account pool.
+  const gpt27 = await product('Chat GPT x27 Dias', 'Productividad');
+  const duplicatedGPT = await request(`/api/products/${gpt27.id}/duplicate`, admin.token, 'POST', {});
+  assert.equal(duplicatedGPT.status, 201); products.push(duplicatedGPT.data.product);
+  const gpt20 = duplicatedGPT.data.product;
+  assert.equal((await request(`/api/products/${gpt20.id}`, admin.token, 'PATCH', { ...gpt20, name: 'Chat GPT x20 Dias', expectedStock: 0 })).status, 200);
+  const gptBody = { productIds: [gpt27.id, gpt20.id], account: { ...account, email: `gpt-${suffix}@example.com` }, profiles };
+  assert.equal((await request(endpoint, admin.token, 'POST', gptBody)).status, 201);
+  async function accountStocks(ids, expected) {
+    const response = await request('/api/products', null);
+    for (const id of ids) { const value = response.data.products.find(p => p.id === id); assert.equal(value.stock, expected); assert.equal(value.inventoryManaged, true); }
+  }
+  await accountStocks(gptBody.productIds, 7);
+  assert.equal((await buy(client, [{ id: gpt20.id, qty: 1 }])).status, 201);
+  await accountStocks(gptBody.productIds, 6);
+  assert.equal((await buy(client, [{ id: gpt27.id, qty: 4 }, { id: gpt20.id, qty: 2 }])).status, 201);
+  await accountStocks(gptBody.productIds, 0);
+  assert.equal((await buy(client, [{ id: gpt27.id, qty: 1 }])).status, 400);
+  // Manual stock edits cannot re-enable an exhausted unique inventory.
+  assert.equal((await request(`/api/products/${gpt20.id}`, admin.token, 'PATCH', { ...gpt20, name: 'Chat GPT x20 Dias', stock: 100, expectedStock: 0 })).status, 200);
+  await accountStocks(gptBody.productIds, 0);
+  const spotify = await product('Spotify x30 días', 'Música');
+  assert.equal((await request(endpoint, admin.token, 'POST', { productIds: [spotify.id], account: { ...account, email: `music-${suffix}@example.com` }, profiles: [profiles[0]] })).status, 201);
+  await accountStocks([spotify.id], 1);
+  assert.equal((await buy(client, [{ id: spotify.id, qty: 1 }])).status, 201);
+  await accountStocks([spotify.id], 0);
+  const legacyProductivity = await product('Productividad anterior', 'Productividad');
+  await db.product.update({ where: { id: legacyProductivity.id }, data: { stock: 3 } });
+  const legacyPublic = (await request('/api/products', null)).data.products.find(p => p.id === legacyProductivity.id);
+  assert.equal(legacyPublic.stock, 3); assert.equal(legacyPublic.inventoryManaged, false);
+  assert.equal((await buy(client, [{ id: legacyProductivity.id, qty: 1 }])).status, 201);
+  assert.equal((await request('/api/products', null)).data.products.find(p => p.id === legacyProductivity.id).stock, 2);
+  console.log('PASS shared streaming: productivity duplicates, Chat GPT seven-profile pool, music, legacy stock compatibility, seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement plan detachment, exclusive full accounts and concurrent mode protection.');
 } finally {
   const pids = products.map(p=>p.id), uids = users.map(u=>u.id);
   await db.streamingAccess.deleteMany({where:{OR:[{productId:{in:pids}},{productIds:{hasSome:pids}}]}});
