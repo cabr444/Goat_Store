@@ -44,16 +44,18 @@ export const saleSelect = {
 } satisfies Prisma.OrderSelect;
 export async function getAdminSales(raw: RawSalesFilters) {
   const where = salesWhere(salesFilters(raw));
-  const [aggregate, units, pending] = await Promise.all([
-    db.order.aggregate({ where, _count: true, _sum: { total: true } }),
-    db.orderItem.aggregate({ where: { order: where }, _sum: { quantity: true } }),
-    db.order.count({ where: { AND: [where, { status: 'PENDIENTE_ENTREGA' }] } }),
+  const summaryWhere: Prisma.OrderWhereInput = { AND: [where, { user: { role: { not: 'ADMIN' } } }] };
+  const [aggregate, units, pending, count] = await Promise.all([
+    db.order.aggregate({ where: summaryWhere, _count: true, _sum: { total: true } }),
+    db.orderItem.aggregate({ where: { order: summaryWhere }, _sum: { quantity: true } }),
+    db.order.count({ where: { AND: [summaryWhere, { status: 'PENDIENTE_ENTREGA' }] } }),
+    db.order.count({ where }),
   ]);
-  const count = aggregate._count, pages = Math.max(1, Math.ceil(count / 20));
+  const pages = Math.max(1, Math.ceil(count / 20));
   const requested = /^\d{1,6}$/.test(first(raw.pagina)) ? Number(first(raw.pagina)) : 1;
   const page = Math.max(1, Math.min(requested, pages));
   const orders = await db.order.findMany({ where, select: saleSelect, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * 20, take: 20 });
-  return { orders, count, pages, page, total: aggregate._sum.total || 0, units: units._sum.quantity || 0, pending };
+  return { orders, count, salesCount: aggregate._count, pages, page, total: aggregate._sum.total || 0, units: units._sum.quantity || 0, pending };
 }
 export const saleDate = (date: Date) => new Intl.DateTimeFormat('es-CO', {dateStyle:'medium', timeStyle:'short', timeZone:'America/Bogota'}).format(date);
 export function csvCell(value: unknown) {
