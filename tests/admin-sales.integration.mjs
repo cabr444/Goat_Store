@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { SignJWT } from 'jose';
 import { encryptPrivate } from '../lib/private-delivery.ts';
+import { getAdminClients } from '../lib/admin-clients.ts';
 import { getAdminSales } from '../lib/admin-sales.ts';
 import { db as sharedDb } from '../lib/db.ts';
 const database=new URL(process.env.DATABASE_URL||'postgresql://invalid'),base=new URL(process.env.INVENTORY_TEST_URL||'http://127.0.0.1:3125');
@@ -48,6 +49,22 @@ try{
  assert.equal(adminCSV.status,200);assert.ok((await adminCSV.text()).includes(users[0].email));
  const filteredAdmin=await getAdminSales({...raw,estado:'PENDIENTE_ENTREGA',categoria:'Audio'});
  assert.equal(filteredAdmin.count,1);assert.equal(filteredAdmin.salesCount,0);assert.equal(filteredAdmin.total,0);assert.equal(filteredAdmin.units,0);assert.equal(filteredAdmin.pending,0);
+ // Spending ranges/sort must apply before pagination and include zero spenders.
+ const zeroSpend = await getAdminClients({q:suffix,minimo:'0',maximo:'0'});
+ assert.equal(zeroSpend.clients.some(row=>row.id===users[2].id),true);
+ assert.equal(zeroSpend.clients.some(row=>row.id===users[1].id),false);
+ for(let index=1;index<=26;index++){
+  const buyer=await db.user.create({data:{name:'Spending '+index,email:`spending-${index}-${suffix}@example.com`,passwordHash:'fixture',role:'CLIENTE'}});users.push(buyer);
+  orders.push(await db.order.create({data:{userId:buyer.id,total:index*1000,items:{create:{productId:products[0].id,name:products[0].name,category:'Audio',quantity:1,unitPrice:index*1000}}}}));
+ }
+ const spendRaw={q:'spending-',minimo:'1000',maximo:'26000',orden:'mayor'};
+ const spendFirst=await getAdminClients(spendRaw),spendSecond=await getAdminClients({...spendRaw,pagina:'2'});
+ assert.equal(spendFirst.count,26);assert.equal(spendFirst.clients.length,25);assert.equal(spendFirst.clients[0].totalSpent,26000);
+ assert.equal(spendSecond.clients.length,1);assert.equal(spendSecond.clients[0].totalSpent,1000);
+ const ascending=await getAdminClients({...spendRaw,orden:'menor'});assert.equal(ascending.clients[0].totalSpent,1000);
+ const exactSpend=await getAdminClients({...spendRaw,minimo:'12000',maximo:'12000'});assert.equal(exactSpend.count,1);assert.equal(exactSpend.clients[0].totalSpent,12000);
+ const invalidSpend=await getAdminClients({...spendRaw,minimo:'20000',maximo:'1000'});assert.equal(invalidSpend.filters.invalidRange,true);assert.equal(invalidSpend.count,0);
+ const spendPage=await request('/administracion/clientes?'+new URLSearchParams({...spendRaw,pagina:'2'}),admin);assert.equal(spendPage.status,200);const spendHTML=await spendPage.text();assert.ok(spendHTML.includes('Gasto mínimo (COP)'));assert.ok(spendHTML.includes('Mayor gasto primero'));assert.ok(spendHTML.includes('minimo=1000'));
  console.log('PASS admin sales: administrator buyers excluded from all KPIs with history/CSV retained, customer purchases of admin-owned products counted, role/origin protection, exact Bogotá date range, complete-order totals and category/status filters, buyer details, private receipts restricted to admin detail, safe CSV, pagination, clients, delivery status concurrency with balance/stock/ledger unchanged.');
 }finally{
  await db.orderItem.deleteMany({where:{orderId:{in:orders.map(o=>o.id)}}});await db.order.deleteMany({where:{id:{in:orders.map(o=>o.id)}}});await db.walletEvent.deleteMany({where:{userId:{in:users.map(u=>u.id)}}});await db.product.deleteMany({where:{id:{in:products.map(p=>p.id)}}});await db.user.deleteMany({where:{id:{in:users.map(u=>u.id)}}});await db.$disconnect();await sharedDb.$disconnect();
