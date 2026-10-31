@@ -5,6 +5,7 @@ import { readJsonResponse } from "@/lib/json-response";
 import { supportLink } from "@/lib/account-links";
 import { emptyCardOrders, sortCards, type CardOrders } from "@/lib/catalog-order";
 import MarketplaceHome from "@/components/MarketplaceHome";
+import ProductDetailsDialog from "@/components/ProductDetailsDialog";
 import ProductCarousel from "@/components/ProductCarousel";
 import { homeProductRows } from "@/lib/home-product-rows";
 import StreamingHighlights from "@/components/StreamingHighlights";
@@ -138,6 +139,7 @@ export default function Storefront({
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [buyNowId, setBuyNowId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
@@ -462,19 +464,19 @@ export default function Storefront({
 
   function renderProduct(p: Product, rowIds: string[]) {
     return (
-              <article key={p.id} className="product-card" {...dragProps("products", p.id)}>
+              <article key={p.id} className="product-card" {...dragProps("products", p.id)} onClick={event => { if (!reorderMode && !(event.target as HTMLElement).closest("button, a, input, select, textarea")) setDetailId(p.id); }}>
                 {orderControls("products", p.id, p.name, rowIds)}
                 <div
                   className="product-photo"
                   style={{ background: p.gradient }}
                 >
-                  <div className="photo-click">
+                  <button type="button" className="photo-click" disabled={reorderMode} aria-label={`Ver detalles de ${p.name}`} onClick={() => setDetailId(p.id)}>
                     <CatalogImage
                       productId={p.id}
                       name={p.name}
                       category={p.category}
                     />
-                  </div>
+                  </button>
                   <span
                     className={
                       p.stock > 0 ? "stock-badge" : "stock-badge sold-out"
@@ -488,7 +490,7 @@ export default function Storefront({
                 </div>
                 <div className="product-info">
                   <span className="category-label">{p.category}</span>
-                  <strong className="product-title">{p.name}</strong>
+                  <button type="button" className="product-title" disabled={reorderMode} onClick={() => setDetailId(p.id)}>{p.name}</button>
                   <p className="product-description">{p.description}</p>
                   <div className="product-bottom">
                     <strong className="price">
@@ -1069,6 +1071,7 @@ export default function Storefront({
           </aside>
         </>
       )}
+      {detailId && products.find(product => product.id === detailId) && <ProductDetailsDialog product={products.find(product => product.id === detailId)!} busy={checkoutBusy || catalogLoading} onClose={() => setDetailId(null)} onAdd={() => { add(detailId); setDetailId(null); }} onBuy={() => { setCheckoutError(""); setNotice(""); setBuyNowId(detailId); setDetailId(null); }} />}
       {buyNowId && (
         <>
           <div className="overlay" onClick={() => { if (!checkoutBusy) setBuyNowId(null); }} />
