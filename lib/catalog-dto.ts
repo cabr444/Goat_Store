@@ -2,7 +2,6 @@ import { categoryName } from "./category-names";
 import type { Prisma } from "@prisma/client";
 export const publicProductSelect = {
   _count: { select: { streamingAccesses: { where: { soldAt: null, retiredAt: null } } } },
-  reminderDays: true,
   id: true,
   name: true,
   category: true,

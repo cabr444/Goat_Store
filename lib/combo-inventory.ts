@@ -32,7 +32,7 @@ export function eligibleComboProduct(product: { name: string; category: string; 
   return platform !== 'netflix' || /\b(?:x\s*)?28\s*dias\b/.test(normalize(product.name));
 }
 type Combo = { id: string; name: string; ownerId: string | null };
-type Source = { reminderDays?: number | null; id: string; name: string; category: string; active: boolean; ownerId: string | null };
+type Source = { id: string; name: string; category: string; active: boolean; ownerId: string | null };
 export type ComboUnit = { id: string; source: Source; sources: Source[]; delivery: Delivery };
 type Snapshot = { units: ComboUnit[]; adminOwners: Set<string> };
 type InventoryDB = Pick<Prisma.TransactionClient, 'product' | 'user' | 'streamingAccess'>;
@@ -40,7 +40,7 @@ export async function loadComboInventory(client: InventoryDB, combos: Combo[]): 
   const required = new Set(combos.flatMap(combo => comboPlatforms(combo.name)));
   if (!required.size) return { units: [], adminOwners: new Set() };
   const [products, admins] = await Promise.all([
-    client.product.findMany({ where: { category: 'Streaming', active: true }, select: { id: true, name: true, category: true, active: true, ownerId: true, reminderDays: true } }),
+    client.product.findMany({ where: { category: 'Streaming', active: true }, select: { id: true, name: true, category: true, active: true, ownerId: true } }),
     client.user.findMany({ where: { id: { in: combos.flatMap(combo => combo.ownerId ? [combo.ownerId] : []) }, role: 'ADMIN' }, select: { id: true } }),
   ]);
   const sources = new Map(products.filter(product => [...required].some(platform => eligibleComboProduct(product, platform))).map(product => [product.id, product]));

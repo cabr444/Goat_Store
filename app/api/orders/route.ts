@@ -1,5 +1,3 @@
-import { planDuration, reminderDate } from "@/lib/reminder-time";
-import { isAccountCategory } from "@/lib/account-categories";
 import { managedAccountProductIds, accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { comboPools, loadComboInventory } from "@/lib/combo-inventory";
 import { Prisma } from "@prisma/client";
@@ -60,7 +58,6 @@ async function handlePOST(req: Request) {
         const reservations = new Map<string, number>();
         const reserve = (id: string, qty: number) => reservations.set(id, (reservations.get(id) || 0) + qty);
         const comboLabels = new Map<string, string[]>();
-        const comboReminderPlans = new Map<string, { name: string; reminderDays?: number | null }[]>();
         const combos = products.filter(product => product.category === "Combos");
         const comboInventory = combos.length ? await loadComboInventory(tx, combos) : null;
         // Standalone accesses are selected first, so bundles cannot select the same access again.
@@ -81,17 +78,16 @@ async function handlePOST(req: Request) {
             const pools = comboPools(product, comboInventory!);
             if (!pools.length) throw new PurchaseError(`${product.name}: revisa las plataformas del combo. Solo se permiten perfiles individuales; Netflix debe usar x28 días.`);
             const deliveries: z.infer<typeof deliverySchema>[] = [], labels: string[] = [];
-            const reminderPlans: { name: string; reminderDays?: number | null }[] = [];
             for (const pool of pools) {
               const units = pool.filter(unit => !selectedAccesses.has(unit.id)).slice(0, item.qty);
               if (units.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes perfiles individuales para todas las plataformas del combo.`);
               for (const unit of units) {
                 selectedAccesses.add(unit.id); reserve(unit.source.id, 1);
                 assignments.push({ id: unit.id, productId: product.id });
-                deliveries.push(unit.delivery); labels.push(unit.source.name); reminderPlans.push(unit.source);
+                deliveries.push(unit.delivery); labels.push(unit.source.name);
               }
             }
-            accesses.set(product.id, deliveries); comboLabels.set(product.id, labels); comboReminderPlans.set(product.id, reminderPlans);
+            accesses.set(product.id, deliveries); comboLabels.set(product.id, labels);
           } else {
             if (product.stock < item.qty) throw new PurchaseError(`${product.name}: pediste ${item.qty}, pero hay ${product.stock} unidades disponibles.`);
             if (product.deliveryCipher && ["Música", "Productividad"].includes(product.category)) {
@@ -126,21 +122,6 @@ async function handlePOST(req: Request) {
             return { id: itemIds.get(product.id)!, productId: product.id, category: product.category, sellerId: product.ownerId, name: product.name, quantity: item.qty, unitPrice: product.price, receiptCipher: access ? encryptPrivate((product.category === "Combos" ? `*Combo: ${product.name}*\nCantidad: ${item.qty}\nTotal del combo: $${new Intl.NumberFormat("es-CO").format(product.price * item.qty)} COP\n\n` : "") + access.map((unit, index) => (managedAccounts.has(product.id) && access.length > 1 ? `Acceso ${index + 1} de ${access.length}\n\n` : "") + receiptText(unit, comboLabels.get(product.id)?.[index] || product.name, reference, date, (managedAccounts.has(product.id) || product.category === "Combos") ? 1 : item.qty, product.category === "Combos" ? null : managedAccounts.has(product.id) ? product.price : product.price * item.qty)).join("\n\n────────────────────\n\n")) : null };
           }) } },
         } });
-        if (user.role !== "ADMIN") for (const item of items) {
-          const product = byId.get(item.id)!;
-          if (!isAccountCategory(product.category) && product.category !== "Combos") continue;
-          const plans = product.category === "Combos" ? comboReminderPlans.get(product.id)! : [product];
-          const grouped = new Map<string, { name: string; days: number; quantity: number }>();
-          for (const plan of plans) {
-            const days = planDuration(plan.name, product.category === "Combos" ? product.reminderDays ?? plan.reminderDays : plan.reminderDays);
-            if (days === null) continue;
-            const key = JSON.stringify([plan.name, days]);
-            const previous = grouped.get(key);
-            grouped.set(key, { name: plan.name, days, quantity: (previous?.quantity || 0) + (product.category === "Combos" ? 1 : item.qty) });
-          }
-          let index = 0;
-          for (const plan of grouped.values()) await tx.expiryReminder.create({ data: { id: `${itemIds.get(item.id)}:${index++}`, orderItemId: itemIds.get(item.id)!, planName: plan.name, quantity: plan.quantity, durationDays: plan.days, dueAt: reminderDate(date, plan.days) } });
-        }
         for (const item of items) {
           const ids = assignments.filter(row => row.productId === item.id).map(row => row.id);
           if (!ids.length) continue;
