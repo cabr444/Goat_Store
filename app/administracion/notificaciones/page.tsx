@@ -6,6 +6,7 @@ import { getStoreOptions } from '@/lib/store-settings';
 import { cop } from '@/lib/account';
 import { saleDate } from '@/lib/admin-sales';
 import AccountHeader from '@/components/AccountHeader';
+import ExpiryBackfill from '@/components/ExpiryBackfill';
 import ExpiryReminderRead from '@/components/ExpiryReminderRead';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Vencimientos | Goats', robots: { index: false, follow: false } };
@@ -18,7 +19,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ e
   const reminders = await db.expiryReminder.findMany({ where, orderBy: [{ dueAt: 'asc' }, { id: 'asc' }], skip: (page - 1) * 25, take: 25, include: { orderItem: { select: { name: true, quantity: true, unitPrice: true, order: { select: { id: true, reference: true, createdAt: true, user: { select: { name: true, email: true } } } } } } } });
   return <><AccountHeader name={user.name} role={user.role} balance={user.balance} storeOptions={await getStoreOptions()}/><main className="container admin-dashboard"><Link className="account-back" href="/administracion/ventas">← Administración</Link><h1>Recordatorios de vencimiento</h1><p>Según la duración guardada al comprar. Fechas en hora de Bogotá. Los correos se procesan diariamente; revisarlos aquí no cancela el envío ni renueva el acceso.</p><nav className="admin-quick-links" aria-label="Estado de recordatorios"><Link href="?estado=pendientes">Pendientes</Link><Link href="?estado=proximos">Próximos</Link><Link href="?estado=revisados">Revisados</Link></nav>
   {!emailReady && <p role="status">Para activar el correo automático configura RESEND_API_KEY, EMAIL_FROM, APP_URL y CRON_SECRET en Vercel. Los avisos del panel funcionan sin correo.</p>}
-  <p className="admin-help">Duración automática según el nombre; 30 días si no se indica. Puedes cambiarla en Editar producto para futuras compras. Las compras anteriores a activar esta función no se programan automáticamente.</p>
+  <p className="admin-help">Duración automática según el nombre; 30 días si no se indica. Puedes cambiarla en Editar producto para futuras compras. Las compras anteriores se importan automáticamente al abrir esta página, sin modificar recordatorios existentes.</p>
+  <ExpiryBackfill/>
   {reminders.map(reminder => { const item = reminder.orderItem, order = item.order; return <article className="admin-panel" key={reminder.id}><h2>{reminder.planName}</h2><p><strong>{order.user.name}</strong> · {order.user.email}</p><p>Pedido: {order.reference || order.id} · Producto: {item.name} · {reminder.quantity} unidades del plan</p><p>Compra: {saleDate(order.createdAt)} · Duración: {reminder.durationDays} días · Vencimiento: <strong>{saleDate(reminder.dueAt)}</strong></p><p>Subtotal del producto: {cop(item.unitPrice * item.quantity)}</p><p>Correo: {reminder.emailedAt ? `Enviado ${saleDate(reminder.emailedAt)}` : reminder.lastError || 'Pendiente de envío al vencer'}</p><Link className="button violet" href={`/administracion/ventas/${encodeURIComponent(order.id)}`}>Ver venta y comprobante</Link>{!reminder.readAt && reminder.dueAt <= now && <ExpiryReminderRead id={reminder.id}/>}</article>; })}
   {!reminders.length && <p>No hay recordatorios en esta sección.</p>}<nav className="admin-pagination"><span>{count} recordatorios · Página {page} de {pages}</span>{page > 1 && <Link href={`?estado=${state}&pagina=${page-1}`}>← Anterior</Link>}{page < pages && <Link href={`?estado=${state}&pagina=${page+1}`}>Siguiente →</Link>}</nav></main></>;
 }

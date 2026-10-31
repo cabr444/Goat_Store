@@ -66,7 +66,15 @@ in Vercel to verify activation; deployment alone does not prove email delivery.
 - Emails include the buyer, order reference, sold product/plan, quantity,
   purchase/due dates and a private admin order link. Platform passwords and PINs
   are never included. Full credentials remain in the authenticated order detail.
-- Existing purchases made before activation are not automatically backfilled.
+- Existing purchases are backfilled automatically when an administrator opens
+  Vencimientos. Original purchase dates and saved plan names are used, ignoring
+  current positive duration overrides. Products currently set to 0 (disabled)
+  are excluded. The first import fixes a purchase-date cutoff; later purchases
+  are never reconsidered by the historical import. Existing reminders are retained. Expired plans
+  appear in Pendientes and join the email queue. Old combos are reconstructed
+  only from immutable receipt platform lines; unreadable/ambiguous receipts
+  are reported for manual review rather than guessed. Lifetime plans and
+  administrator purchases are excluded. The import is resumable and duplicate-safe.
   Reminders do not renew subscriptions, refund payments, or release sold profiles.
 
 ## Reliability and limits

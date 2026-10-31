@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { SignJWT } from 'jose';
+import { backfillExpiryReminders } from '../lib/expiry-backfill.ts';
+import { encryptPrivate, receiptText } from '../lib/private-delivery.ts';
 import { sendDueExpiryEmails } from '../lib/expiry-notifications.ts';
 import { db as sharedDb } from '../lib/db.ts';
 const url = new URL(process.env.DATABASE_URL || 'postgresql://invalid'), base = new URL(process.env.INVENTORY_TEST_URL || 'http://127.0.0.1:3140');
@@ -41,7 +43,26 @@ try {
  assert.equal((await request(`/api/admin/notifications/${due.id}`,client.token,'PATCH',{})).status,403);
  assert.equal((await request(`/api/admin/notifications/${due.id}`,admin.token,'PATCH',{})).status,200);
  assert.equal((await (await request('/api/admin/notifications',admin.token)).json()).unread,1);
- console.log('PASS expiry reminders: duration detection/override, immutable schedules, multi-item quantities, checkout replay, admin purchase exclusion, admin-only notifications, cron authentication, concurrent mocked email idempotency, failed-send retry and reviewed state. No real emails sent.');
+ // Historical reminders must use saved names/dates, never the current 99-day override.
+ const past=new Date(Date.now()-100*86400000);
+ const comboProduct=await db.product.create({data:{name:'Combo Netflix + Prime Video',category:'Combos',price:1000}});products.push(comboProduct);
+ const account={brand:'History fixture',email:'fixture@example.com',password:'NeverExposeHistorySecret',profile:'1',pin:''};
+ const comboReceipt=['Netflix x28 días','Amazon Prime Video','Netflix x28 días','Amazon Prime Video'].map(name=>receiptText(account,name,'HISTORY',past,1,null)).join('\n\n');
+ const historical=await db.order.create({data:{userId:client.id,total:3000,createdAt:past,items:{create:[{productId:products[0].id,name:'Chat GPT x20 Dias',category:'Productividad',quantity:1,unitPrice:1000},{productId:comboProduct.id,name:comboProduct.name,category:'Combos',quantity:2,unitPrice:1000,receiptCipher:encryptPrivate(comboReceipt)}]}},include:{items:true}});orders.push(historical.id);
+ const previous=await db.expiryReminder.findUniqueOrThrow({where:{id:due.id}});
+ const imports=await Promise.all([backfillExpiryReminders(),backfillExpiryReminders()]);assert.equal(imports.reduce((sum,row)=>sum+row.added,0),3);
+ const imported=await db.expiryReminder.findMany({where:{orderItem:{orderId:historical.id}},orderBy:{durationDays:'asc'}});
+ assert.deepEqual(imported.map(row=>row.durationDays),[20,28,30]);assert.deepEqual(imported.map(row=>row.quantity),[1,2,2]);
+ for(const row of imported)assert.equal(row.dueAt.getTime()-past.getTime(),row.durationDays*86400000);
+ assert.deepEqual(await db.expiryReminder.findUniqueOrThrow({where:{id:due.id}}),previous);
+ assert.equal((await backfillExpiryReminders()).added,0);
+ const marker=await db.catalogOrder.findUniqueOrThrow({where:{kind:'expiry-history-cutoff-v1'}});
+ const later=await db.order.create({data:{userId:client.id,total:1000,createdAt:new Date(new Date(marker.ids.cutoff).getTime()+1000),items:{create:{productId:products[0].id,name:'Chat GPT x20 Dias',category:'Productividad',quantity:1,unitPrice:1000}}}});orders.push(later.id);
+ assert.equal((await backfillExpiryReminders()).added,0);assert.equal(await db.expiryReminder.count({where:{orderItem:{orderId:later.id}}}),0);
+ assert.equal((await request('/api/admin/notifications/backfill',client.token,'POST',{})).status,403);
+ assert.equal((await request('/api/admin/notifications/backfill',admin.token,'POST',{})).status,200);
+ console.log('PASS expiry reminders: concurrent duplicate-safe history import, immutable receipts/date/durations, future cutoff, historical combo quantities, duration detection/override, immutable schedules, multi-item quantities, checkout replay, admin purchase exclusion, admin-only notifications, cron authentication, concurrent mocked email idempotency, failed-send retry and reviewed state. No real emails sent.');
 }finally{
+ await db.catalogOrder.deleteMany({where:{kind:'expiry-history-cutoff-v1'}});
  await db.checkoutAttempt.deleteMany({where:{orderId:{in:orders}}});await db.orderItem.deleteMany({where:{orderId:{in:orders}}});await db.order.deleteMany({where:{id:{in:orders}}});await db.walletEvent.deleteMany({where:{userId:{in:users.map(u=>u.id)}}});await db.product.deleteMany({where:{id:{in:products.map(p=>p.id)}}});await db.user.deleteMany({where:{id:{in:users.map(u=>u.id)}}});await db.$disconnect();await sharedDb.$disconnect();
 }
