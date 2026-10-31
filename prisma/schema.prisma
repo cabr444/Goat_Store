@@ -29,6 +29,7 @@ model User {
 }
 
 model Product {
+  reminderDays Int?
   streamingAccesses StreamingAccess[]
   stock Int @default(0)
   deliveryCipher String?
@@ -64,6 +65,7 @@ model Order {
 }
 
 model OrderItem {
+  expiryReminders ExpiryReminder[]
   streamingAccesses StreamingAccess[]
   receiptCipher String?
   category String @default("")
@@ -166,4 +168,22 @@ model StreamingAccess {
   orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
   @@index([productIds], type: Gin)
   @@index([productId, soldAt, retiredAt, createdAt])
+}
+
+model ExpiryReminder {
+  id String @id
+  orderItemId String
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  planName String
+  quantity Int
+  durationDays Int
+  dueAt DateTime
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  emailedAt DateTime?
+  emailClaimedAt DateTime?
+  attempts Int @default(0)
+  lastError String?
+  @@index([emailedAt, dueAt])
+  @@index([dueAt, id])
 }

@@ -18,6 +18,7 @@ import AdminProductList from "@/components/AdminProductList";
 import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
+import AdminNotificationBell from "@/components/AdminNotificationBell";
 import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
@@ -56,6 +57,7 @@ type User = {
   balance: number;
 };
 type Product = {
+  reminderDays?: number | null;
   inventoryManaged?: boolean;
   configuredStock?: number;
   id: string;
@@ -70,6 +72,7 @@ type Product = {
 };
 type CartItem = { id: string; qty: number };
 type Entry = {
+  reminderDays?: number | null;
   expectedStock?: number;
   expectedConfiguredStock?: number;
   name: string;
@@ -325,6 +328,7 @@ export default function Storefront({
     setForm(
       p
         ? {
+            reminderDays: p.reminderDays ?? null,
             name: p.name,
             category: p.category,
             price: p.price,
@@ -586,6 +590,7 @@ export default function Storefront({
               <Wallet size={17} />
               {cop(user?.balance || 0)}
             </span>
+            {user.role === "ADMIN" && <AdminNotificationBell />}
             <ProfileMenu name={user.name} role={user.role} /></>}
             {!user && !catalogLoading && <Link className="guest-sign-in" href="/acceso">Ingresar / Registrarse</Link>}
             <button
@@ -1159,6 +1164,7 @@ export default function Storefront({
                     )}
                   </>
                 )}
+                {(isAccountCategory(form.category) || form.category === "Combos") && <label>Duración para recordatorio (días)<input type="number" min={0} max={3650} step={1} placeholder="Automática según el nombre; 30 días si no se indica" value={form.reminderDays ?? ""} onChange={event => setForm({ ...form, reminderDays: event.target.value === "" ? null : Number(event.target.value) })} /><small>Vacío: detectar x20, x27, x33 días, meses o años. 0: sin recordatorio. Se aplica a compras nuevas.</small></label>}
                 <label>
                   Texto corto o marca
                   <input

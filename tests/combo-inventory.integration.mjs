@@ -31,6 +31,7 @@ try{
  assert.equal((await request(`/api/admin/products/${combo.id}/delivery`,admin,'PUT',{brand:'No',email:'x@example.com',password:'x',profile:'1',pin:''})).status,409);
  const key=randomUUID(),first=await buy(buyer,[{id:combo.id,qty:2}],key);assert.equal(first.status,201,JSON.stringify(first));
  const order=await db.order.findUniqueOrThrow({where:{id:first.data.orderId},include:{items:true}});assert.equal(order.status,'ENTREGADO');assert.equal(order.total,30000);assert.equal(order.items.length,1);assert.equal(order.items[0].quantity,2);
+ const reminders=await db.expiryReminder.findMany({where:{orderItemId:order.items[0].id},orderBy:{durationDays:'asc'}});assert.deepEqual(reminders.map(row=>row.durationDays),[28,30]);assert.deepEqual(reminders.map(row=>row.quantity),[2,2]);
  const receipt=decryptPrivate(order.items[0].receiptCipher);assert.match(receipt,/NETFLIX X28 DÍAS/);assert.match(receipt,/AMAZON PRIME VIDEO/);assert.ok(!receipt.includes('NeverDeliverLegacyCombo'));assert.equal((receipt.match(/Correo:/g)||[]).length,4);
  assert.equal(await stock(combo),8);assert.equal(await stock(netflix),6);assert.equal(await stock(prime),5);assert.equal(await available(netflix),6);assert.equal(await available(prime),5);
  const assigned=await db.streamingAccess.findMany({where:{orderItemId:order.items[0].id}});assert.equal(assigned.length,4);assert.equal(new Set(assigned.map(a=>a.id)).size,4);
