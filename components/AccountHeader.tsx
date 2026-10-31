@@ -1,5 +1,6 @@
 import type { StoreOptions } from "@/lib/store-settings";
 import { Wallet } from "lucide-react";
+import AdminNotificationBell from "@/components/AdminNotificationBell";
 import ProfileMenu from "@/components/ProfileMenu";
 import { cop } from "@/lib/account";
 export default function AccountHeader({
@@ -33,6 +34,7 @@ export default function AccountHeader({
             <Wallet size={17} />
             {cop(balance)}
           </span>
+          {role === "ADMIN" && <AdminNotificationBell />}
           <ProfileMenu name={name} role={role} />
         </div>
       </div>

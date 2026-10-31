@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { allCategories } from "@/lib/technology-products";
 export const productSchema = z.object({
+  reminderDays: z.number().int().min(0).max(3650).nullable().optional(),
   name: z.string().trim().min(2).max(100),
   category: z.enum(allCategories),
   price: z.number().int().min(1).max(100000000),

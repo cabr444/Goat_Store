@@ -19,7 +19,7 @@ async function duplicate(_req: Request, { params }: Context) {
     const product = await tx.product.create({
       data: {
         name: name.trimEnd() + " (copia)",
-        category: source.category, price: source.price, description: source.description,
+        reminderDays: source.reminderDays, category: source.category, price: source.price, description: source.description,
         mark: source.mark, gradient: source.gradient, active: true, stock: 0, ownerId: user.id,
       },
       select: publicProductSelect,
