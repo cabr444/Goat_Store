@@ -346,3 +346,8 @@ El panel administrativo muestra además un acceso destacado al formulario. Desde
 Clientes, el enlace de una fila abre la cuenta ya seleccionada. El formulario
 permite buscar por nombre/correo y utiliza el endpoint de recargas existente;
 no hay cambios de esquema ni de reglas de saldo.
+
+Un botón flotante **Recargar saldo** permanece en la esquina inferior derecha
+al recorrer la tienda y las páginas de cuenta. ADMIN abre el formulario interno;
+clientes y visitantes abren el contacto de recargas por WhatsApp. Respeta el área
+segura móvil y deja espacio para las notificaciones del carrito.

@@ -1,4 +1,5 @@
 import type { StoreOptions } from "@/lib/store-settings";
+import FloatingRechargeButton from "@/components/FloatingRechargeButton";
 import BalanceRechargeLink from "@/components/BalanceRechargeLink";
 import AdminNotificationBell from "@/components/AdminNotificationBell";
 import ProfileMenu from "@/components/ProfileMenu";
@@ -15,7 +16,7 @@ export default function AccountHeader({
   storeOptions: StoreOptions;
 }) {
   return (
-    <header className="header">
+    <><header className="header">
       <div className="container nav account-nav">
         <a className="logo" href="/">
           Goats<span>.</span>
@@ -35,6 +36,6 @@ export default function AccountHeader({
           <ProfileMenu name={name} role={role} />
         </div>
       </div>
-    </header>
+    </header><FloatingRechargeButton role={role}/></>
   );
 }

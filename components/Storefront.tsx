@@ -20,6 +20,7 @@ import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
 import AdminNotificationBell from "@/components/AdminNotificationBell";
+import FloatingRechargeButton from "@/components/FloatingRechargeButton";
 import BalanceRechargeLink from "@/components/BalanceRechargeLink";
 import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
@@ -1208,6 +1209,7 @@ export default function Storefront({
           </div>
         </>
       )}
+      {!catalogLoading && <FloatingRechargeButton role={user?.role}/>}
     </div>
   );
 }
