@@ -311,3 +311,29 @@ Los accesos disponibles compartidos permanecen en sus otros planes; los accesos
 exclusivos se retiran y los vendidos conservan su historial. La eliminación se
 registra en los metadatos existentes de catálogo y no requiere `db:push`.
 La prueba `npm run test:delete` usa exclusivamente una base local descartable.
+
+## Registro privado de cuentas y exportación CSV
+
+**Administración → Registro privado de cuentas** (`/administracion/cuentas`) es
+exclusivo de ADMIN. Permite guardar correo y contraseña para Prime Video,
+YouTube y Netflix. El mismo correo/plataforma actualiza la contraseña sin
+crear duplicados. Las cuentas son independientes del inventario de productos.
+
+Los datos se guardan cifrados en `AdminPlatformAccount`; el correo no se almacena
+en texto plano y se usa una huella HMAC para identificar duplicados. Conserva
+`AUTH_SECRET` y `DELIVERY_SECRET`: cambiar la clave de cifrado impide leer los datos.
+La lista muestra metadatos y correos, sin enviar las contraseñas guardadas al navegador.
+
+**Exportar todas las cuentas** descarga todas las páginas con plataforma, correo,
+ID y fechas. **Incluir contraseñas en CSV** añade contraseñas legibles de forma
+explícita. El CSV usa UTF-8, comillas escapadas y protección contra fórmulas de
+hojas de cálculo; las celdas que podrían interpretarse como fórmulas llevan un
+apóstrofo protector. Esa protección debe tenerse en cuenta al importar el archivo
+con un programa que trate el apóstrofo como parte del texto. El archivo con
+contraseñas contiene credenciales y debe almacenarse de forma privada.
+
+Para activar esta tabla nueva: actualiza la rama `password-reset` local y ejecuta
+`npm run db:push` con `DATABASE_URL` apuntando al mismo Neon de producción.
+No se añaden columnas a User ni Product. Si falta la tabla, esta página muestra
+instrucciones y bloquea el formulario; el catálogo permanece disponible.
+La prueba `npm run test:platform-accounts` requiere la base local descartable.

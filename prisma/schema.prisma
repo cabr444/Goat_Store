@@ -187,3 +187,13 @@ model ExpiryReminder {
   @@index([emailedAt, dueAt])
   @@index([dueAt, id])
 }
+
+model AdminPlatformAccount {
+  id String @id @default(cuid())
+  platform String
+  fingerprint String @unique
+  cipher String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([platform, createdAt])
+}
