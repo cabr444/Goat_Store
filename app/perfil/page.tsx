@@ -84,8 +84,8 @@ export default async function Page() {
           </div>
           <a
             className="button violet"
-            href={rechargeLink}
-            target="_blank"
+            href={user.role === "ADMIN" ? "/administracion/recargas" : rechargeLink}
+            target={user.role === "ADMIN" ? undefined : "_blank"}
             rel="noopener noreferrer"
           >
             Recargar saldo <ArrowUpRight size={17} />

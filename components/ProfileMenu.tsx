@@ -90,7 +90,7 @@ export default function ProfileMenu({ name, role }: { name?: string; role?: stri
             <MessageCircle size={17} />
             Soporte
           </a>
-          <a href={rechargeLink} target="_blank" rel="noopener noreferrer">
+          <a href={role === "ADMIN" ? "/administracion/recargas" : rechargeLink} target={role === "ADMIN" ? undefined : "_blank"} rel={role === "ADMIN" ? undefined : "noopener noreferrer"}>
             <Wallet size={17} />
             Recargas
           </a>

@@ -337,3 +337,12 @@ Para activar esta tabla nueva: actualiza la rama `password-reset` local y ejecut
 No se añaden columnas a User ni Product. Si falta la tabla, esta página muestra
 instrucciones y bloquea el formulario; el catálogo permanece disponible.
 La prueba `npm run test:platform-accounts` requiere la base local descartable.
+
+### Acceso directo a recargas
+
+El saldo de la cabecera incluye **Recargar saldo**. ADMIN abre directamente
+`/administracion/recargas`; clientes y vendedores conservan el contacto por WhatsApp.
+El panel administrativo muestra además un acceso destacado al formulario. Desde
+Clientes, el enlace de una fila abre la cuenta ya seleccionada. El formulario
+permite buscar por nombre/correo y utiliza el endpoint de recargas existente;
+no hay cambios de esquema ni de reglas de saldo.

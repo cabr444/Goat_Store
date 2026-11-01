@@ -20,6 +20,7 @@ import StreamingInventoryEditor from "@/components/StreamingInventoryEditor";
 import DeliveryEditor from "@/components/DeliveryEditor";
 import ImageUploadButton from "@/components/ImageUploadButton";
 import AdminNotificationBell from "@/components/AdminNotificationBell";
+import BalanceRechargeLink from "@/components/BalanceRechargeLink";
 import ProfileMenu from "@/components/ProfileMenu";
 import CatalogImage from "@/components/CatalogImage";
 import { BannerBackground, BannerEditor } from "@/components/BannerImages";
@@ -32,7 +33,6 @@ import {
   Plus,
   ShoppingBag,
   Trash2,
-  Wallet,
   Menu,
   X,
   Search,
@@ -605,10 +605,7 @@ export default function Storefront({
             </a>
           </nav>
           <div className="actions">
-            {user && <><span className="balance-chip">
-              <Wallet size={17} />
-              {cop(user?.balance || 0)}
-            </span>
+            {user && <><BalanceRechargeLink balance={user.balance} role={user.role}/>
             {user.role === "ADMIN" && <AdminNotificationBell />}
             <ProfileMenu name={user.name} role={user.role} /></>}
             {!user && !catalogLoading && <Link className="guest-sign-in" href="/acceso">Ingresar / Registrarse</Link>}
