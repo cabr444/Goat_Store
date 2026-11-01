@@ -5,3 +5,9 @@ export const sandboxCards = [
   { id: 'funds', label: 'Fondos insuficientes', number: '4000 0000 0000 9995', result: 'Simulación: fondos insuficientes.', state: 'decline' },
   { id: 'authentication', label: 'Autenticación 3D Secure', number: '4000 0025 0000 3155', result: 'Simulación: se requiere autenticación 3D Secure.', state: 'authentication' },
 ] as const;
+
+export function sandboxFixtureForNumber(value: string) {
+  if (value.length > 32) return undefined;
+  const normalized = value.replace(/[\s-]/g, '');
+  return sandboxCards.find(card => card.number.replace(/ /g, '') === normalized);
+}

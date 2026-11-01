@@ -367,3 +367,9 @@ en https://docs.stripe.com/testing: aceptación, rechazo, fondos insuficientes y
 3D Secure. No genera números, no acepta tarjetas arbitrarias, no llama a pasarelas
 y no realiza verificaciones ni cobros reales. No requiere claves Stripe ni
 cambios de esquema. Las pruebas mockean el proveedor de metadatos.
+
+El simulador permite introducir el número completo de uno de los cuatro fixtures
+oficiales mostrados. La comparación es local y contra una lista fija, sin
+algoritmos de generación ni comprobación de tarjetas arbitrarias. El campo se
+borra al enviar, tanto si coincide como si se rechaza; no hay envío a proveedores
+ni almacenamiento del número introducido. El endpoint BIN sigue limitado a prefijos.

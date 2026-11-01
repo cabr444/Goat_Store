@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { binSchema, lookupBin } from '../lib/bin-lookup';
-import { sandboxCards } from '../lib/sandbox-cards';
+import { sandboxCards, sandboxFixtureForNumber } from '../lib/sandbox-cards';
 test('BIN endpoint accepts prefixes only and rejects full-card or security data', () => {
  for(const bin of ['424242','42424242'])assert.equal(binSchema.safeParse({bin}).success,true);
  for(const bin of ['','12345','1234567','4242424242424242','424242/../','abcdef'])assert.equal(binSchema.safeParse({bin}).success,false);
@@ -22,4 +22,15 @@ test('sandbox is a fixed set of published test fixtures, not an arbitrary-card c
  assert.equal(sandboxCards.length,4);
  assert.deepEqual(sandboxCards.map(card=>card.id),['success','decline','funds','authentication']);
  for(const card of sandboxCards)assert.ok(card.result.startsWith('Simulación:'));
+});
+
+test('full-number simulation recognizes only the fixed official test allowlist',()=>{
+ for(const card of sandboxCards){
+  assert.equal(sandboxFixtureForNumber(card.number)?.id,card.id);
+  assert.equal(sandboxFixtureForNumber(card.number.replace(/ /g,''))?.id,card.id);
+  assert.equal(sandboxFixtureForNumber(card.number.replace(/ /g,'-'))?.id,card.id);
+ }
+ assert.equal(sandboxFixtureForNumber('not-a-published-fixture'),undefined);
+ assert.equal(sandboxFixtureForNumber('424242'),undefined);
+ assert.equal(sandboxFixtureForNumber('4242424242424241'),undefined);
 });
