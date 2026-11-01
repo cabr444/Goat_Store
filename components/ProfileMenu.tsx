@@ -78,7 +78,6 @@ export default function ProfileMenu({ name, role }: { name?: string; role?: stri
           {role === "ADMIN" && <a href="/administracion/ventas"><LayoutDashboard size={17} />Administración</a>}
           {role === "ADMIN" && <a href="/administracion/notificaciones">Vencimientos</a>}
           {role === "ADMIN" && <a href="/administracion/cuentas">Registro privado de cuentas</a>}
-          {role === "ADMIN" && <a href="/administracion/pruebas-pagos">BIN y sandbox</a>}
           <a href="/perfil">
             <UserRound size={17} />
             Perfil

@@ -28,8 +28,7 @@
     "test:admin": "node --import tsx tests/admin-sales.integration.mjs",
     "test:expiry": "node --import tsx tests/expiry-reminders.integration.mjs",
     "test:delete": "node --import tsx tests/product-delete.integration.mjs",
-    "test:platform-accounts": "node --import tsx tests/platform-accounts.integration.mjs",
-    "test:payment-sandbox": "node --import tsx tests/payment-sandbox.integration.mjs"
+    "test:platform-accounts": "node --import tsx tests/platform-accounts.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
