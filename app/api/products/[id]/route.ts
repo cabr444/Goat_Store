@@ -1,6 +1,8 @@
+import { deletedProductIds } from "@/lib/deleted-products";
+import { removeProductInventory } from "@/lib/remove-product";
 import { isAccountCategory } from "@/lib/account-categories";
 import { isFullAccount } from "@/lib/streaming-product-kind";
-import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
+import { accessForProduct } from "@/lib/shared-streaming";
 import { platformForProduct } from "@/lib/streaming-platform";
 import { comboPools, loadComboInventory, withComboStocks } from "@/lib/combo-inventory";
 import { availableAccess } from "@/lib/streaming-inventory";
@@ -18,7 +20,7 @@ async function handlePATCH(
   if (!u) return fail("Inicia sesión.", 401);
   const { id } = await ctx.params;
   const p = await db.product.findUnique({ where: { id } });
-  if (!p) return fail("Producto no encontrado.", 404);
+  if (!p || (await deletedProductIds(db)).includes(id)) return fail("Producto no encontrado.", 404);
   if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
     return fail("No puedes modificar este producto.", 403);
   const raw = await req.json();
@@ -33,6 +35,7 @@ async function handlePATCH(
   if (!v.success) return fail("Datos inválidos.");
   const updated = await db.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
+    if ((await deletedProductIds(tx)).includes(id)) return null;
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
     const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
     if (inventoryCount && (!isAccountCategory(v.data.category) || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
@@ -53,22 +56,13 @@ async function handleDELETE(
   if (!u) return fail("Inicia sesión.", 401);
   const { id } = await ctx.params;
   const p = await db.product.findUnique({ where: { id } });
-  if (!p) return fail("Producto no encontrado.", 404);
+  if (!p || (await deletedProductIds(db)).includes(id)) return fail("Producto no encontrado.", 404);
   if (u.role !== "ADMIN" && (u.role !== "VENDEDOR" || p.ownerId !== u.id))
     return fail("No autorizado.", 403);
   await db.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
-    const rows = await tx.streamingAccess.findMany({ where: { ...accessForProduct(id), ...availableAccess } });
-    const affected = new Set([id]);
-    for (const row of rows) {
-      accessProductIds(row).forEach(id => affected.add(id));
-      const remaining = accessProductIds(row).filter(productId => productId !== id);
-      const changed = await tx.streamingAccess.updateMany({ where: { id: row.id, version: row.version, ...availableAccess }, data: remaining.length
-        ? { productId: remaining[0], productIds: remaining.slice(1), version: { increment: 1 } }
-        : { retiredAt: new Date(), version: { increment: 1 } } });
-      if (changed.count !== 1) throw Error("El acceso cambió durante la operación.");
-    }
-    await syncStreamingStocks(tx, [...affected]);
+    if ((await deletedProductIds(tx)).includes(id)) return;
+    await removeProductInventory(tx, id);
     await tx.product.update({ where: { id }, data: { stock: 0, active: true } });
   });
   return reply({ ok: true });

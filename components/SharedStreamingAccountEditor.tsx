@@ -12,6 +12,13 @@ export default function SharedStreamingAccountEditor({ products, onSaved }: { pr
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [failed, setFailed] = useState(false);
   const feedback = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
+    const next = selected.filter(id => products.some(product => product.id === id));
+    if (next.length !== selected.length) {
+      setSelected(next);
+      if (!next.length) setProfiles([{ profile: '1', pin: '' }]);
+    }
+  }, [products, selected]);
+  useEffect(() => {
     if (!message) return;
     feedback.current?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     if (failed) feedback.current?.focus({ preventScroll: true });

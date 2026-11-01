@@ -1,3 +1,4 @@
+import { deletedProductIds } from "@/lib/deleted-products";
 import { planDuration, reminderDate } from "@/lib/reminder-time";
 import { isAccountCategory } from "@/lib/account-categories";
 import { managedAccountProductIds, accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
@@ -49,6 +50,8 @@ async function handlePOST(req: Request) {
         }
         const settings = await tx.storeSettings.findUnique({ where: { id: "main" } });
         const blocked = disabledClientCategories(user.role, settings || { tiendaEnabled: true, segundaEnabled: true });
+        const deleted = await deletedProductIds(tx);
+        if (items.some(item => deleted.includes(item.id))) throw new PurchaseError("Este producto fue eliminado del catálogo. Actualiza tu carrito.");
         const products = await tx.product.findMany({ where: { id: { in: items.map(item => item.id) } } });
         if (products.length !== items.length) throw new PurchaseError("Hay productos que ya no están disponibles. Actualiza tu carrito.");
         const managedAccounts = await managedAccountProductIds(tx, products);

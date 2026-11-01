@@ -298,3 +298,16 @@ El campo «Correo o ID numérico» de accesos de plataforma acepta un email vál
 El formulario admite productos como «Prime Video cuenta completa». Al seleccionar un producto con «cuenta completa», «full» o equivalente en su nombre, cambia a una sola unidad con el perfil fijo «Cuenta completa». Puedes vincularla a otros planes de cuenta completa de la misma plataforma; al venderse se agotan todos esos vínculos. Para otra cuenta, introduce otro correo o ID y su clave. No se agregan siete perfiles a una cuenta que se vende completa.
 
 La cuenta completa y sus perfiles no pueden registrarse como inventarios independientes con el mismo identificador y plataforma. Se comprueban accesos actuales, vendidos/retirados y recibos antiguos; las operaciones de alta usan transacciones serializables para impedir una alta simultánea en ambos modos. Los combos siguen excluyendo cuentas completas. Los accesos individuales también admiten cuentas completas, con la misma identidad fija y protección. Esta actualización no requiere cambios adicionales de esquema.
+
+## Eliminar tarjetas de productos
+
+ADMIN dispone de **Eliminar** en cada producto y en **Administración → Productos
+e inventario**. La confirmación retira la tarjeta de Inicio, categorías, búsquedas
+y selectores de cuentas; los pedidos, comprobantes y recordatorios existentes se
+conservan. Un carrito antiguo no puede comprar un producto eliminado. **Agotar**
+sigue mostrando la tarjeta con stock cero y es una acción distinta.
+
+Los accesos disponibles compartidos permanecen en sus otros planes; los accesos
+exclusivos se retiran y los vendidos conservan su historial. La eliminación se
+registra en los metadatos existentes de catálogo y no requiere `db:push`.
+La prueba `npm run test:delete` usa exclusivamente una base local descartable.

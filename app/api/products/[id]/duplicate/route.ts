@@ -1,3 +1,4 @@
+import { deletedProductIds } from "@/lib/deleted-products";
 import { getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
@@ -11,7 +12,7 @@ async function duplicate(_req: Request, { params }: Context) {
   const { id } = await params;
   const result = await db.$transaction(async tx => {
     const source = await tx.product.findUnique({ where: { id }, select: publicProductSelect });
-    if (!source) return { status: 404, error: "Producto no encontrado." };
+    if (!source || (await deletedProductIds(tx)).includes(id)) return { status: 404, error: "Producto no encontrado." };
     if (user.role !== "ADMIN" && source.ownerId !== user.id) return { status: 403, error: "Solo puedes duplicar tus propios productos." };
     // Copy catalog content only. Every copy starts without stock, credentials or allocations.
     let name = source.name;

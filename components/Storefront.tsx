@@ -139,6 +139,7 @@ export default function Storefront({
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [buyNowId, setBuyNowId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
@@ -403,6 +404,21 @@ export default function Storefront({
       setNotice((e as Error).message);
     }
   }
+  async function deleteCard(p: Product) {
+    if (deletingId || user?.role !== "ADMIN") return;
+    if (!confirm(`¿Eliminar ${p.name} del catálogo? Ya no podrá comprarse. Los pedidos y comprobantes anteriores se conservarán.`)) return;
+    setDeletingId(p.id);
+    try {
+      await request(`/api/admin/products/${p.id}`, "DELETE");
+      setProducts(old => old.filter(product => product.id !== p.id));
+      setCart(old => old.filter(item => item.id !== p.id));
+      if (detailId === p.id) setDetailId(null);
+      if (buyNowId === p.id) setBuyNowId(null);
+      setNotice("Tarjeta eliminada del catálogo. El historial de ventas se conserva.");
+      await load();
+    } catch (error) { setNotice(error instanceof Error ? error.message : "No se pudo eliminar la tarjeta."); }
+    finally { setDeletingId(null); }
+  }
   async function recharge(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -521,6 +537,7 @@ export default function Storefront({
                         <button onClick={() => remove(p)}>
                           <Trash2 size={14} /> Agotar
                         </button>
+                        {user?.role === "ADMIN" && <button type="button" className="danger" disabled={deletingId !== null} onClick={() => void deleteCard(p)}><Trash2 size={14}/>{deletingId === p.id ? "Eliminando…" : "Eliminar"}</button>}
                       </div>
                     )}
                 </div>
@@ -741,7 +758,7 @@ export default function Storefront({
         </section>
         )}
         {management && user?.role === "ADMIN" && <div className="container admin-manager-link"><Link className="button violet" href="/administracion/ventas">Ventas y panel de administración</Link></div>}
-        {management && user?.role === "ADMIN" && <AdminProductList products={products} loading={catalogLoading} onEdit={startEdit} />}
+        {management && user?.role === "ADMIN" && <AdminProductList products={products} loading={catalogLoading} onEdit={startEdit} onDelete={deleteCard} deletingId={deletingId} />}
         {management && user?.role === "ADMIN" && <div id="secciones"><StoreOptionsEditor options={storeOptions} onChange={setStoreOptions} /></div>}
         {management && user?.role === "ADMIN" && <div id="imagenes"><CategoryImageManager /></div>}
         {management && user?.role === "ADMIN" && <SharedStreamingAccountEditor products={products} onSaved={load} />}

@@ -26,7 +26,8 @@
     "test:combos": "node --import tsx tests/combo-inventory.integration.mjs",
     "test:guests": "node --import tsx tests/guest-storefront.integration.mjs",
     "test:admin": "node --import tsx tests/admin-sales.integration.mjs",
-    "test:expiry": "node --import tsx tests/expiry-reminders.integration.mjs"
+    "test:expiry": "node --import tsx tests/expiry-reminders.integration.mjs",
+    "test:delete": "node --import tsx tests/product-delete.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

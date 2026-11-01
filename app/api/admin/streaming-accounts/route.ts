@@ -1,3 +1,4 @@
+import { deletedProductIds } from "@/lib/deleted-products";
 import { accountCategories } from "@/lib/account-categories";
 import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
 import { fullAccountProfile } from "@/lib/streaming-product-kind";
@@ -20,6 +21,8 @@ export const POST = secureMutation(async (req: Request) => {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const result = await db.$transaction(async tx => {
+        const deleted = await deletedProductIds(tx);
+        if (productIds.some(id => deleted.includes(id))) throw new InventoryError('Un producto seleccionado fue eliminado. Actualiza la página.');
         const products = await tx.product.findMany({ where: { id: { in: productIds }, category: { in: [...accountCategories] } } });
         if (products.length !== productIds.length) throw new InventoryError('Selecciona productos de Streaming, Música o Productividad.');
         const fullAccount = products.every(product => isFullAccount(product.name));

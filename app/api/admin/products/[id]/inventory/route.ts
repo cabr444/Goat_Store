@@ -1,3 +1,4 @@
+import { deletedProductIds } from "@/lib/deleted-products";
 import { isAccountCategory } from "@/lib/account-categories";
 import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
 import { isFullAccount, fullAccountProfile } from "@/lib/streaming-product-kind";
@@ -17,7 +18,7 @@ export async function GET(_req: Request, { params }: Context) {
   if (user?.role !== "ADMIN") return fail("Solo el administrador puede consultar el inventario privado.", 403);
   const { id } = await params;
   const product = await db.product.findUnique({ where: { id }, select: { name: true, category: true, stock: true, deliveryCipher: true } });
-  if (!product) return fail("Producto no encontrado.", 404);
+  if (!product || (await deletedProductIds(db)).includes(id)) return fail("Producto no encontrado.", 404);
   if (!isAccountCategory(product.category)) return fail("Este inventario es para Streaming, Música o Productividad.");
   const [available, sold, rows] = await Promise.all([
     db.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }),
@@ -40,7 +41,7 @@ async function mutate(req: Request, { params }: Context) {
     const result = await db.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${id} FOR UPDATE`;
       const product = await tx.product.findUnique({ where: { id } });
-      if (!product || !isAccountCategory(product.category)) throw Error("PRODUCT");
+      if (!product || (await deletedProductIds(tx)).includes(id) || !isAccountCategory(product.category)) throw Error("PRODUCT");
       if (removing && removal.success) {
         const changed = await tx.streamingAccess.updateMany({ where: { id: removal.data.accessId, ...accessForProduct(id), version: removal.data.version, ...availableAccess }, data: { retiredAt: new Date(), version: { increment: 1 } } });
         if (changed.count !== 1) throw Error("CHANGED");

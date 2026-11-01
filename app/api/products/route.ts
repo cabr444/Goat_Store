@@ -1,3 +1,4 @@
+import { deletedIdsFromRows } from "@/lib/deleted-products";
 import { catalogFailure } from "@/lib/catalog-failure";
 export const dynamic = "force-dynamic";
 import { withComboStocks } from "@/lib/combo-inventory";
@@ -13,11 +14,13 @@ export async function GET() {
   const user = await getUser();
   try {
     const storeOptions = await getStoreOptions();
+    const orderRows = await db.catalogOrder.findMany();
+    const deleted = deletedIdsFromRows(orderRows);
     return reply({
       storeOptions,
-      cardOrders: readCardOrders(await db.catalogOrder.findMany()),
+      cardOrders: readCardOrders(orderRows),
       products: await withComboStocks((await db.product.findMany({
-        where: { category: { notIn: disabledClientCategories(user?.role || "CLIENTE", storeOptions) } },
+        where: { id: { notIn: deleted }, category: { notIn: disabledClientCategories(user?.role || "CLIENTE", storeOptions) } },
         select: publicProductSelect,
         orderBy: { createdAt: "asc" },
       })).map(publicProduct)),
