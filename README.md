@@ -351,3 +351,19 @@ Un botón flotante **Recargar saldo** permanece en la esquina inferior derecha
 al recorrer la tienda y las páginas de cuenta. ADMIN abre el formulario interno;
 clientes y visitantes abren el contacto de recargas por WhatsApp. Respeta el área
 segura móvil y deja espacio para las notificaciones del carrito.
+
+## BIN y pruebas sandbox (solo ADMIN)
+
+`/administracion/pruebas-pagos` permite consultar metadatos de un prefijo BIN de
+6 u 8 dígitos mediante Binlist. Solo se devuelven red, tipo, marca, país y emisor;
+esa información no indica vigencia, saldo ni validez de una tarjeta individual.
+El endpoint rechaza números completos, campos de seguridad, lotes y endpoints
+personalizados. Se limita a 20 consultas por administrador por ventana de 15
+minutos; el proveedor puede aplicar límites adicionales. No se guardan prefijos
+ni datos de tarjetas en el historial de compras.
+
+La segunda herramienta es una simulación local con cuatro fixtures publicados
+en https://docs.stripe.com/testing: aceptación, rechazo, fondos insuficientes y
+3D Secure. No genera números, no acepta tarjetas arbitrarias, no llama a pasarelas
+y no realiza verificaciones ni cobros reales. No requiere claves Stripe ni
+cambios de esquema. Las pruebas mockean el proveedor de metadatos.
