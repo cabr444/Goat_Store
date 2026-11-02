@@ -351,3 +351,11 @@ Un botón flotante **Recargar saldo** permanece en la esquina inferior derecha
 al recorrer la tienda y las páginas de cuenta. ADMIN abre el formulario interno;
 clientes y visitantes abren el contacto de recargas por WhatsApp. Respeta el área
 segura móvil y deja espacio para las notificaciones del carrito.
+
+### Modo claro y oscuro
+
+El botón flotante de la esquina inferior izquierda permite cambiar el tema en
+cualquier página. La primera visita respeta la preferencia del dispositivo; una
+selección manual se guarda en `localStorage` (`goats-theme`) y se sincroniza entre
+pestañas. El tema se aplica antes de mostrar la página para evitar un destello del
+tema contrario. No requiere cuenta ni cambios en la base de datos.

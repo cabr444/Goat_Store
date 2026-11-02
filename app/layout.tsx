@@ -1,3 +1,4 @@
+import ThemeToggle from "@/components/ThemeToggle";
 import CatalogImageProvider from "@/components/CatalogImageProvider";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -12,9 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es-CO">
+    <html lang="es-CO" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: `(function(){var t;try{t=localStorage.getItem('goats-theme')}catch(e){}document.documentElement.dataset.theme=t==='light'||t==='dark'?t:window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'})()` }}/></head>
       <body>
         <CatalogImageProvider>{children}</CatalogImageProvider>
+        <ThemeToggle/>
       </body>
     </html>
   );
