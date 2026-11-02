@@ -1,16 +1,18 @@
 "use client";
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { readJsonResponse } from '@/lib/json-response';
 import { Bell, Check, Wallet } from 'lucide-react';
 type Item = { id: string; amount: number; createdAt: string };
-type Data = { userId: string; items: Item[]; balance: number };
-const Context = createContext<{ data: Data | null; read: string[]; error: string; markRead: () => void; reload: () => void; subscribe: () => () => void } | null>(null);
+type Data = { userId: string; items: Item[]; balance: number; read: string[] };
+const Context = createContext<{ data: Data | null; read: string[]; error: string; saving: boolean; markRead: () => void; reload: () => void; subscribe: () => () => void } | null>(null);
 export function RechargeNotificationProvider({ children }: { children: ReactNode }) {
-  const requestVersion = useRef(0);
+  const requestVersion = useRef(0), savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [consumers, setConsumers] = useState(0);
   const subscribe = useCallback(() => { setConsumers(n => n + 1); return () => setConsumers(n => n - 1); }, []);
   const [data, setData] = useState<Data | null>(null), [read, setRead] = useState<string[]>([]), [error, setError] = useState('');
   const reload = useCallback(async () => {
-    if (document.visibilityState !== 'visible') return;
+    if (document.visibilityState !== 'visible' || savingRef.current) return;
     const version = ++requestVersion.current;
     try {
       const response = await fetch('/api/account/recharges', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
@@ -19,9 +21,7 @@ export function RechargeNotificationProvider({ children }: { children: ReactNode
       if (!response.ok) throw Error();
       const next: Data = await response.json();
       if (version !== requestVersion.current) return;
-      let saved: unknown = [];
-      try { saved = JSON.parse(localStorage.getItem('goats-recharges-read:' + next.userId) || '[]'); } catch {}
-      setRead(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string').slice(-200) : []);
+      setRead(next.read);
       setData(next); setError('');
     } catch { if (version !== requestVersion.current) return; setError('No fue posible actualizar las notificaciones. Inténtalo de nuevo.'); }
   }, []);
@@ -33,12 +33,18 @@ export function RechargeNotificationProvider({ children }: { children: ReactNode
     window.addEventListener('focus', visible); document.addEventListener('visibilitychange', visible); window.addEventListener('storage', storage);
     return () => { ++requestVersion.current; window.clearInterval(timer); window.removeEventListener('focus', visible); document.removeEventListener('visibilitychange', visible); window.removeEventListener('storage', storage); };
   }, [reload, consumers]);
-  function markRead() {
-    if (!data) return;
-    const next = [...new Set([...read, ...data.items.map(item => item.id)])].slice(-200);
-    setRead(next); try { localStorage.setItem('goats-recharges-read:' + data.userId, JSON.stringify(next)); } catch {}
+  async function markRead() {
+    if (!data || savingRef.current) return;
+    savingRef.current = true; setSaving(true); setError(''); ++requestVersion.current;
+    try {
+      const result = await readJsonResponse(await fetch('/api/account/recharges', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: data.items.map(item => item.id) }), signal: AbortSignal.timeout(10000) }));
+      setRead(result.read);
+      // Signal other tabs only; the server is authoritative.
+      try { localStorage.setItem('goats-recharges-read:' + data.userId, JSON.stringify(result.read)); } catch {}
+    } catch { setError('No fue posible guardar las notificaciones leídas. Inténtalo de nuevo.'); }
+    finally { savingRef.current = false; setSaving(false); }
   }
-  return <Context.Provider value={{ data, read, error, markRead, reload, subscribe }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ data, read, error, saving, markRead, reload, subscribe }}>{children}</Context.Provider>;
 }
 export function RechargeNotificationBell() {
   const state = useContext(Context);
@@ -53,5 +59,5 @@ export function RechargeNotificationList() {
   useEffect(() => subscribe?.(), [subscribe]);
   if (!state) return null;
   const money = (amount: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
-  return <section id="notificaciones-recargas" className="recharge-notifications account-section" aria-labelledby="recharge-notification-title"><div className="account-section-heading"><h2 id="recharge-notification-title"><Bell size={20} aria-hidden="true"/> Notificaciones de recarga</h2><button type="button" className="button outline" onClick={state.markRead} disabled={!state.data?.items.some(item => !state.read.includes(item.id))}><Check size={16} aria-hidden="true"/>Marcar como leídas</button></div><p>Últimas 20 recargas confirmadas. Se actualiza cada minuto mientras estás en la página.</p>{state.error && <p role="alert">{state.error} <button type="button" onClick={state.reload}>Reintentar</button></p>}{!state.data && !state.error && <p role="status">Cargando recargas…</p>}{state.data && !state.data.items.length && <p>Aún no tienes recargas. Cuando se agregue saldo, aparecerá aquí.</p>}<div className="recharge-notification-items">{state.data?.items.map(item => { const unread = !state.read.includes(item.id); return <article key={item.id} className={unread ? 'recharge-notice unread' : 'recharge-notice'}><Wallet size={22} aria-hidden="true"/><div><strong>Se agregaron {money(item.amount)} a tu saldo</strong><time dateTime={item.createdAt}>{new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(item.createdAt))}</time></div><span>{unread ? 'Nueva' : 'Leída'}</span></article>; })}</div><p className="admin-help">Las marcas de lectura se guardan en este navegador. Estas son notificaciones dentro de Goats; no se envían mensajes ni correos.</p></section>;
+  return <section id="notificaciones-recargas" className="recharge-notifications account-section" aria-labelledby="recharge-notification-title"><div className="account-section-heading"><h2 id="recharge-notification-title"><Bell size={20} aria-hidden="true"/> Notificaciones de recarga</h2><button type="button" className="button outline" onClick={state.markRead} disabled={state.saving || !state.data?.items.some(item => !state.read.includes(item.id))}><Check size={16} aria-hidden="true"/>{state.saving ? 'Guardando…' : 'Marcar como leídas'}</button></div><p>Últimas 20 recargas confirmadas. Se actualiza cada minuto mientras estás en la página.</p>{state.error && <p role="alert">{state.error} <button type="button" onClick={state.reload}>Reintentar</button></p>}{!state.data && !state.error && <p role="status">Cargando recargas…</p>}{state.data && !state.data.items.length && <p>Aún no tienes recargas. Cuando se agregue saldo, aparecerá aquí.</p>}<div className="recharge-notification-items">{state.data?.items.map(item => { const unread = !state.read.includes(item.id); return <article key={item.id} className={unread ? 'recharge-notice unread' : 'recharge-notice'}><Wallet size={22} aria-hidden="true"/><div><strong>Se agregaron {money(item.amount)} a tu saldo</strong><time dateTime={item.createdAt}>{new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(item.createdAt))}</time></div><span>{unread ? 'Nueva' : 'Leída'}</span></article>; })}</div><p className="admin-help">Las marcas de lectura se guardan en tu cuenta, incluso al cerrar sesión o cambiar de dispositivo. Estas son notificaciones dentro de Goats; no se envían mensajes ni correos.</p></section>;
 }

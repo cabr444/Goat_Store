@@ -368,6 +368,7 @@ que acredita el saldo. El endpoint privado `/api/account/recharges` utiliza el
 usuario de la sesión; no acepta otro destinatario ni devuelve notas internas.
 Se consulta cada 60 segundos mientras la página está visible y al volver a ella;
 los visitantes sin sesión no activan el sondeo. No envía correo, WhatsApp ni push.
-Las marcas de lectura se guardan por usuario en este navegador, no se sincronizan
-entre dispositivos. También aparecen las recargas anteriores existentes. No hay
+Las marcas de lectura se guardan por usuario en la base de datos, en metadatos
+privados separados del catálogo. Persisten al cerrar sesión y entre dispositivos.
+Solo se guardan tras la confirmación del servidor; los errores permiten reintentar. También aparecen las recargas anteriores existentes. No hay
 cambios de esquema. Prueba local aislada: `npm run test:recharge-notifications`.

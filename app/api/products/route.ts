@@ -1,4 +1,4 @@
-import { deletedIdsFromRows } from "@/lib/deleted-products";
+import { deletedIdsFromRows, deletedProductsKind } from "@/lib/deleted-products";
 import { catalogFailure } from "@/lib/catalog-failure";
 export const dynamic = "force-dynamic";
 import { withComboStocks } from "@/lib/combo-inventory";
@@ -14,7 +14,7 @@ export async function GET() {
   const user = await getUser();
   try {
     const storeOptions = await getStoreOptions();
-    const orderRows = await db.catalogOrder.findMany();
+    const orderRows = await db.catalogOrder.findMany({ where: { kind: { in: ["products", "categories", deletedProductsKind] } } });
     const deleted = deletedIdsFromRows(orderRows);
     return reply({
       storeOptions,

@@ -1,4 +1,4 @@
-import { deletedIdsFromRows } from "@/lib/deleted-products";
+import { deletedIdsFromRows, deletedProductsKind } from "@/lib/deleted-products";
 import { catalogFailure } from "@/lib/catalog-failure";
 export const dynamic = "force-dynamic";
 import { withComboStocks } from "@/lib/combo-inventory";
@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const storeOptions = await getStoreOptions();
     const blocked = disabledClientCategories(user?.role || "CLIENTE", storeOptions);
-    const orderRows = await db.catalogOrder.findMany();
+    const orderRows = await db.catalogOrder.findMany({ where: { kind: { in: ["products", "categories", deletedProductsKind] } } });
     const deleted = deletedIdsFromRows(orderRows);
     const [products, orders, users] = await Promise.all([
       db.product.findMany({ where: { id: { notIn: deleted }, category: { notIn: blocked } }, select: publicProductSelect, orderBy: { createdAt: "asc" } }),
