@@ -1,3 +1,4 @@
+import { RechargeNotificationBell } from "@/components/RechargeNotifications";
 import type { StoreOptions } from "@/lib/store-settings";
 import FloatingRechargeButton from "@/components/FloatingRechargeButton";
 import BalanceRechargeLink from "@/components/BalanceRechargeLink";
@@ -33,6 +34,7 @@ export default function AccountHeader({
         <div className="actions">
           <BalanceRechargeLink balance={balance} role={role}/>
           {role === "ADMIN" && <AdminNotificationBell />}
+          <RechargeNotificationBell/>
           <ProfileMenu name={name} role={role} />
         </div>
       </div>

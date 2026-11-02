@@ -1,3 +1,4 @@
+import { RechargeNotificationProvider } from "@/components/RechargeNotifications";
 import ThemeToggle from "@/components/ThemeToggle";
 import CatalogImageProvider from "@/components/CatalogImageProvider";
 import type { Metadata } from "next";
@@ -16,7 +17,7 @@ export default function RootLayout({
     <html lang="es-CO" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: `(function(){var t;try{t=localStorage.getItem('goats-theme')}catch(e){}document.documentElement.dataset.theme=t==='light'||t==='dark'?t:window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'})()` }}/></head>
       <body>
-        <CatalogImageProvider>{children}</CatalogImageProvider>
+        <RechargeNotificationProvider><CatalogImageProvider>{children}</CatalogImageProvider></RechargeNotificationProvider>
         <ThemeToggle/>
       </body>
     </html>

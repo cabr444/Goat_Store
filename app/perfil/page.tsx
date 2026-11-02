@@ -1,3 +1,4 @@
+import { RechargeNotificationList } from "@/components/RechargeNotifications";
 import { getStoreOptions } from "@/lib/store-settings";
 import { redirect } from "next/navigation";
 import {
@@ -120,6 +121,7 @@ export default async function Page() {
             </strong>
           </article>
         </section>
+        <RechargeNotificationList/>
         <section className="account-profile-details">
           <h2>Información del perfil</h2>
           <dl>

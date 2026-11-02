@@ -359,3 +359,15 @@ cualquier página. La primera visita respeta la preferencia del dispositivo; una
 selección manual se guarda en `localStorage` (`goats-theme`) y se sincroniza entre
 pestañas. El tema se aplica antes de mostrar la página para evitar un destello del
 tema contrario. No requiere cuenta ni cambios en la base de datos.
+
+### Notificaciones de recarga para clientes
+
+La campana de cuenta y tienda abre `/perfil#notificaciones-recargas`. Muestra las
+últimas 20 recargas positivas de `WalletEvent`, creadas en la misma transacción
+que acredita el saldo. El endpoint privado `/api/account/recharges` utiliza el
+usuario de la sesión; no acepta otro destinatario ni devuelve notas internas.
+Se consulta cada 60 segundos mientras la página está visible y al volver a ella;
+los visitantes sin sesión no activan el sondeo. No envía correo, WhatsApp ni push.
+Las marcas de lectura se guardan por usuario en este navegador, no se sincronizan
+entre dispositivos. También aparecen las recargas anteriores existentes. No hay
+cambios de esquema. Prueba local aislada: `npm run test:recharge-notifications`.

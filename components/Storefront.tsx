@@ -1,4 +1,5 @@
 "use client";
+import { RechargeNotificationBell } from "@/components/RechargeNotifications";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { isAccountCategory } from "@/lib/account-categories";
 import { readJsonResponse } from "@/lib/json-response";
@@ -608,6 +609,7 @@ export default function Storefront({
           <div className="actions">
             {user && <><BalanceRechargeLink balance={user.balance} role={user.role}/>
             {user.role === "ADMIN" && <AdminNotificationBell />}
+            <RechargeNotificationBell/>
             <ProfileMenu name={user.name} role={user.role} /></>}
             {!user && !catalogLoading && <Link className="guest-sign-in" href="/acceso">Ingresar / Registrarse</Link>}
             <button
