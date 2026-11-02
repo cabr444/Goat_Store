@@ -1,9 +1,24 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { UserRound, Package, MessageCircle, Wallet, LayoutDashboard } from "lucide-react";
+import { UserRound, Package, MessageCircle, Wallet, LayoutDashboard, LogOut } from "lucide-react";
+import { readJsonResponse } from "@/lib/json-response";
 import { supportLink, rechargeLink } from "@/lib/account-links";
 export default function ProfileMenu({ name, role }: { name?: string; role?: string }) {
   const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false), [logoutError, setLogoutError] = useState("");
+  const logoutPending = useRef(false);
+  async function logout() {
+    if (logoutPending.current) return;
+    logoutPending.current = true; setLoggingOut(true); setLogoutError("");
+    try {
+      const result = await readJsonResponse(await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(10000) }));
+      if (result.ok !== true) throw Error("No fue posible cerrar sesión. Inténtalo de nuevo.");
+      window.location.replace("/acceso");
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "No fue posible cerrar sesión. Inténtalo de nuevo.");
+      logoutPending.current = false; setLoggingOut(false);
+    }
+  }
   const root = useRef<HTMLDivElement>(null),
     button = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -45,7 +60,7 @@ export default function ProfileMenu({ name, role }: { name?: string; role?: stri
         if (!root.current?.contains(document.activeElement)) setOpen(false);
       }}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+        if (!logoutPending.current && !e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
       }}
     >
       <button
@@ -94,6 +109,8 @@ export default function ProfileMenu({ name, role }: { name?: string; role?: stri
             <Wallet size={17} />
             Recargas
           </a>
+          <button type="button" className="profile-logout" onClick={logout} disabled={loggingOut}><LogOut size={17} aria-hidden="true"/>{loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}</button>
+          {logoutError && <p className="profile-logout-error" role="alert">{logoutError}</p>}
         </nav>
       )}
     </div>
