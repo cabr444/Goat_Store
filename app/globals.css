@@ -368,3 +368,9 @@ html[data-theme=dark] :is(.marketplace-discover strong,.marketplace-services>a>s
 html[data-theme=dark] .account-empty{background:#2c2239;color:var(--muted)}
 html[data-theme=dark] .marketplace-home .button.outline{background:#38264c;color:#e4d1ff}
 html[data-theme=dark] .marketplace-home :is(.product-photo .tag,.add-mini:disabled){background:#382f43;color:#d4c8df}
+
+html[data-theme=dark] :is(.info-panel,.admin-form){background:#2c2239;color:var(--ink);border-color:var(--line)}
+html[data-theme=dark] .account-section .info-panel h3{color:var(--ink)}
+html[data-theme=dark] .account-section .info-panel .wallet-amount{color:#d2b8ff}
+html[data-theme=dark] .account-section .info-panel :is(p:not(.wallet-amount),small){color:var(--muted)}
+html[data-theme=dark] .info-panel .order-entry{border-color:#514160}
