@@ -1057,17 +1057,17 @@ export default function Storefront({
                 <b>Total</b>
                 <strong>{cop(total)}</strong>
               </div>
-              {user && <p>Tu saldo: {cop(user.balance)}</p>}
+              {user && <p>{user.role === "ADMIN" ? "Compra administrativa sin límite de saldo" : `Tu saldo: ${cop(user.balance)}`}</p>}
               {user ? <button
                 className="button violet full"
                 disabled={checkoutBusy || !cart.length || !user || catalogLoading}
                 onClick={() => void checkout()}
               >
-                {checkoutBusy ? "Procesando y guardando tu pedido…" : "Comprar con saldo Goats"}
+                {checkoutBusy ? "Procesando y guardando tu pedido…" : user.role === "ADMIN" ? "Comprar sin descontar saldo" : "Comprar con saldo Goats"}
               </button> : <><p>Crea una cuenta o inicia sesión para comprar. Conservaremos tu carrito.</p><Link className="button violet full" href={authHref()}>Iniciar sesión o crear cuenta</Link></>}
               {checkoutBusy && <p role="status">Estamos comprobando todos los productos y guardando tu compra. Espera un momento.</p>}
               {checkoutError && <div className="checkout-error" role="alert"><p>{checkoutError}</p><a href="/pedidos">Revisar Mis pedidos</a></div>}
-              {user && total > user.balance && (
+              {user && user.role !== "ADMIN" && total > user.balance && (
                 <small>
                   El saldo mostrado no cubre este total. Al comprar comprobaremos tu saldo actualizado.
                 </small>
@@ -1081,7 +1081,7 @@ export default function Storefront({
                 </p>
               )}
               <small>
-                La compra debita tu saldo y crea un pedido con stock reservado.
+                {user?.role === "ADMIN" ? "La compra administrativa reserva stock y guarda el pedido sin descontar saldo." : "La compra debita tu saldo y crea un pedido con stock reservado."}
                 Los accesos digitales configurados se muestran en Pedidos.
               </small>
             </div>
@@ -1097,8 +1097,8 @@ export default function Storefront({
             {buyNowProduct ? <>
               <strong>{buyNowProduct.name}</strong>
               <p>1 unidad · {cop(buyNowProduct.price)} COP</p>
-              {user && <p>Saldo Goats: {cop(user.balance)}</p>}
-              <p>{user ? "Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva." : "Crea una cuenta o inicia sesión para comprar. Tu carrito se conserva."}</p>
+              {user && <p>{user.role === "ADMIN" ? "Compra administrativa sin límite de saldo" : `Saldo Goats: ${cop(user.balance)}`}</p>}
+              <p>{user?.role === "ADMIN" ? "Confirmar reservará el stock y guardará el pedido sin descontar saldo. Tu carrito se conserva." : user ? "Confirmar descontará el total de tu saldo y guardará el pedido. Tu carrito se conserva." : "Crea una cuenta o inicia sesión para comprar. Tu carrito se conserva."}</p>
               {buyNowProduct.stock === 0 && <p role="status">Producto agotado.</p>}
               {user ? <button type="button" className="button violet full" autoFocus disabled={checkoutBusy || buyNowProduct.stock === 0 || !user} onClick={() => void checkout([{ id: buyNowProduct.id, qty: 1 }])}>
                 {checkoutBusy ? "Procesando compra…" : "Confirmar compra"}

@@ -118,8 +118,10 @@ async function handlePOST(req: Request) {
         const values = Prisma.join([...reservations].sort(([a], [b]) => a.localeCompare(b)).map(([id, qty]) => Prisma.sql`(${id}::text, ${qty}::integer)`));
         const reserved = await tx.$executeRaw`UPDATE "Product" AS product SET "stock" = product."stock" - cart.qty FROM (VALUES ${values}) AS cart(id, qty) WHERE product.id = cart.id AND product."stock" >= cart.qty`;
         if (reserved !== reservations.size) throw new PurchaseError("El stock cambió durante la compra. Revisa las cantidades e inténtalo de nuevo.");
-        const debit = await tx.user.updateMany({ where: { id: user.id, balance: { gte: total } }, data: { balance: { decrement: total } } });
-        if (!debit.count) throw new PurchaseError("Saldo insuficiente para el total del carrito.");
+        if (user.role !== "ADMIN") {
+          const debit = await tx.user.updateMany({ where: { id: user.id, balance: { gte: total } }, data: { balance: { decrement: total } } });
+          if (!debit.count) throw new PurchaseError("Saldo insuficiente para el total del carrito.");
+        }
         const itemIds = new Map(items.map(item => [item.id, randomUUID()]));
         const order = await tx.order.create({ data: {
           id: randomUUID(), reference, createdAt: date, userId: user.id, total,
@@ -155,7 +157,7 @@ async function handlePOST(req: Request) {
           await syncStreamingStocks(tx, soldRows.flatMap(accessProductIds));
         }
         if (checkoutKey) await tx.checkoutAttempt.create({ data: { key: checkoutKey, orderId: order.id } });
-        await tx.walletEvent.create({ data: { userId: user.id, amount: -total, type: "COMPRA", note: `Pedido ${reference}` } });
+        if (user.role !== "ADMIN") await tx.walletEvent.create({ data: { userId: user.id, amount: -total, type: "COMPRA", note: `Pedido ${reference}` } });
         return { order, replayed: false };
       }, { isolationLevel: "Serializable", maxWait: 10000, timeout: 30000 });
       return reply({ orderId: result.order.id, reference: result.order.reference, total: result.order.total }, result.replayed ? 200 : 201);

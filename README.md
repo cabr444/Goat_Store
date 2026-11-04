@@ -372,3 +372,12 @@ Las marcas de lectura se guardan por usuario en la base de datos, en metadatos
 privados separados del catálogo. Persisten al cerrar sesión y entre dispositivos.
 Solo se guardan tras la confirmación del servidor; los errores permiten reintentar. También aparecen las recargas anteriores existentes. No hay
 cambios de esquema. Prueba local aislada: `npm run test:recharge-notifications`.
+
+### Compras administrativas sin límite de saldo
+
+ADMIN puede comprar con cualquier saldo, incluido cero. La compra conserva su
+precio y pedido, consume inventario y asigna los accesos de la misma manera, pero
+no descuenta saldo ni registra un movimiento financiero ficticio. La excepción
+usa únicamente el rol de la sesión del servidor. CLIENTE y VENDEDOR mantienen la
+comprobación y el débito de saldo. Se conservan los límites de cantidades por
+pedido y las validaciones de stock. No requiere cambios de esquema.
