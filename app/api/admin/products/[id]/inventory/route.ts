@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { reply, fail } from "@/lib/http";
 import { secureMutation } from "@/lib/security";
 import { deliverySchema, encryptPrivate, decryptPrivate } from "@/lib/private-delivery";
-import { accessFingerprint, availableAccess, platformForProduct } from "@/lib/streaming-inventory";
+import { accessFingerprint, availableAccess, platformForProduct, releaseHistoricalAccess } from "@/lib/streaming-inventory";
 type Context = { params: Promise<{ id: string }> };
 const schema = z.object({ delivery: deliverySchema, platform: z.string().trim().min(1).max(100), accessId: z.string().max(100).optional(), version: z.number().int().min(0).optional() });
 export async function GET(_req: Request, { params }: Context) {
@@ -59,7 +59,10 @@ async function mutate(req: Request, { params }: Context) {
           // Identity is immutable, so editing a password cannot free a previously registered profile for reuse.
           const changed = await tx.streamingAccess.updateMany({ where: { id: accessId, ...accessForProduct(id), fingerprint, version, ...availableAccess }, data: { cipher: data.cipher, version: { increment: 1 } } });
           if (changed.count !== 1) throw Error("CHANGED");
-        } else await tx.streamingAccess.create({ data: { productId: id, ...data } });
+        } else {
+          await releaseHistoricalAccess(tx, fingerprint);
+          await tx.streamingAccess.create({ data: { productId: id, ...data } });
+        }
       }
       const linked = await tx.streamingAccess.findMany({ where: accessForProduct(id), select: { productId: true, productIds: true } });
       await syncStreamingStocks(tx, [id, ...linked.flatMap(accessProductIds)]);
@@ -70,8 +73,7 @@ async function mutate(req: Request, { params }: Context) {
     return reply({ ok: true, ...result }, req.method === "POST" ? 201 : 200);
   } catch (error) {
     if (error instanceof AccountModeError) return fail(error.message, 409);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return fail("Este correo y perfil ya están registrados para esa plataforma, incluso en otro producto o como vendidos/retirados.", 409);
-    if (error instanceof Error && error.message === "HISTORIC") return fail("Este acceso ya fue entregado en una compra anterior y no puede volver a venderse.", 409);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return fail("Este correo y perfil ya están registrados para esa plataforma, como disponibles, incluso en otro producto.", 409);
     if (error instanceof Error && error.message === "CHANGED") return fail("El acceso cambió, fue vendido o intentaste cambiar su identidad. Actualiza el inventario.", 409);
     if (error instanceof Error && error.message === "PRODUCT") return fail("Producto de cuentas no encontrado.", 404);
     return fail("No se pudo actualizar el inventario. Actualiza la página e inténtalo de nuevo.", 503);

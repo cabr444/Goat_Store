@@ -38,7 +38,7 @@ try{
  const own=await fetch(base.origin+'/pedidos?pedido='+order.id,{headers:{Cookie:'goat_session='+buyer.token}});assert.ok((await own.text()).includes('OriginalSecret'));
  const otherResponse=await fetch(base.origin+'/pedidos?pedido='+order.id,{headers:{Cookie:'goat_session='+other.token}});assert.ok(!(await otherResponse.text()).includes('OriginalSecret'));
  const sold=assigned[0];assert.equal((await request(endpoint({id:sold.productId}),admin.token,'PATCH',{accessId:sold.id,version:sold.version,platform:'Netflix',delivery:delivery('1')})).status,409);
- assert.equal((await add(b,1)).status,409);
+
  const race=await Promise.all([buy(buyer.token,[{id:a.id,qty:1}]),buy(other.token,[{id:a.id,qty:1}])]);assert.deepEqual(race.map(r=>r.status).sort(),[201,400]);
  assert.equal(await db.streamingAccess.count({where:{productId:a.id,soldAt:null,retiredAt:null}}),0);
  const pending=(await request(endpoint(b),admin.token)).data.accesses[0];assert.equal(pending.delivery.profile,'5');
@@ -52,12 +52,13 @@ try{
  assert.equal((await db.streamingAccess.findUniqueOrThrow({where:{id:pending.id}})).soldAt,null);
  assert.equal((await db.product.findUniqueOrThrow({where:{id:b.id}})).stock,1);
  assert.equal((await request(endpoint(b),admin.token,'DELETE',{accessId:pending.id,version:ready.version})).status,200);
- assert.equal((await add(b,5)).status,409);
+ assert.equal((await add(b,5)).status,201);
  const past=delivery('historic');
  await db.order.create({data:{userId:buyer.id,total:1000,items:{create:{productId:legacy.id,name:legacy.name,category:'Streaming',quantity:1,unitPrice:1000,receiptCipher:encryptPrivate(receiptText(past,legacy.name,'historic',new Date(),1,1000))}}}});
- assert.equal((await add(legacy,'historic')).status,409);
+ assert.equal((await add(legacy,'historic')).status,201);
+ assert.equal((await add(b,1)).status,201);
  assert.equal((await db.orderItem.findUniqueOrThrow({where:{id:order.items.find(i=>i.productId===a.id).id}})).receiptCipher,order.items.find(i=>i.productId===a.id).receiptCipher);
- console.log('PASS streaming inventory: admin-only encrypted entries, cross-plan duplicate prevention, quantity-specific receipts, one-time concurrent allocation, retry recovery, buyer privacy, immutable sold entries, retirement, historic-sale protection and transaction rollback.');
+ console.log('PASS streaming inventory: admin-only encrypted entries, cross-plan duplicate prevention, quantity-specific receipts, one-time concurrent allocation, retry recovery, buyer privacy, immutable sold entries, retirement, historic-sale restocking and transaction rollback.');
 }finally{
  const ids=users.map(u=>u.id),pids=products.map(p=>p.id);
  await db.streamingAccess.deleteMany({where:{productId:{in:pids}}});await db.orderItem.deleteMany({where:{order:{userId:{in:ids}}}});await db.order.deleteMany({where:{userId:{in:ids}}});await db.walletEvent.deleteMany({where:{userId:{in:ids}}});await db.product.deleteMany({where:{id:{in:pids}}});await db.user.deleteMany({where:{id:{in:ids}}});await db.$disconnect();

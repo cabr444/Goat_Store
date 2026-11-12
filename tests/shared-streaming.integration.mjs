@@ -60,7 +60,12 @@ try {
   assert.equal((await buy(client,[{id:thirtyThree.id,qty:1}])).status,201); await stocks(1);
   const raced = await Promise.all([buy(client,[{id:twenty.id,qty:1}]),buy(other,[{id:thirtyThree.id,qty:1}])]); assert.deepEqual(raced.map(r=>r.status).sort(),[201,400]); await stocks(0);
   assert.equal(await db.streamingAccess.count({where:{productId:twenty.id,soldAt:{not:null}}}),7);
-  const failed = await request(endpoint,admin.token,'POST',{...body,profiles:[{profile:'new',pin:''},{profile:delivered.profile,pin:delivered.pin}]}); assert.equal(failed.status,409); assert.equal(await db.streamingAccess.count({where:{productId:twenty.id}}),7);
+  const restocked = await request(endpoint,admin.token,'POST',{...body,account:{...account,password:'RenewedPassword'},profiles:[{profile:delivered.profile,pin:'9999'}]});
+  assert.equal(restocked.status,201,JSON.stringify(restocked)); assert.equal(restocked.data.added,1); await stocks(1);
+  const original = await db.streamingAccess.findUniqueOrThrow({where:{id:sold.id}});
+  assert.equal(original.orderItemId,sold.orderItemId); assert.equal(original.cipher,sold.cipher); assert.deepEqual(original.soldAt,sold.soldAt);
+  assert.equal((await db.orderItem.findUniqueOrThrow({where:{id:item.id}})).receiptCipher,item.receiptCipher);
+  assert.equal((await buy(client,[{id:twenty.id,qty:1}])).status,201); await stocks(0);
   // Existing unsold entries can be linked, edited globally and retired globally.
   const extraAccount = {...account,email:`extra-${suffix}@example.com`};
   assert.equal((await request(`/api/admin/products/${twenty.id}/inventory`,admin.token,'POST',{platform:'Netflix',delivery:{...extraAccount,profile:'extra',pin:'7777'}})).status,201);
@@ -102,7 +107,7 @@ try {
   const wholeItem = await db.orderItem.findFirstOrThrow({where:{orderId:wholeBuy.data.orderId}}); assert.ok(decryptPrivate(wholeItem.receiptCipher).includes('Perfil: Cuenta completa'));
   const wholeCatalog = (await request('/api/products',client.token)).data.products;
   for (const id of fullIds) assert.equal(wholeCatalog.find(product=>product.id===id).stock,0);
-  assert.equal((await request(endpoint,admin.token,'POST',wholeBody)).status,409);
+  assert.equal((await request(endpoint,admin.token,'POST',wholeBody)).status,201);
   const singleWhole = {...account,email:`whole-single-${suffix}@example.com`,profile:'7',pin:'0007'};
   assert.equal((await request(`/api/admin/products/${fullThirty.id}/inventory`,admin.token,'POST',{platform:'Prime Video',delivery:singleWhole})).status,201);
   const singleWholeInventory = await request(`/api/admin/products/${fullThirty.id}/inventory`,admin.token);
@@ -146,7 +151,7 @@ try {
   assert.equal(legacyPublic.stock, 3); assert.equal(legacyPublic.inventoryManaged, false);
   assert.equal((await buy(client, [{ id: legacyProductivity.id, qty: 1 }])).status, 201);
   assert.equal((await request('/api/products', null)).data.products.find(p => p.id === legacyProductivity.id).stock, 2);
-  console.log('PASS shared streaming: productivity duplicates, Chat GPT seven-profile pool, music, legacy stock compatibility, seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile protection, linking, editing, retirement plan detachment, exclusive full accounts and concurrent mode protection.');
+  console.log('PASS shared streaming: productivity duplicates, Chat GPT seven-profile pool, music, legacy stock compatibility, seven profiles, admin-only batch, canonical identity, cross-plan stock, private receipts, mixed-cart uniqueness, bundle eligibility, concurrent allocation, sold-profile restocking with preserved history, linking, editing, retirement plan detachment, exclusive full accounts and concurrent mode protection.');
 } finally {
   const pids = products.map(p=>p.id), uids = users.map(u=>u.id);
   await db.streamingAccess.deleteMany({where:{OR:[{productId:{in:pids}},{productIds:{hasSome:pids}}]}});

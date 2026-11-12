@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
 import { reply, fail } from '@/lib/http';
 import { secureMutation } from '@/lib/security';
 import { sharedAccountSchema, sharedAccountValidationMessage } from '@/lib/shared-streaming-schema';
-import { accessFingerprint, platformForProduct, availableAccess } from '@/lib/streaming-inventory';
+import { accessFingerprint, platformForProduct, availableAccess, releaseHistoricalAccess } from '@/lib/streaming-inventory';
 import { accessProductIds, syncStreamingStocks } from '@/lib/shared-streaming';
 import { deliverySchema, encryptPrivate, decryptPrivate } from '@/lib/private-delivery';
 import { isFullAccount } from '@/lib/combo-inventory';
@@ -37,9 +37,9 @@ export const POST = secureMutation(async (req: Request) => {
         const affected = new Set(productIds);
         for (const delivery of deliveries) {
           const fingerprint = accessFingerprint(platform, delivery);
+          await releaseHistoricalAccess(tx, fingerprint);
           const existing = await tx.streamingAccess.findUnique({ where: { fingerprint } });
           if (existing) {
-            if (existing.soldAt || existing.retiredAt) throw new InventoryError('Un perfil de esta cuenta ya fue vendido o retirado y no puede volver al inventario.');
             const previous = deliverySchema.parse(JSON.parse(decryptPrivate(existing.cipher)));
             if (previous.password !== delivery.password || previous.pin !== delivery.pin) throw new InventoryError('El perfil ya existe con otra clave o PIN. Actualízalo en su inventario antes de vincularlo.');
             const all = [...new Set([...accessProductIds(existing), ...productIds])];
