@@ -1,7 +1,11 @@
 "use client";
+import InvitationForm from "./InvitationForm";
+import { readInvitation } from "@/lib/invitation-delivery";
 import { useState } from "react";
-export default function PurchaseReceipt({ text }: { text: string }) {
+export default function PurchaseReceipt({ text, itemId }: { text: string; itemId?: string }) {
   const [message, setMessage] = useState("");
+  const invitation = readInvitation(text);
+  if (invitation) return <InvitationForm itemId={itemId} emails={invitation.emails} />;
   return (
     <section className="purchase-receipt">
       <h4>Comprobante y acceso de streaming</h4>

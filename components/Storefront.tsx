@@ -1,4 +1,5 @@
 "use client";
+import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { RechargeNotificationBell } from "@/components/RechargeNotifications";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { isAccountCategory } from "@/lib/account-categories";
@@ -1162,14 +1163,14 @@ export default function Storefront({
                   />
                 </label>
                 <label>
-                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : (form.category === "Streaming" || products.find(product => product.id === editId)?.inventoryManaged) ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
+                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : (!isInvitationProduct(form) && (form.category === "Streaming" || products.find(product => product.id === editId)?.inventoryManaged)) ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
                   <input
                     type="number"
                     min={0}
                     max={1000000}
                     required
                     value={form.stock}
-                    disabled={form.category === "Streaming" || Boolean(products.find(product => product.id === editId)?.inventoryManaged)}
+                    disabled={!isInvitationProduct(form) && (form.category === "Streaming" || Boolean(products.find(product => product.id === editId)?.inventoryManaged))}
                     onChange={(e) =>
                       setForm({ ...form, stock: Number(e.target.value) })
                     }
@@ -1180,7 +1181,7 @@ export default function Storefront({
                     <ImageUploadButton kind="product" imageKey={editId} />
                     {isAccountCategory(form.category) && form.category !== "Streaming" && !products.find(product => product.id === editId)?.inventoryManaged && <details><summary>Configurar entrega anterior (acceso compartido)</summary><DeliveryEditor productId={editId} /></details>}
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isInvitationProduct(form) ? <p>Entrega por invitación: el cliente indica su correo después de comprar. Ajusta las unidades disponibles arriba.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}

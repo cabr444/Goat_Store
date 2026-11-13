@@ -165,7 +165,7 @@ export default async function Page({
                                 </strong>
                               </div>
                               {item.receipt && (
-                                <PurchaseReceipt text={item.receipt} />
+                                <PurchaseReceipt text={item.receipt} itemId={item.id} />
                               )}
                             </div>
                           ))}

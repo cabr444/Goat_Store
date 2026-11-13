@@ -1,3 +1,4 @@
+import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { deletedProductIds } from "@/lib/deleted-products";
 import { removeProductInventory } from "@/lib/remove-product";
 import { isAccountCategory } from "@/lib/account-categories";
@@ -40,9 +41,9 @@ async function handlePATCH(
     const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
     if (inventoryCount && (!isAccountCategory(v.data.category) || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
     const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
-    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : (current.category === "Streaming" || inventoryCount > 0) ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
+    const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : (!isInvitationProduct(current) && (current.category === "Streaming" || inventoryCount > 0)) ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
     if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
-    await tx.product.update({ where: { id }, data: { ...v.data, stock: (v.data.category === "Streaming" || inventoryCount > 0) ? (isAccountCategory(current.category) ? stock : 0) : v.data.stock } });
+    await tx.product.update({ where: { id }, data: { ...v.data, stock: (!isInvitationProduct(v.data) && (v.data.category === "Streaming" || inventoryCount > 0)) ? (isAccountCategory(current.category) ? stock : 0) : v.data.stock } });
     return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
   });
   if (!updated) return fail("El inventario cambió o el producto tiene accesos registrados. Actualiza el producto antes de guardar.", 409);

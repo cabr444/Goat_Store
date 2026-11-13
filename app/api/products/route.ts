@@ -1,3 +1,4 @@
+import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { deletedIdsFromRows, deletedProductsKind } from "@/lib/deleted-products";
 import { catalogFailure } from "@/lib/catalog-failure";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ async function handlePOST(req: Request) {
     const v = productSchema.safeParse(await req.json());
     if (!v.success) return fail("Información de producto inválida.");
     const product = await db.product.create({
-      data: { ...v.data, stock: v.data.category === "Streaming" ? 0 : v.data.stock, ownerId: u.id },
+      data: { ...v.data, stock: v.data.category === "Streaming" && !isInvitationProduct(v.data) ? 0 : v.data.stock, ownerId: u.id },
       select: publicProductSelect,
     });
     return reply({ product: (await withComboStocks([publicProduct(product)]))[0] }, 201);

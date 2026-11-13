@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { readInvitation } from "@/lib/invitation-delivery";
 import PurchaseReceipt from "./PurchaseReceipt";
 
 export default function ReceiptModal({ reference, date, total, items }: {
@@ -22,8 +23,8 @@ export default function ReceiptModal({ reference, date, total, items }: {
     <p>{date} · Total: <strong>{total}</strong></p>
     {items.map(item => <section key={item.id}>
       <h3>{item.name}</h3><p>{item.quantity} unidades · {item.amount}</p>
-      {item.receipt ? <PurchaseReceipt text={item.receipt} /> : <p>Entrega pendiente. Consulta el estado en Pedidos.</p>}
+      {item.receipt ? <PurchaseReceipt text={item.receipt} itemId={item.id} /> : <p>Entrega pendiente. Consulta el estado en Pedidos.</p>}
     </section>)}
-    <p>Tu comprobante queda guardado en Mis pedidos.</p>
+    <p>{items.every(item => item.receipt && readInvitation(item.receipt)) ? "Tu solicitud queda guardada en Mis pedidos." : "Tu compra queda guardada en Mis pedidos."}</p>
   </dialog>;
 }

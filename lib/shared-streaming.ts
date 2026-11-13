@@ -1,3 +1,4 @@
+import { isInvitationProduct } from "./invitation-delivery";
 import { accountCategories, isAccountCategory } from "./account-categories";
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
@@ -16,8 +17,8 @@ export async function streamingStockCounts(client: InventoryDB, ids: string[]) {
 // Streaming always uses unique accesses. Older music/productivity products keep
 // their configured stock until an inventory row is explicitly added (including
 // sold/retired rows so an exhausted pool can never fall back to legacy delivery).
-export async function managedAccountProductIds(client: InventoryDB, products: { id: string; category: string }[]) {
-  const eligible = products.filter(product => isAccountCategory(product.category));
+export async function managedAccountProductIds(client: InventoryDB, products: { id: string; category: string; name?: string }[]) {
+  const eligible = products.filter(product => isAccountCategory(product.category) && !isInvitationProduct(product));
   const ids = new Set(eligible.map(product => product.id));
   const managed = new Set(eligible.filter(product => product.category === 'Streaming').map(product => product.id));
   const optional = eligible.filter(product => product.category !== 'Streaming').map(product => product.id);

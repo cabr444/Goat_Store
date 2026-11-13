@@ -1,0 +1,21 @@
+import { getUser } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { fail, reply } from '@/lib/http';
+import { secureMutation } from '@/lib/security';
+import { decryptPrivate, encryptPrivate } from '@/lib/private-delivery';
+import { invitationSchema, readInvitation } from '@/lib/invitation-delivery';
+export const POST = secureMutation(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
+  const user = await getUser();
+  if (!user) return fail('Inicia sesión.', 401);
+  const { id } = await params;
+  const item = await db.orderItem.findFirst({ where: { id, order: { userId: user.id } }, select: { receiptCipher: true, quantity: true } });
+  if (!item?.receiptCipher) return fail('Solicitud no encontrada.', 404);
+  const invitation = readInvitation(decryptPrivate(item.receiptCipher));
+  if (!invitation) return fail('Este producto no requiere invitación.', 400);
+  const parsed = invitationSchema.safeParse({ kind: 'youtube-invitation', emails: (await req.json().catch(() => null))?.emails });
+  if (!parsed.success || parsed.data.emails.length !== item.quantity) return fail(`Introduce un correo válido por cada una de las ${item.quantity} unidades.`, 400);
+  if (invitation.emails.length) return fail('Los correos ya fueron guardados. Contacta con soporte para corregirlos.', 409);
+  const changed = await db.orderItem.updateMany({ where: { id, receiptCipher: item.receiptCipher }, data: { receiptCipher: encryptPrivate(JSON.stringify(parsed.data)) } });
+  if (!changed.count) return fail('La solicitud cambió. Actualiza la página.', 409);
+  return reply({ ok: true });
+});
