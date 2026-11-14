@@ -32,7 +32,7 @@ export async function deliverPurchasePushes(orderId?: string) {
   if (!pushConfigured()) return {sent:0,failed:0};
   const now = new Date(), stale = new Date(now.getTime()-5*60000);
   const where = {sentAt:null, attempts:{lt:10}, ...(orderId?{orderId}:{}), OR:[{claimedAt:null},{claimedAt:{lt:stale}}]};
-  const rows = await db.adminPushDelivery.findMany({where,take:30,orderBy:{id:'asc'},include:{order:{select:{id:true,reference:true,total:true}},subscription:{include:{user:{select:{role:true}}}}}});
+  const rows = await db.adminPushDelivery.findMany({where,take:30,orderBy:{id:'asc'},include:{order:{select:{id:true,reference:true,total:true,items:{select:{name:true,quantity:true},orderBy:{id:'asc'}}}},subscription:{include:{user:{select:{role:true}}}}}});
   let sent=0,failed=0;
   const results = await Promise.allSettled(rows.map(async row=>{
     const claim = await db.adminPushDelivery.updateMany({where:{id:row.id,...where},data:{claimedAt:now,attempts:{increment:1}}});

@@ -11,6 +11,11 @@ export const pushSubscriptionSchema = z.object({
   endpoint: z.string().max(4096).refine(allowedPushEndpoint),
   keys: z.object({p256dh:z.string().regex(/^[A-Za-z0-9_-]{87}$/),auth:z.string().regex(/^[A-Za-z0-9_-]{22}$/)}),
 });
-export function purchasePush(order: {id:string;reference:string|null;total:number}) {
-  return {title:'Nueva compra en Goats',body:`Pedido ${order.reference || order.id} · $${new Intl.NumberFormat('es-CO').format(order.total)} COP`,url:`/administracion/ventas/${encodeURIComponent(order.id)}`,tag:`purchase-${order.id}`};
+export function purchasePush(order: {id:string;reference:string|null;total:number;items:{name:string;quantity:number}[]}) {
+  const products = order.items.slice(0,3).map(item => {
+    const name = Array.from(item.name.replace(/\s+/g,' ').trim());
+    return `${item.quantity} × ${name.slice(0,70).join('')}${name.length > 70 ? '…' : ''}`;
+  }).join(', ');
+  const more = order.items.length > 3 ? ` y ${order.items.length - 3} más` : '';
+  return {title:'Nueva compra en Goats',body:`${products}${more}\nPedido ${order.reference || order.id} · $${new Intl.NumberFormat('es-CO').format(order.total)} COP`,url:`/administracion/ventas/${encodeURIComponent(order.id)}`,tag:`purchase-${order.id}`};
 }

@@ -50,5 +50,5 @@ export default function AdminPushSettings() {
     {!supported?<p>Necesitas un navegador compatible y la tienda abierta mediante HTTPS.</p>:<div className="actions">
       <button type="button" className="button violet" disabled={busy} onClick={()=>void action('enable')}>{enabled?'Volver a activar':'Activar notificaciones'}</button>
       {enabled&&<><button type="button" className="button outline" disabled={busy} onClick={()=>void action('test')}>Probar notificación</button><button type="button" className="button outline" disabled={busy} onClick={()=>void action('disable')}>Desactivar en este teléfono</button></>}
-    </div>}{message&&<p role="status">{message}</p>}<p>Los avisos muestran el número y total del pedido. Tócalos para abrir la venta; no muestran claves ni comprobantes privados.</p></section>;
+    </div>}{message&&<p role="status">{message}</p>}<p>Los avisos muestran productos, cantidades, número y total del pedido. Tócalos para abrir la venta; no muestran claves ni comprobantes privados.</p></section>;
 }

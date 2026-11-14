@@ -404,7 +404,7 @@ Configuración del servidor, antes de activar teléfonos:
    **Activar notificaciones**, luego **Probar notificación**.
 
 Las compras confirmadas (también las de administradores) generan un aviso con
-referencia y total, sin datos de acceso, correos del comprador ni contraseñas.
+productos y cantidades (hasta tres productos y un indicador de los restantes), referencia y total, sin datos de acceso, correos del comprador ni contraseñas.
 Al tocarlo se abre el detalle privado de la venta, que requiere sesión ADMIN.
 No se envían avisos por intentos fallidos ni se crean trabajos duplicados al
 reintentar el mismo pedido. Se conservan suscripciones cifradas asociadas al
