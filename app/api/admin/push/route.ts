@@ -1,4 +1,4 @@
-import { pushFailure } from "@/lib/push-errors";
+import { pushFailure, pushSendFailure } from "@/lib/push-errors";
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { getUser } from '@/lib/auth';
@@ -38,7 +38,12 @@ export const POST = pushMutation(async(req:Request)=>{
     const saved=await db.adminPushSubscription.findFirst({where:{endpointHash,userId:user.id}});
     if(!saved) return fail('Activa las notificaciones primero.',404);
     try {await sendPush(pushSubscriptionSchema.parse(JSON.parse(decryptPrivate(saved.cipher))),{title:'Goats: notificaciones activadas',body:'Recibirás un aviso cuando se confirme una compra.',url:'/administracion/ventas',tag:'goats-push-test'}); return reply({ok:true});}
-    catch{return fail('No se pudo enviar la prueba. Comprueba los permisos y la configuración del servidor.',503);}
+    catch(error){
+      const diagnostic=pushSendFailure(error);
+      const status=typeof error==='object' && error!==null && 'statusCode' in error ? Number(error.statusCode) : 0;
+      console.error('Admin push test failed',diagnostic.code,Number.isInteger(status)?status:0);
+      return fail(`${diagnostic.message} (${diagnostic.code})`,503);
+    }
   }
   const cipher=encryptPrivate(JSON.stringify(subscription.data));
   await db.adminPushSubscription.upsert({where:{endpointHash},create:{endpointHash,userId:user.id,cipher},update:{userId:user.id,cipher}});

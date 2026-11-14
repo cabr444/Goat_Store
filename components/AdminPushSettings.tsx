@@ -30,6 +30,15 @@ export default function AdminPushSettings() {
         if(subscription) {await request('DELETE',{endpoint:subscription.endpoint});await subscription.unsubscribe();}
         setEnabled(false);setMessage('Notificaciones desactivadas en este teléfono.');return;
       }
+      if(subscription) {
+        const subscribedKey=subscription.options.applicationServerKey;
+        const configuredKey=applicationKey(config.publicKey);
+        if(subscribedKey && (subscribedKey.byteLength!==configuredKey.byteLength || new Uint8Array(subscribedKey).some((value,index)=>value!==configuredKey[index]))) {
+          await request('DELETE',{endpoint:subscription.endpoint});
+          if(!await subscription.unsubscribe()) throw Error('No se pudo renovar la suscripción anterior. Inténtalo de nuevo.');
+          subscription=null;
+        }
+      }
       if(!subscription) subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:applicationKey(config.publicKey)});
       await request('POST',{subscription:subscription.toJSON()});setEnabled(true);
       if(kind==='test') {await request('POST',{subscription:subscription.toJSON(),test:true});setMessage('Prueba enviada. Comprueba las notificaciones del teléfono.');}
