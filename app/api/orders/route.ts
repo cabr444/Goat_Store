@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { queuePurchasePush, deliverPurchasePushes } from "@/lib/admin-push";
 import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { deletedProductIds } from "@/lib/deleted-products";
 import { planDuration, reminderDate } from "@/lib/reminder-time";
@@ -163,6 +165,13 @@ async function handlePOST(req: Request) {
         if (user.role !== "ADMIN") await tx.walletEvent.create({ data: { userId: user.id, amount: -total, type: "COMPRA", note: `Pedido ${reference}` } });
         return { order, replayed: false };
       }, { isolationLevel: "Serializable", maxWait: 10000, timeout: 30000 });
+      after(async () => {
+        try {
+          await queuePurchasePush(db, result.order.id, result.order.createdAt);
+          await deliverPurchasePushes(result.order.id);
+        }
+        catch { console.error("Purchase push delivery failed; pending notifications can be retried."); }
+      });
       return reply({ orderId: result.order.id, reference: result.order.reference, total: result.order.total }, result.replayed ? 200 : 201);
     } catch (error) {
       if (retryable(error) && attempt < 2) continue;

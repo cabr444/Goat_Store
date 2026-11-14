@@ -29,7 +29,9 @@
     "test:expiry": "node --import tsx tests/expiry-reminders.integration.mjs",
     "test:delete": "node --import tsx tests/product-delete.integration.mjs",
     "test:platform-accounts": "node --import tsx tests/platform-accounts.integration.mjs",
-    "test:recharge-notifications": "node --import tsx tests/recharge-notifications.integration.mjs"
+    "test:recharge-notifications": "node --import tsx tests/recharge-notifications.integration.mjs",
+    "push:keys": "node scripts/generate-push-keys.mjs",
+    "test:push": "node --import tsx tests/push-notifications.integration.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
@@ -40,6 +42,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sharp": "^0.35.5",
+    "web-push": "^3.6.7",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -47,6 +50,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/web-push": "^3.6.4",
     "prisma": "^6.16.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"

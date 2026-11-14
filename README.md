@@ -381,3 +381,44 @@ no descuenta saldo ni registra un movimiento financiero ficticio. La excepción
 usa únicamente el rol de la sesión del servidor. CLIENTE y VENDEDOR mantienen la
 comprobación y el débito de saldo. Se conservan los límites de cantidades por
 pedido y las validaciones de stock. No requiere cambios de esquema.
+
+### Avisos de compras en Android
+
+Administración → Ventas incluye **Activar notificaciones** y **Probar notificación**.
+Abre la tienda publicada mediante HTTPS en Chrome de Android, inicia sesión como
+ADMIN y permite las notificaciones. Cada teléfono debe activarlas por separado.
+No hace falta mantener la página abierta. Android/Chrome pueden retrasar avisos
+por ahorro de batería, falta de conexión o permisos del sistema.
+
+Configuración del servidor, antes de activar teléfonos:
+
+1. Ejecuta `npm run db:push` contra la base correspondiente para crear
+   `AdminPushSubscription` y `AdminPushDelivery`. No se modifican ventas previas.
+2. Ejecuta una sola vez `npm run push:keys`. Guarda las claves generadas de
+   `.env.push` en un lugar privado. Cambia `VAPID_SUBJECT` por tu correo real
+   (`mailto:...`). Configura `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y
+   `VAPID_SUBJECT` en Vercel y vuelve a desplegar. No publiques `.env.push` ni
+   rotes la pareja en cada build. El script no sobrescribe un archivo existente.
+3. Activa Chrome → Configuración → Configuración de sitios → Notificaciones y
+   los permisos de notificaciones de Chrome en Android. En la tienda, pulsa
+   **Activar notificaciones**, luego **Probar notificación**.
+
+Las compras confirmadas (también las de administradores) generan un aviso con
+referencia y total, sin datos de acceso, correos del comprador ni contraseñas.
+Al tocarlo se abre el detalle privado de la venta, que requiere sesión ADMIN.
+No se envían avisos por intentos fallidos ni se crean trabajos duplicados al
+reintentar el mismo pedido. Se conservan suscripciones cifradas asociadas al
+administrador y una cola persistente por pedido/teléfono. Los errores de envío
+no revierten ni bloquean el pago. El cron existente de vencimientos recupera
+trabajos que faltan y reintenta los pendientes (hasta diez intentos); su
+programación diaria significa que los reintentos no son inmediatos. Configura
+`CRON_SECRET` para la recuperación. La prueba permite verificar la configuración
+sin comprar. Los endpoints de envío son FCM, Mozilla Push y Apple Web Push;
+el servidor necesita acceso HTTPS a ellos. Las suscripciones caducadas se
+eliminan y un usuario que deja de ser ADMIN ya no recibe nuevos avisos.
+
+**Desactivar en este teléfono** elimina su suscripción del servidor. En un
+teléfono compartido, desactiva los avisos antes de cerrar sesión; una suscripción
+continúa recibiendo alertas mientras siga habilitada, aunque la sesión caduque.
+Los envíos web push dependen del navegador y del servicio del sistema; una
+respuesta de envío aceptada no garantiza que el usuario haya visto el aviso.
