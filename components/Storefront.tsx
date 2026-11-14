@@ -570,12 +570,12 @@ export default function Storefront({
             <button type="submit" aria-label="Buscar productos"><Search size={21}/></button>
           </form><span className="marketplace-location"><MapPin size={20}/><span>Compra en Colombia<strong>Precios en pesos COP</strong></span></span></>}
           <nav className={`navlinks ${menu ? "expanded" : ""}`}>
-            <a
+            {!catalogLoading && storeOptions.inicioEnabled !== false && <a
               href={technology || secondhand || courses || digitalCatalog || management ? "/#inicio" : "#inicio"}
               onClick={() => setMenu(false)}
             >
               Inicio
-            </a>
+            </a>}
             <Link
               href="/catalogo?categoria=Streaming"
               onClick={() => setMenu(false)}

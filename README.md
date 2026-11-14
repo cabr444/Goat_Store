@@ -422,3 +422,15 @@ teléfono compartido, desactiva los avisos antes de cerrar sesión; una suscripc
 continúa recibiendo alertas mientras siga habilitada, aunque la sesión caduque.
 Los envíos web push dependen del navegador y del servicio del sistema; una
 respuesta de envío aceptada no garantiza que el usuario haya visto el aviso.
+
+### Elegir Inicio o Streaming como primera página
+
+En **Administración → Configurar secciones**, el control **Inicio como primera
+página** permite deshabilitar Inicio y abrir directamente Streaming. Al hacerlo,
+la dirección principal `/` redirige a `/catalogo?categoria=Streaming` y se oculta
+el enlace Inicio del menú. Se aplica a visitantes, clientes y administradores.
+Los parámetros de la URL de entrada se conservan, salvo la categoría, que pasa
+a Streaming. **Habilitar Inicio** restaura la página y su enlace.
+
+La opción se conserva en los metadatos `CatalogOrder` existentes, independiente
+de las opciones Tienda y Segunda. No requiere cambios de esquema ni `db:push`.

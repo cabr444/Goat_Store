@@ -5,7 +5,7 @@ import type { StoreOptions } from "@/lib/store-settings";
 export default function StoreOptionsEditor({ options, onChange }: { options: StoreOptions; onChange: (value: StoreOptions) => void }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  async function toggle(department: "tienda" | "segunda", enabled: boolean) {
+  async function toggle(department: "inicio" | "tienda" | "segunda", enabled: boolean) {
     setBusy(true);
     setMessage("");
     try {
@@ -13,16 +13,20 @@ export default function StoreOptionsEditor({ options, onChange }: { options: Sto
       const data = await response.json();
       if (!response.ok) throw Error(data.error || "No se pudo guardar la opción.");
       onChange(data.storeOptions);
-      setMessage("Configuración guardada para los clientes.");
+      setMessage("Configuración guardada.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo guardar.");
     } finally { setBusy(false); }
   }
   return <section className="container store-options-editor">
     <span className="overline">ADMINISTRACIÓN</span>
-    <h2>Secciones disponibles para clientes</h2>
+    <h2>Página inicial y secciones disponibles</h2>
     <p>Al deshabilitar una sección se oculta su enlace y se bloquean el acceso y las nuevas compras de los clientes. Administradores y vendedores conservan el acceso; los pedidos anteriores siguen disponibles.</p>
     <div className="store-options-grid">
+      <article>
+        <div><strong>Inicio como primera página</strong><p>{options.inicioEnabled !== false ? "La tienda abre en Inicio." : "Inicio está deshabilitado. La tienda abre directamente en Streaming."}</p></div>
+        <button type="button" className={"button " + (options.inicioEnabled !== false ? "dark" : "violet")} disabled={busy} onClick={() => void toggle("inicio", options.inicioEnabled === false)}>{options.inicioEnabled !== false ? "Deshabilitar Inicio y abrir Streaming" : "Habilitar Inicio"}</button>
+      </article>
       {(["tienda", "segunda"] as const).map(department => {
         const enabled = department === "tienda" ? options.tiendaEnabled : options.segundaEnabled;
         const label = department === "tienda" ? "Tienda" : "Segunda";

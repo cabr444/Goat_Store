@@ -23,7 +23,7 @@ export default function AccountHeader({
           Goats<span>.</span>
         </a>
         <nav className="account-page-links" aria-label="Navegación de cuenta">
-          <a href="/">Inicio</a>
+          {storeOptions.inicioEnabled !== false ? <a href="/">Inicio</a> : <a href="/catalogo?categoria=Streaming">Streaming</a>}
           {(role !== "CLIENTE" || storeOptions.tiendaEnabled) && <a href="/store">Tienda</a>}
           {(role !== "CLIENTE" || storeOptions.segundaEnabled) && <a href="/segunda">Segunda</a>}
           <a href="/cursos">Cursos</a>
