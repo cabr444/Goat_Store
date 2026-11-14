@@ -1,3 +1,4 @@
+import { pushFailure } from "@/lib/push-errors";
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { getUser } from '@/lib/auth';
@@ -8,17 +9,29 @@ import { encryptPrivate, decryptPrivate } from '@/lib/private-delivery';
 import { pushConfigured, sendPush } from '@/lib/admin-push';
 import { pushSubscriptionSchema, allowedPushEndpoint } from '@/lib/push-schema';
 export const dynamic = 'force-dynamic';
+function pushMutation(handler: (req: Request) => Promise<Response>) {
+  return secureMutation(async (req: Request) => {
+    try { return await handler(req); }
+    catch (error) {
+      const diagnostic = pushFailure(error);
+      const rawCode = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      // Codes only: never log endpoint URLs, keys, ciphertext or DB error text.
+      console.error('Admin push failed', diagnostic.code, /^P[0-9]{4}$/.test(rawCode) ? rawCode : 'UNKNOWN');
+      return fail(`${diagnostic.message} (${diagnostic.code})`, 503);
+    }
+  });
+}
 const hash = (endpoint:string)=>createHash('sha256').update(endpoint).digest('hex');
 export async function GET() {
   if((await getUser())?.role !== 'ADMIN') return fail('Solo administración.',403);
   return reply({configured:pushConfigured(),publicKey:pushConfigured()?process.env.VAPID_PUBLIC_KEY:null});
 }
-export const POST = secureMutation(async(req:Request)=>{
+export const POST = pushMutation(async(req:Request)=>{
   const user=await getUser(); if(user?.role !== 'ADMIN') return fail('Solo administración.',403);
   if(!pushConfigured()) return fail('Configura las claves VAPID en el servidor.',503);
   if(!await consumeLimit(`admin-push:${user.id}`,30)) return fail('Espera unos minutos antes de intentarlo de nuevo.',429);
   const body=await req.json();
-  const subscription=pushSubscriptionSchema.safeParse(body.subscription);
+  const subscription=pushSubscriptionSchema.safeParse(body?.subscription);
   if(!subscription.success) return fail('Suscripción inválida.',400);
   const endpointHash=hash(subscription.data.endpoint);
   if(body.test === true) {
@@ -31,7 +44,7 @@ export const POST = secureMutation(async(req:Request)=>{
   await db.adminPushSubscription.upsert({where:{endpointHash},create:{endpointHash,userId:user.id,cipher},update:{userId:user.id,cipher}});
   return reply({ok:true});
 });
-export const DELETE = secureMutation(async(req:Request)=>{
+export const DELETE = pushMutation(async(req:Request)=>{
   const user=await getUser(); if(user?.role !== 'ADMIN') return fail('Solo administración.',403);
   const parsed=z.object({endpoint:z.string().max(4096).refine(allowedPushEndpoint)}).safeParse(await req.json());
   if(!parsed.success) return fail('Suscripción inválida.',400);
