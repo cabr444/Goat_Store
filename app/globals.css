@@ -321,7 +321,21 @@
 
 .balance-recharge-link{min-height:44px}.admin-quick-links .admin-recharge-shortcut{background:#7045ee;color:#fff;border-color:#7045ee}.admin-quick-links .admin-recharge-shortcut span{color:#f0e8ff}
 
-.floating-recharge{position:fixed;right:24px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:38;display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #b594ff;border-radius:18px;background:linear-gradient(125deg,#7045ee,#542699);color:#fff;box-shadow:0 8px 28px #40117c40;text-decoration:none;min-height:62px;transition:transform .18s,box-shadow .18s}.floating-recharge>span:not(.floating-recharge-icon){display:flex;flex-direction:column;gap:3px}.floating-recharge small{font-size:11px;color:#f0e8ff;line-height:1.2}.floating-recharge strong{font-size:15px;font-weight:800;line-height:1.25}.floating-recharge-icon{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:12px;background:#ffffff1c}.floating-recharge:hover{transform:translateY(-2px);box-shadow:0 12px 32px #40117c55}.floating-recharge:focus-visible{outline:3px solid #b594ff;outline-offset:4px}body:has(.floating-recharge){padding-bottom:100px}.storefront:has(.floating-recharge) .notice{bottom:calc(104px + env(safe-area-inset-bottom,0px))}@media(max-width:600px){.floating-recharge{right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:10px 12px;gap:9px;border-radius:15px;min-height:58px}.floating-recharge strong{font-size:14px}.floating-recharge-icon{width:34px;height:34px}.floating-recharge small{font-size:10px}}@media(prefers-reduced-motion:reduce){.floating-recharge{transition:none}.floating-recharge:hover{transform:none}}
+/* Recharge shortcut: large touch target with a decorative LED outline. */
+.floating-recharge{position:fixed;right:26px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:38;display:flex;align-items:center;gap:14px;padding:17px 22px;border:2px solid #91fff0;border-radius:22px;background:linear-gradient(125deg,#7045ee,#452080);color:#fff;box-shadow:0 0 12px #5bffe680,0 0 26px #a55cff70,0 10px 30px #240a5d66;text-decoration:none;min-height:82px;max-width:calc(100vw - 52px);transition:transform .18s,box-shadow .18s}
+.floating-recharge::after{content:"";position:absolute;inset:-7px;border:3px dotted #91fff0;border-radius:28px;pointer-events:none;filter:drop-shadow(0 0 4px #5bffe6);animation:recharge-led-glow 3s ease-in-out infinite}
+.floating-recharge>span:not(.floating-recharge-icon){display:flex;flex-direction:column;gap:4px}
+.floating-recharge small{font-size:13px;color:#f0e8ff;line-height:1.2}
+.floating-recharge strong{font-size:20px;font-weight:800;line-height:1.25}
+.floating-recharge-icon{display:grid;place-items:center;flex-shrink:0;width:48px;height:48px;border-radius:14px;background:#ffffff24}
+.floating-recharge:hover{transform:translateY(-3px);box-shadow:0 0 18px #5bffe6aa,0 0 34px #a55cff90,0 14px 34px #240a5d77}
+.floating-recharge:focus-visible{outline:3px solid #fff;outline-offset:10px}
+body:has(.floating-recharge){padding-bottom:128px}
+.storefront:has(.floating-recharge) .notice{bottom:calc(132px + env(safe-area-inset-bottom,0px))}
+@keyframes recharge-led-glow{0%,100%{opacity:.65}50%{opacity:1}}
+@media(max-width:600px){.floating-recharge{right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));padding:14px 16px;gap:11px;border-radius:19px;min-height:74px;max-width:calc(100vw - 36px)}.floating-recharge::after{border-radius:25px}.floating-recharge strong{font-size:18px}.floating-recharge-icon{width:42px;height:42px}.floating-recharge small{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.floating-recharge{transition:none}.floating-recharge::after{animation:none;opacity:1}.floating-recharge:hover{transform:none}}
+
 
 /* Theme preference applies across storefront, account and administration pages. */
 :root{color-scheme:light}
