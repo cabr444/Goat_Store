@@ -5,6 +5,7 @@ export const publicProductSelect = {
   reminderDays: true,
   id: true,
   name: true,
+  inventoryName: true,
   category: true,
   price: true,
   description: true,

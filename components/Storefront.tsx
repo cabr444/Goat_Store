@@ -63,6 +63,7 @@ type User = {
 type Product = {
   reminderDays?: number | null;
   inventoryManaged?: boolean;
+  inventoryName?: string | null;
   configuredStock?: number;
   id: string;
   name: string;
@@ -138,6 +139,7 @@ export default function Storefront({
   const [personalizedSeedBusy, setPersonalizedSeedBusy] = useState(false);
   const [personalizedOnly, setPersonalizedOnly] = useState(false);
   const [courseSeedBusy, setCourseSeedBusy] = useState(false);
+  const [productSaveError, setProductSaveError] = useState("");
   const [inventoryBusy, setInventoryBusy] = useState(false);
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
@@ -326,8 +328,16 @@ export default function Storefront({
     router.replace("/");
     router.refresh();
   }
+  const editedProduct = products.find(product => product.id === editId);
+  const invitationProduct = isInvitationProduct({
+    name: form.name,
+    inventoryName: editedProduct && editedProduct.category === form.category
+      ? editedProduct.inventoryName ?? (isInvitationProduct(editedProduct) ? editedProduct.name : null)
+      : null,
+  });
   function startEdit(p?: Product) {
     setInventoryBusy(false);
+    setProductSaveError("");
     setNotice("");
     setDuplicateHint("");
     setEditId(p?.id || null);
@@ -362,11 +372,12 @@ export default function Storefront({
     e.preventDefault();
     if (inventoryBusy) return;
     setBusy(true);
+    setProductSaveError("");
     try {
       const result = await request(
         editId ? `/api/products/${editId}` : "/api/products",
         editId ? "PATCH" : "POST",
-        form,
+        editId ? { ...form, preserveStock: form.stock === (form.expectedConfiguredStock ?? form.expectedStock) } : form,
       );
       if (!editId && user?.role === "ADMIN" && isAccountCategory(form.category)) {
         startEdit(result.product);
@@ -377,7 +388,7 @@ export default function Storefront({
       }
       await load();
     } catch (e) {
-      setNotice((e as Error).message);
+      setProductSaveError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -1160,14 +1171,14 @@ export default function Storefront({
                   />
                 </label>
                 <label>
-                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : (!isInvitationProduct(form) && (form.category === "Streaming" || products.find(product => product.id === editId)?.inventoryManaged)) ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
+                  {form.category === "Combos" ? "Cantidad de combos para vender (ejemplo: 10)" : (!invitationProduct && (form.category === "Streaming" || editedProduct?.inventoryManaged)) ? "Disponibles (según accesos individuales)" : "Unidades disponibles"}
                   <input
                     type="number"
                     min={0}
                     max={1000000}
                     required
                     value={form.stock}
-                    disabled={!isInvitationProduct(form) && (form.category === "Streaming" || Boolean(products.find(product => product.id === editId)?.inventoryManaged))}
+                    disabled={!invitationProduct && (form.category === "Streaming" || Boolean(editedProduct?.inventoryManaged))}
                     onChange={(e) =>
                       setForm({ ...form, stock: Number(e.target.value) })
                     }
@@ -1176,9 +1187,9 @@ export default function Storefront({
                 {user?.role === "ADMIN" && editId && (
                   <>
                     <ImageUploadButton kind="product" imageKey={editId} />
-                    {isAccountCategory(form.category) && form.category !== "Streaming" && !products.find(product => product.id === editId)?.inventoryManaged && <details><summary>Configurar entrega anterior (acceso compartido)</summary><DeliveryEditor productId={editId} /></details>}
+                    {isAccountCategory(form.category) && form.category !== "Streaming" && !editedProduct?.inventoryManaged && <details><summary>Configurar entrega anterior (acceso compartido)</summary><DeliveryEditor productId={editId} /></details>}
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isInvitationProduct(form) ? <p>Entrega por invitación: el cliente indica su correo después de comprar. Ajusta las unidades disponibles arriba.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onBusyChange={setInventoryBusy} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : invitationProduct ? <p>Entrega por invitación: el cliente indica su correo después de comprar. Ajusta las unidades disponibles arriba.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onBusyChange={setInventoryBusy} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}
@@ -1201,6 +1212,7 @@ export default function Storefront({
                     }
                   />
                 </label>
+                {productSaveError && <p role="alert">{productSaveError}</p>}
                 <button type="submit" disabled={busy || inventoryBusy} className="button violet full">
                   {busy ? "Guardando..." : "Guardar producto"}
                 </button>

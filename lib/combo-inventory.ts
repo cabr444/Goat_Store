@@ -1,5 +1,5 @@
 import { deletedProductIds } from "./deleted-products";
-import { isFullAccount } from "./streaming-product-kind";
+import { inventoryProductName, isFullAccount } from "./streaming-product-kind";
 export { isFullAccount } from "./streaming-product-kind";
 import { accessForProducts, accessProductIds, withStreamingStocks } from "./shared-streaming";
 import type { Prisma } from '@prisma/client';
@@ -28,12 +28,13 @@ export function comboPlatforms(name: string): string[] {
   rest = rest.replace(/\bcombo[s]?\b|\bx\s*\d+\b|\b(?:28\s*dias|x28\s*dias|perfiles?|individual(?:es)?)\b/g, ' ').replace(/[\s+:,&()\-]/g, '');
   return result.length >= 2 && !rest ? result : [];
 }
-export function eligibleComboProduct(product: { name: string; category: string; active: boolean }, platform: string) {
-  if (product.category !== 'Streaming' || !product.active || isFullAccount(product.name) || platformForProduct(product.name) !== platform) return false;
-  return platform !== 'netflix' || /\b(?:x\s*)?28\s*dias\b/.test(normalize(product.name));
+export function eligibleComboProduct(product: { name: string; inventoryName?: string | null; category: string; active: boolean }, platform: string) {
+  const name = inventoryProductName(product);
+  if (product.category !== 'Streaming' || !product.active || isFullAccount(name) || platformForProduct(name) !== platform) return false;
+  return platform !== 'netflix' || /\b(?:x\s*)?28\s*dias\b/.test(normalize(name));
 }
 type Combo = { id: string; name: string; ownerId: string | null };
-type Source = { reminderDays?: number | null; id: string; name: string; category: string; active: boolean; ownerId: string | null };
+type Source = { inventoryName?: string | null; reminderDays?: number | null; id: string; name: string; category: string; active: boolean; ownerId: string | null };
 export type ComboUnit = { id: string; source: Source; sources: Source[]; delivery: Delivery };
 type Snapshot = { units: ComboUnit[]; adminOwners: Set<string> };
 type InventoryDB = Pick<Prisma.TransactionClient, 'product' | 'user' | 'streamingAccess' | 'catalogOrder'>;
@@ -42,7 +43,7 @@ export async function loadComboInventory(client: InventoryDB, combos: Combo[]): 
   if (!required.size) return { units: [], adminOwners: new Set() };
   const deleted = await deletedProductIds(client);
   const [products, admins] = await Promise.all([
-    client.product.findMany({ where: { id: { notIn: deleted }, category: 'Streaming', active: true }, select: { id: true, name: true, category: true, active: true, ownerId: true, reminderDays: true } }),
+    client.product.findMany({ where: { id: { notIn: deleted }, category: 'Streaming', active: true }, select: { id: true, name: true, inventoryName: true, category: true, active: true, ownerId: true, reminderDays: true } }),
     client.user.findMany({ where: { id: { in: combos.flatMap(combo => combo.ownerId ? [combo.ownerId] : []) }, role: 'ADMIN' }, select: { id: true } }),
   ]);
   const sources = new Map(products.filter(product => [...required].some(platform => eligibleComboProduct(product, platform))).map(product => [product.id, product]));
@@ -50,7 +51,7 @@ export async function loadComboInventory(client: InventoryDB, combos: Combo[]): 
   const units: ComboUnit[] = [];
   for (const row of rows) {
     try {
-      const eligible = accessProductIds(row).flatMap(id => sources.has(id) && row.platform === platformForProduct(sources.get(id)!.name) ? [sources.get(id)!] : []);
+      const eligible = accessProductIds(row).flatMap(id => sources.has(id) && row.platform === platformForProduct(inventoryProductName(sources.get(id)!)) ? [sources.get(id)!] : []);
       if (!eligible.length) continue;
       const delivery = deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher)));
       if (!isFullAccount(delivery.profile)) units.push({ id: row.id, source: eligible[0], sources: eligible, delivery });

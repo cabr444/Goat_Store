@@ -2,9 +2,9 @@
 import { accountCategories, isAccountCategory } from "@/lib/account-categories";
 import { readJsonResponse } from "@/lib/json-response";
 import { useEffect, useRef, useState } from 'react';
-import { isFullAccount, fullAccountProfile } from '@/lib/streaming-product-kind';
+import { inventoryProductName, isFullAccount, fullAccountProfile } from '@/lib/streaming-product-kind';
 import { platformForProduct } from '@/lib/streaming-platform';
-type Product = { id: string; name: string; category: string };
+type Product = { id: string; name: string; inventoryName?: string | null; category: string };
 export default function SharedStreamingAccountEditor({ products, onSaved }: { products: Product[]; onSaved: () => Promise<void> }) {
   const [planQuery, setPlanQuery] = useState('');
   const [selected, setSelected] = useState<string[]>([]), [account, setAccount] = useState({ brand: 'STREAMING LT', email: '', password: '' });
@@ -25,11 +25,11 @@ export default function SharedStreamingAccountEditor({ products, onSaved }: { pr
   }, [message, failed]);
   const plans = products.filter(product => isAccountCategory(product.category));
   const matchingPlans = [...plans].reverse().filter(product => [product.name, product.id, product.category].some(value => value.toLocaleLowerCase('es').includes(planQuery.trim().toLocaleLowerCase('es'))));
-  const platform = selected.length ? platformForProduct(plans.find(product => product.id === selected[0])?.name || '') : '';
-  const fullAccount = selected.length > 0 && isFullAccount(plans.find(product => product.id === selected[0])?.name || '');
+  const platform = selected.length ? platformForProduct(inventoryProductName(plans.find(product => product.id === selected[0]) ?? {})) : '';
+  const fullAccount = selected.length > 0 && isFullAccount(inventoryProductName(plans.find(product => product.id === selected[0]) ?? {}));
   function selectPlan(product: Product, checked: boolean) {
     const next = checked ? [...selected, product.id] : selected.filter(id => id !== product.id);
-    if (next.length && isFullAccount(plans.find(plan => plan.id === next[0])?.name || '')) setProfiles(current => [{ profile: fullAccountProfile, pin: current[0]?.pin || '' }]);
+    if (next.length && isFullAccount(inventoryProductName(plans.find(plan => plan.id === next[0]) ?? {}))) setProfiles(current => [{ profile: fullAccountProfile, pin: current[0]?.pin || '' }]);
     else if (fullAccount) setProfiles([{ profile: '1', pin: '' }]);
     setSelected(next);
   }
@@ -50,7 +50,7 @@ export default function SharedStreamingAccountEditor({ products, onSaved }: { pr
       const categoryPlans = matchingPlans.filter(product => product.category === category);
       return <section className="shared-account-group" key={category} aria-label={`Planes de ${category}`}>
         <h3>{category} <span>({categoryPlans.length})</span></h3>
-        <div className="shared-streaming-plans">{categoryPlans.map(product => <label key={product.id}><input type="checkbox" checked={selected.includes(product.id)} disabled={busy || (!selected.includes(product.id) && (selected.length >= 20 || Boolean(platform && platform !== platformForProduct(product.name)) || (selected.length > 0 && fullAccount !== isFullAccount(product.name))))} onChange={event => selectPlan(product, event.target.checked)} />{product.name}</label>)}</div>
+        <div className="shared-streaming-plans">{categoryPlans.map(product => <label key={product.id}><input type="checkbox" checked={selected.includes(product.id)} disabled={busy || (!selected.includes(product.id) && (selected.length >= 20 || Boolean(platform && platform !== platformForProduct(inventoryProductName(product))) || (selected.length > 0 && fullAccount !== isFullAccount(inventoryProductName(product)))))} onChange={event => selectPlan(product, event.target.checked)} />{product.name}</label>)}</div>
         {!categoryPlans.length && <p>{planQuery.trim() ? "No hay planes que coincidan con la búsqueda en esta categoría." : "Todavía no hay productos en esta categoría."}</p>}
       </section>;
     })}</div>{!matchingPlans.length && plans.length > 0 && <p role="status">No hay planes que coincidan con la búsqueda.</p>}<p role="status">{selected.length} planes seleccionados. Con una selección activa, los planes de otra plataforma o tipo de cuenta quedan deshabilitados. Usa Cambiar selección de planes para elegir otra plataforma.</p><button type="button" className="button outline" disabled={busy || !selected.length} onClick={() => { setSelected([]); setProfiles([{profile:"1",pin:""}]); }}>Cambiar selección de planes</button>{!plans.length && <p>Primero crea productos de Streaming, Música o Productividad.</p>}

@@ -1,7 +1,7 @@
 import { deletedProductIds } from "@/lib/deleted-products";
 import { accountCategories } from "@/lib/account-categories";
 import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
-import { fullAccountProfile } from "@/lib/streaming-product-kind";
+import { inventoryProductName, fullAccountProfile } from "@/lib/streaming-product-kind";
 import { Prisma } from '@prisma/client';
 import { getUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -25,11 +25,11 @@ export const POST = secureMutation(async (req: Request) => {
         if (productIds.some(id => deleted.includes(id))) throw new InventoryError('Un producto seleccionado fue eliminado. Actualiza la página.');
         const products = await tx.product.findMany({ where: { id: { in: productIds }, category: { in: [...accountCategories] } } });
         if (products.length !== productIds.length) throw new InventoryError('Selecciona productos de Streaming, Música o Productividad.');
-        const fullAccount = products.every(product => isFullAccount(product.name));
-        if (!fullAccount && products.some(product => isFullAccount(product.name))) throw new InventoryError('Selecciona planes de cuenta completa o de perfiles, sin mezclarlos.');
+        const fullAccount = products.every(product => isFullAccount(inventoryProductName(product)));
+        if (!fullAccount && products.some(product => isFullAccount(inventoryProductName(product)))) throw new InventoryError('Selecciona planes de cuenta completa o de perfiles, sin mezclarlos.');
         if (fullAccount && profiles.length !== 1) throw new InventoryError('Una cuenta completa se vende como una sola unidad. Añade únicamente un acceso.');
-        const platform = platformForProduct(products[0].name);
-        if (products.some(product => platformForProduct(product.name) !== platform)) throw new InventoryError('Todos los planes deben pertenecer a la misma plataforma.');
+        const platform = platformForProduct(inventoryProductName(products[0]));
+        if (products.some(product => platformForProduct(inventoryProductName(product)) !== platform)) throw new InventoryError('Todos los planes deben pertenecer a la misma plataforma.');
         const deliveries = profiles.map(profile => deliverySchema.parse({ ...account, ...profile, ...(fullAccount ? {profile:fullAccountProfile} : {}) }));
         if (!fullAccount && deliveries.some(delivery => isFullAccount(delivery.profile))) throw new InventoryError('Para vender una cuenta completa, selecciona un producto de cuenta completa.');
         await assertAccountMode(tx, platform, deliveries, fullAccount);

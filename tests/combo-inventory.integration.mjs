@@ -36,6 +36,11 @@ try{
  assert.equal(await stock(combo),8);assert.equal(await stock(netflix),6);assert.equal(await stock(prime),5);assert.equal(await available(netflix),6);assert.equal(await available(prime),5);
  const assigned=await db.streamingAccess.findMany({where:{orderItemId:order.items[0].id}});assert.equal(assigned.length,4);assert.equal(new Set(assigned.map(a=>a.id)).size,4);
  assert.equal((await buy(buyer,[{id:combo.id,qty:2}],key)).status,200);assert.equal(await stock(combo),8);assert.equal((await buy(other,[{id:combo.id,qty:2}],key)).status,409);
+ const renamedSource = await request(`/api/products/${netflix.id}`, admin, 'PATCH', {
+  ...netflix, name: 'Plan de películas', stock: 6, expectedStock: 6, preserveStock: true,
+ });
+ assert.equal(renamedSource.status, 200, JSON.stringify(renamedSource.data));
+ assert.equal((await request('/api/products', buyer)).data.products.find(p => p.id === combo.id).stock, 4);
  // Mixed single and combo lines must receive different physical access rows.
  const mixed=await buy(buyer,[{id:combo.id,qty:1},{id:netflix.id,qty:1},{id:triple.id,qty:1}]);assert.equal(mixed.status,201,JSON.stringify(mixed));
  const mixedItems=await db.orderItem.findMany({where:{orderId:mixed.data.orderId}});assert.equal(await db.streamingAccess.count({where:{orderItemId:{in:mixedItems.map(i=>i.id)}}}),6);

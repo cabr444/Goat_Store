@@ -382,6 +382,14 @@ usa únicamente el rol de la sesión del servidor. CLIENTE y VENDEDOR mantienen 
 comprobación y el débito de saldo. Se conservan los límites de cantidades por
 pedido y las validaciones de stock. No requiere cambios de esquema.
 
+### Renombrar tarjetas con inventario
+
+Antes de desplegar, ejecuta `npm run db:push` contra la base de datos del
+despliegue para añadir `Product.inventoryName`. Al renombrar una tarjeta con
+accesos registrados, el sistema conserva su plataforma, el tipo de cuenta y
+la duración detectada del plan. Cambia «Duración para recordatorio (días)» si
+quieres ajustar el plazo para futuras compras.
+
 ### Avisos de compras y vencimientos en Android
 
 Administración → Ventas incluye **Activar notificaciones** y **Probar notificación**.

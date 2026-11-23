@@ -41,6 +41,15 @@ try{
 
  const race=await Promise.all([buy(buyer.token,[{id:a.id,qty:1}]),buy(other.token,[{id:a.id,qty:1}])]);assert.deepEqual(race.map(r=>r.status).sort(),[201,400]);
  assert.equal(await db.streamingAccess.count({where:{productId:a.id,soldAt:null,retiredAt:null}}),0);
+ const beforeRename = await db.streamingAccess.findMany({ where: { productId: b.id }, orderBy: { id: 'asc' } });
+ const renamed = await request(`/api/products/${b.id}`, admin.token, 'PATCH', {
+  ...b, name: 'Plan familiar', stock: 2, expectedStock: 2, preserveStock: true,
+ });
+ assert.equal(renamed.status, 200, JSON.stringify(renamed.data));
+ assert.equal(renamed.data.product.name, 'Plan familiar');
+ assert.equal(renamed.data.product.stock, 1);
+ assert.deepEqual(await db.streamingAccess.findMany({ where: { productId: b.id }, orderBy: { id: 'asc' } }), beforeRename);
+ assert.equal((await request(endpoint(b), admin.token)).data.platform, 'netflix');
  const pending=(await request(endpoint(b),admin.token)).data.accesses[0];assert.equal(pending.delivery.profile,'5');
  const changed=await request(endpoint(b),admin.token,'PATCH',{accessId:pending.id,version:pending.version,platform:'Netflix',delivery:{...pending.delivery,password:'UpdatedSecret',pin:'5555'}});assert.equal(changed.status,200);
  assert.equal((await request(endpoint(b),admin.token,'PATCH',{accessId:pending.id,version:pending.version,platform:'Netflix',delivery:pending.delivery})).status,409);
@@ -58,7 +67,7 @@ try{
  assert.equal((await add(legacy,'historic')).status,201);
  assert.equal((await add(b,1)).status,201);
  assert.equal((await db.orderItem.findUniqueOrThrow({where:{id:order.items.find(i=>i.productId===a.id).id}})).receiptCipher,order.items.find(i=>i.productId===a.id).receiptCipher);
- console.log('PASS streaming inventory: admin-only encrypted entries, cross-plan duplicate prevention, quantity-specific receipts, one-time concurrent allocation, retry recovery, buyer privacy, immutable sold entries, retirement, historic-sale restocking and transaction rollback.');
+ console.log('PASS streaming inventory: admin-only encrypted entries, cross-plan duplicate prevention, quantity-specific receipts, one-time concurrent allocation, retry recovery, buyer privacy, immutable sold entries, retirement, historic-sale restocking, rename with concurrent stock changes, and transaction rollback.');
 }finally{
  const ids=users.map(u=>u.id),pids=products.map(p=>p.id);
  await db.streamingAccess.deleteMany({where:{productId:{in:pids}}});await db.orderItem.deleteMany({where:{order:{userId:{in:ids}}}});await db.order.deleteMany({where:{userId:{in:ids}}});await db.walletEvent.deleteMany({where:{userId:{in:ids}}});await db.product.deleteMany({where:{id:{in:pids}}});await db.user.deleteMany({where:{id:{in:ids}}});await db.$disconnect();

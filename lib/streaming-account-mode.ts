@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { deliverySchema, decryptPrivate, type Delivery } from './private-delivery';
 import { accessFingerprint, availableAccess, normalizeAccessIdentity, platformForProduct } from './streaming-inventory';
 import { accessProductIds } from './shared-streaming';
-import { isFullAccount } from './streaming-product-kind';
+import { inventoryProductName, isFullAccount } from './streaming-product-kind';
 export class AccountModeError extends Error {}
 // Call inside a serializable transaction: a whole account and its profiles must
 // never be registered concurrently as two independently saleable units.
@@ -14,8 +14,8 @@ export async function assertAccountMode(tx: Prisma.TransactionClient, platform: 
     const delivery = deliverySchema.parse(JSON.parse(decryptPrivate(row.cipher)));
     return identifiers.has(normalizeAccessIdentity(delivery.email)) ? [{ ...row, delivery }] : [];
   });
-  const products = matching.length ? await tx.product.findMany({ where: { id: { in: matching.flatMap(accessProductIds) } }, select: { id: true, name: true } }) : [];
-  const fullPlans = new Set(products.filter(product => isFullAccount(product.name)).map(product => product.id));
+  const products = matching.length ? await tx.product.findMany({ where: { id: { in: matching.flatMap(accessProductIds) } }, select: { id: true, name: true, inventoryName: true } }) : [];
+  const fullPlans = new Set(products.filter(product => isFullAccount(inventoryProductName(product))).map(product => product.id));
   for (const row of matching) {
     if (row.id === editingId) continue;
     const existingFull = isFullAccount(row.delivery.profile) || accessProductIds(row).some(id => fullPlans.has(id));

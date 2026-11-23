@@ -2,9 +2,7 @@ import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { deletedProductIds } from "@/lib/deleted-products";
 import { removeProductInventory } from "@/lib/remove-product";
 import { isAccountCategory } from "@/lib/account-categories";
-import { isFullAccount } from "@/lib/streaming-product-kind";
 import { accessForProduct } from "@/lib/shared-streaming";
-import { platformForProduct } from "@/lib/streaming-platform";
 import { comboPools, loadComboInventory, withComboStocks } from "@/lib/combo-inventory";
 import { availableAccess } from "@/lib/streaming-inventory";
 import { secureMutation } from "@/lib/security";
@@ -39,11 +37,27 @@ async function handlePATCH(
     if ((await deletedProductIds(tx)).includes(id)) return null;
     const current = await tx.product.findUniqueOrThrow({ where: { id } });
     const inventoryCount = await tx.streamingAccess.count({ where: accessForProduct(id) });
-    if (inventoryCount && (!isAccountCategory(v.data.category) || platformForProduct(current.name) !== platformForProduct(v.data.name) || isFullAccount(current.name) !== isFullAccount(v.data.name))) return null;
+    if (inventoryCount && !isAccountCategory(v.data.category)) return null;
+    const sameCategory = current.category === v.data.category;
+    const preserveStock = raw.preserveStock === true && sameCategory
+      && v.data.stock === (current.category === "Combos" ? raw.expectedConfiguredStock : expectedStock);
+    // Existing accounts keep their platform, mode and plan duration when the card is renamed.
+    const inventoryName = inventoryCount || (sameCategory && (current.inventoryName || isInvitationProduct(current)))
+      ? current.inventoryName ?? (current.name !== v.data.name ? current.name : null)
+      : null;
     const pools = current.category === "Combos" ? comboPools(current, await loadComboInventory(tx, [current])) : [];
     const stock = current.category === "Combos" ? (current.active && pools.length ? Math.min(current.stock, ...pools.map(pool => pool.length)) : 0) : (!isInvitationProduct(current) && (current.category === "Streaming" || inventoryCount > 0)) ? await tx.streamingAccess.count({ where: { ...accessForProduct(id), ...availableAccess } }) : current.stock;
-    if (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock)) return null;
-    await tx.product.update({ where: { id }, data: { ...v.data, stock: (!isInvitationProduct(v.data) && (v.data.category === "Streaming" || inventoryCount > 0)) ? (isAccountCategory(current.category) ? stock : 0) : v.data.stock } });
+    if (!preserveStock && (stock !== expectedStock || (current.category === "Combos" && raw.expectedConfiguredStock !== current.stock))) return null;
+    const { stock: requestedStock, ...details } = v.data;
+    const managed = !isInvitationProduct({ ...details, inventoryName }) && (details.category === "Streaming" || inventoryCount > 0);
+    await tx.product.update({
+      where: { id },
+      data: {
+        ...details,
+        inventoryName,
+        ...(preserveStock ? {} : { stock: managed ? (isAccountCategory(current.category) ? stock : 0) : requestedStock }),
+      },
+    });
     return tx.product.findUniqueOrThrow({ where: { id }, select: publicProductSelect });
   });
   if (!updated) return fail("El inventario cambió o el producto tiene accesos registrados. Actualiza el producto antes de guardar.", 409);

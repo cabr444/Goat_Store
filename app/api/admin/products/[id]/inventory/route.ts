@@ -1,7 +1,7 @@
 import { deletedProductIds } from "@/lib/deleted-products";
 import { isAccountCategory } from "@/lib/account-categories";
 import { assertAccountMode, AccountModeError } from "@/lib/streaming-account-mode";
-import { isFullAccount, fullAccountProfile } from "@/lib/streaming-product-kind";
+import { inventoryProductName, isFullAccount, fullAccountProfile } from "@/lib/streaming-product-kind";
 import { accessForProduct, accessProductIds, syncStreamingStocks } from "@/lib/shared-streaming";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: Context) {
   const user = await getUser();
   if (user?.role !== "ADMIN") return fail("Solo el administrador puede consultar el inventario privado.", 403);
   const { id } = await params;
-  const product = await db.product.findUnique({ where: { id }, select: { name: true, category: true, stock: true, deliveryCipher: true } });
+  const product = await db.product.findUnique({ where: { id }, select: { name: true, inventoryName: true, category: true, stock: true, deliveryCipher: true } });
   if (!product || (await deletedProductIds(db)).includes(id)) return fail("Producto no encontrado.", 404);
   if (!isAccountCategory(product.category)) return fail("Este inventario es para Streaming, Música o Productividad.");
   const [available, sold, rows] = await Promise.all([
@@ -26,7 +26,7 @@ export async function GET(_req: Request, { params }: Context) {
     db.streamingAccess.findMany({ where: { ...accessForProduct(id), ...availableAccess }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 100 }),
   ]);
   const managed = product.category === "Streaming" || await db.streamingAccess.count({ where: accessForProduct(id) }) > 0;
-  return reply({ managed, configuredStock: product.stock, fullAccount: isFullAccount(product.name), platform: platformForProduct(product.name), available, sold, legacy: Boolean(product.deliveryCipher), accesses: rows.map(({ cipher, fingerprint, ...row }) => ({ ...row, delivery: deliverySchema.parse(JSON.parse(decryptPrivate(cipher))) })) });
+  return reply({ managed, configuredStock: product.stock, fullAccount: isFullAccount(inventoryProductName(product)), platform: platformForProduct(inventoryProductName(product)), available, sold, legacy: Boolean(product.deliveryCipher), accesses: rows.map(({ cipher, fingerprint, ...row }) => ({ ...row, delivery: deliverySchema.parse(JSON.parse(decryptPrivate(cipher))) })) });
 }
 async function mutate(req: Request, { params }: Context) {
   const user = await getUser();
@@ -47,9 +47,9 @@ async function mutate(req: Request, { params }: Context) {
         if (changed.count !== 1) throw Error("CHANGED");
       } else if (parsed.success) {
         const { platform, accessId, version } = parsed.data;
-        const fullAccount = isFullAccount(product.name);
+        const fullAccount = isFullAccount(inventoryProductName(product));
         const delivery = req.method === "POST" && fullAccount ? { ...parsed.data.delivery, profile: fullAccountProfile } : parsed.data.delivery;
-        if (platformForProduct(platform) !== platformForProduct(product.name)) throw new AccountModeError("La plataforma del acceso debe coincidir con la del producto.");
+        if (platformForProduct(platform) !== platformForProduct(inventoryProductName(product))) throw new AccountModeError("La plataforma del acceso debe coincidir con la del producto.");
         if (!fullAccount && isFullAccount(delivery.profile)) throw new AccountModeError("Para vender una cuenta completa, selecciona un producto de cuenta completa.");
         if ((req.method === "PATCH" && (!accessId || version === undefined)) || (req.method === "POST" && accessId)) throw Error("CHANGED");
         const fingerprint = accessFingerprint(platform, delivery);

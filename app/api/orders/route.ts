@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { queuePurchasePush, deliverPurchasePushes } from "@/lib/admin-push";
+import { inventoryProductName } from "@/lib/streaming-product-kind";
 import { isInvitationProduct } from "@/lib/invitation-delivery";
 import { deletedProductIds } from "@/lib/deleted-products";
 import { planDuration, reminderDate } from "@/lib/reminder-time";
@@ -66,7 +67,7 @@ async function handlePOST(req: Request) {
         const reservations = new Map<string, number>();
         const reserve = (id: string, qty: number) => reservations.set(id, (reservations.get(id) || 0) + qty);
         const comboLabels = new Map<string, string[]>();
-        const comboReminderPlans = new Map<string, { name: string; reminderDays?: number | null }[]>();
+        const comboReminderPlans = new Map<string, { name: string; inventoryName?: string | null; reminderDays?: number | null }[]>();
         const combos = products.filter(product => product.category === "Combos");
         const comboInventory = combos.length ? await loadComboInventory(tx, combos) : null;
         // Standalone accesses are selected first, so bundles cannot select the same access again.
@@ -89,7 +90,7 @@ async function handlePOST(req: Request) {
             const pools = comboPools(product, comboInventory!);
             if (!pools.length) throw new PurchaseError(`${product.name}: revisa las plataformas del combo. Solo se permiten perfiles individuales; Netflix debe usar x28 días.`);
             const deliveries: z.infer<typeof deliverySchema>[] = [], labels: string[] = [];
-            const reminderPlans: { name: string; reminderDays?: number | null }[] = [];
+            const reminderPlans: { name: string; inventoryName?: string | null; reminderDays?: number | null }[] = [];
             for (const pool of pools) {
               const units = pool.filter(unit => !selectedAccesses.has(unit.id)).slice(0, item.qty);
               if (units.length !== item.qty) throw new PurchaseError(`${product.name}: no hay suficientes perfiles individuales para todas las plataformas del combo.`);
@@ -114,7 +115,7 @@ async function handlePOST(req: Request) {
         const counter = await tx.orderCounter.upsert({ where: { id: "orders" }, create: { id: "orders", value: 1 }, update: { value: { increment: 1 } } });
         const reference = "P" + counter.value, date = new Date();
         // Sync source stock, then reserve aggregate quantities shared by singles and all bundles.
-        const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] } }, select: { id: true, category: true, name: true } });
+        const streamingSources = await tx.product.findMany({ where: { id: { in: [...reservations.keys()] } }, select: { id: true, category: true, name: true, inventoryName: true } });
         const managedSources = await managedAccountProductIds(tx, streamingSources);
         for (const source of streamingSources.filter(source => managedSources.has(source.id))) {
           const stock = await tx.streamingAccess.count({ where: { ...accessForProduct(source.id), ...availableAccess } });
@@ -142,7 +143,7 @@ async function handlePOST(req: Request) {
           const plans = product.category === "Combos" ? comboReminderPlans.get(product.id)! : [product];
           const grouped = new Map<string, { name: string; days: number; quantity: number }>();
           for (const plan of plans) {
-            const days = planDuration(plan.name, product.category === "Combos" ? product.reminderDays ?? plan.reminderDays : plan.reminderDays);
+            const days = planDuration(inventoryProductName(plan), product.category === "Combos" ? product.reminderDays ?? plan.reminderDays : plan.reminderDays);
             if (days === null) continue;
             const key = JSON.stringify([plan.name, days]);
             const previous = grouped.get(key);
