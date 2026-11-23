@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { SignJWT } from 'jose';
 import { backfillExpiryReminders } from '../lib/expiry-backfill.ts';
 import { encryptPrivate, receiptText } from '../lib/private-delivery.ts';
+import { deliverDueExpiryPushes } from '../lib/expiry-push.ts';
 import { sendDueExpiryEmails } from '../lib/expiry-notifications.ts';
 import { db as sharedDb } from '../lib/db.ts';
 const url = new URL(process.env.DATABASE_URL || 'postgresql://invalid'), base = new URL(process.env.INVENTORY_TEST_URL || 'http://127.0.0.1:3140');
@@ -40,6 +41,50 @@ try {
   const failed=await sendDueExpiryEmails(new Date(),async()=>new Response('{}',{status:500}));assert.equal(failed.failed,1);assert.equal((await db.expiryReminder.findUniqueOrThrow({where:{id:next.id}})).emailedAt,null);
   assert.equal((await sendDueExpiryEmails(new Date(),mock)).sent,1);
  }finally{for(const [key,value]of Object.entries(old)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+ // Existing subscriptions each get a durable delivery, independently of email and read state.
+ const pushNow = new Date();
+ const savedVapid = ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'].map(key => [key, process.env[key]]);
+ try {
+  for (const [key] of savedVapid) process.env[key] = 'test-transport-only';
+  const phones = {};
+  for (const [label, user, createdAt] of [
+   ['working', admin, new Date(pushNow.getTime() - 60000)],
+   ['retry', admin, new Date(pushNow.getTime() - 60000)],
+   ['gone', admin, new Date(pushNow.getTime() - 60000)],
+   ['client', client, new Date(pushNow.getTime() - 60000)],
+   ['new', admin, pushNow],
+  ]) {
+   const subscription = { endpoint: `https://fcm.googleapis.com/fcm/send/${label}-${suffix}`, keys: { p256dh: 'A'.repeat(87), auth: 'B'.repeat(22) } };
+   phones[label] = await db.adminPushSubscription.create({ data: { endpointHash: label + suffix, userId: user.id, createdAt, cipher: encryptPrivate(JSON.stringify(subscription)) } });
+  }
+  const calls = [];
+  const transport = async (subscription, payload) => {
+   calls.push({ endpoint: subscription.endpoint, payload });
+   if (subscription.endpoint.includes('/gone-')) throw Object.assign(Error('gone'), { statusCode: 410 });
+   if (subscription.endpoint.includes('/retry-')) throw Object.assign(Error('temporary'), { statusCode: 503 });
+  };
+  await Promise.all([deliverDueExpiryPushes(pushNow, transport), deliverDueExpiryPushes(pushNow, transport)]);
+  assert.equal(calls.filter(call => call.endpoint.includes('/working-')).length, 2);
+  assert.ok(calls.some(call => call.endpoint.includes('/gone-')));
+  assert.equal(await db.adminPushSubscription.findUnique({ where: { id: phones.gone.id } }), null);
+  assert.equal(calls.some(call => /\/(client|new)-/.test(call.endpoint)), false);
+  assert.equal(await db.expiryPushDelivery.count({ where: { reminderId: scheduled[2].id } }), 0);
+  const payload = calls.find(call => call.payload.tag === `expiry-${due.id}`).payload;
+  assert.match(payload.title, /vencimiento/);
+  assert.match(payload.body, /1 × Spotify/);
+  assert.equal(payload.url, `/administracion/ventas/${result.orderId}`);
+  assert.equal(JSON.stringify(payload).includes(client.email), false);
+
+  const retries = [];
+  const recovered = await deliverDueExpiryPushes(new Date(), async subscription => { retries.push(subscription.endpoint); });
+  assert.deepEqual(recovered, { sent: 2, failed: 0 });
+  assert.equal(retries.every(endpoint => endpoint.includes('/retry-')), true);
+  assert.deepEqual(await deliverDueExpiryPushes(new Date(), async () => assert.fail('Already delivered')), { sent: 0, failed: 0 });
+ } finally {
+  for (const [key, value] of savedVapid) {
+   if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
+ }
  assert.equal((await request(`/api/admin/notifications/${due.id}`,client.token,'PATCH',{})).status,403);
  assert.equal((await request(`/api/admin/notifications/${due.id}`,admin.token,'PATCH',{})).status,200);
  assert.equal((await (await request('/api/admin/notifications',admin.token)).json()).unread,1);
@@ -61,7 +106,7 @@ try {
  assert.equal((await backfillExpiryReminders()).added,0);assert.equal(await db.expiryReminder.count({where:{orderItem:{orderId:later.id}}}),0);
  assert.equal((await request('/api/admin/notifications/backfill',client.token,'POST',{})).status,403);
  assert.equal((await request('/api/admin/notifications/backfill',admin.token,'POST',{})).status,200);
- console.log('PASS expiry reminders: concurrent duplicate-safe history import, immutable receipts/date/durations, future cutoff, historical combo quantities, duration detection/override, immutable schedules, multi-item quantities, checkout replay, admin purchase exclusion, admin-only notifications, cron authentication, concurrent mocked email idempotency, failed-send retry and reviewed state. No real emails sent.');
+ console.log('PASS expiry reminders: concurrent duplicate-safe history import, immutable receipts/date/durations, future cutoff, historical combo quantities, duration detection/override, immutable schedules, multi-item quantities, checkout replay, admin purchase exclusion, admin-only notifications, cron authentication, concurrent mocked email idempotency, failed-send retry, subscription-scoped push delivery and retry, and reviewed state. No real emails sent.');
 }finally{
  await db.catalogOrder.deleteMany({where:{kind:'expiry-history-cutoff-v1'}});
  await db.checkoutAttempt.deleteMany({where:{orderId:{in:orders}}});await db.orderItem.deleteMany({where:{orderId:{in:orders}}});await db.order.deleteMany({where:{id:{in:orders}}});await db.walletEvent.deleteMany({where:{userId:{in:users.map(u=>u.id)}}});await db.product.deleteMany({where:{id:{in:products.map(p=>p.id)}}});await db.user.deleteMany({where:{id:{in:users.map(u=>u.id)}}});await db.$disconnect();await sharedDb.$disconnect();

@@ -382,7 +382,7 @@ usa únicamente el rol de la sesión del servidor. CLIENTE y VENDEDOR mantienen 
 comprobación y el débito de saldo. Se conservan los límites de cantidades por
 pedido y las validaciones de stock. No requiere cambios de esquema.
 
-### Avisos de compras en Android
+### Avisos de compras y vencimientos en Android
 
 Administración → Ventas incluye **Activar notificaciones** y **Probar notificación**.
 Abre la tienda publicada mediante HTTPS en Chrome de Android, inicia sesión como
@@ -393,7 +393,7 @@ por ahorro de batería, falta de conexión o permisos del sistema.
 Configuración del servidor, antes de activar teléfonos:
 
 1. Ejecuta `npm run db:push` contra la base correspondiente para crear
-   `AdminPushSubscription` y `AdminPushDelivery`. No se modifican ventas previas.
+   `AdminPushSubscription`, `AdminPushDelivery` y `ExpiryPushDelivery`. No se modifican ventas previas.
 2. Ejecuta una sola vez `npm run push:keys`. Guarda las claves generadas de
    `.env.push` en un lugar privado. Cambia `VAPID_SUBJECT` por tu correo real
    (`mailto:...`). Configura `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y
@@ -416,6 +416,12 @@ programación diaria significa que los reintentos no son inmediatos. Configura
 sin comprar. Los endpoints de envío son FCM, Mozilla Push y Apple Web Push;
 el servidor necesita acceso HTTPS a ellos. Las suscripciones caducadas se
 eliminan y un usuario que deja de ser ADMIN ya no recibe nuevos avisos.
+
+El mismo cron envía los vencimientos de clientes a los teléfonos ya suscritos,
+además del correo habitual. Cada teléfono recibe un aviso por recordatorio
+que vence desde su fecha de suscripción, sin reenviar vencimientos anteriores.
+Al tocar el aviso se abre la venta. Los envíos pendientes se reintentan en el
+cron diario y se registran por separado del correo.
 
 **Desactivar en este teléfono** elimina su suscripción del servidor. En un
 teléfono compartido, desactiva los avisos antes de cerrar sesión; una suscripción

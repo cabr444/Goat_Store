@@ -138,7 +138,7 @@ export default function Storefront({
   const [personalizedSeedBusy, setPersonalizedSeedBusy] = useState(false);
   const [personalizedOnly, setPersonalizedOnly] = useState(false);
   const [courseSeedBusy, setCourseSeedBusy] = useState(false);
-  const [inventoryPending, setInventoryPending] = useState(false);
+  const [inventoryBusy, setInventoryBusy] = useState(false);
   const [duplicateHint, setDuplicateHint] = useState("");
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const duplicateLock = useRef(false);
@@ -327,7 +327,7 @@ export default function Storefront({
     router.refresh();
   }
   function startEdit(p?: Product) {
-    setInventoryPending(false);
+    setInventoryBusy(false);
     setNotice("");
     setDuplicateHint("");
     setEditId(p?.id || null);
@@ -360,10 +360,7 @@ export default function Storefront({
   }
   async function save(e: FormEvent) {
     e.preventDefault();
-    if (inventoryPending) {
-      setDuplicateHint("Primero pulsa Añadir acceso al inventario o Guardar cambios del acceso para guardar la cuenta. Guardar producto solo guarda los datos del producto.");
-      return;
-    }
+    if (inventoryBusy) return;
     setBusy(true);
     try {
       const result = await request(
@@ -1181,7 +1178,7 @@ export default function Storefront({
                     <ImageUploadButton kind="product" imageKey={editId} />
                     {isAccountCategory(form.category) && form.category !== "Streaming" && !products.find(product => product.id === editId)?.inventoryManaged && <details><summary>Configurar entrega anterior (acceso compartido)</summary><DeliveryEditor productId={editId} /></details>}
                     {digitalCategories.some((c) => c === form.category) && (
-                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isInvitationProduct(form) ? <p>Entrega por invitación: el cliente indica su correo después de comprar. Ajusta las unidades disponibles arriba.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onPendingChange={setInventoryPending} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
+                      form.category === "Combos" ? <p>Puedes añadir 10 combos sin introducir cuentas. Cada venta descuenta un combo y un perfil por plataforma desde el inventario de Streaming. La disponibilidad también depende del stock de sus plataformas. Usa nombres como «Combo x2: Netflix + Prime Video». Netflix utiliza únicamente x28 días; se excluyen las cuentas completas. No añadas credenciales compartidas al combo.</p> : isInvitationProduct(form) ? <p>Entrega por invitación: el cliente indica su correo después de comprar. Ajusta las unidades disponibles arriba.</p> : isAccountCategory(form.category) ? <StreamingInventoryEditor key={editId} productId={editId} onBusyChange={setInventoryBusy} onStockChange={stock => { setForm(old => ({ ...old, stock, expectedStock: stock })); setProducts(old => old.map(p => p.id === editId ? { ...p, stock, inventoryManaged: true } : p)); }} /> : <DeliveryEditor productId={editId} />
                     )}
                   </>
                 )}
@@ -1204,7 +1201,7 @@ export default function Storefront({
                     }
                   />
                 </label>
-                <button disabled={busy} className="button violet full">
+                <button type="submit" disabled={busy || inventoryBusy} className="button violet full">
                   {busy ? "Guardando..." : "Guardar producto"}
                 </button>
               </div>

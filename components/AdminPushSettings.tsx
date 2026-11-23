@@ -46,9 +46,9 @@ export default function AdminPushSettings() {
     } catch(error) {setMessage(error instanceof Error?error.message:'No se pudo activar. Inténtalo de nuevo.');}
     finally{setBusy(false);}
   }
-  return <section className="admin-panel"><h2>Compras: notificaciones en tu teléfono</h2><p>Abre esta página en Chrome de Android e inicia sesión como administrador. Activa los avisos en cada teléfono donde quieras recibirlos, incluso cuando la tienda esté cerrada.</p>
+  return <section className="admin-panel"><h2>Compras y vencimientos: notificaciones en tu teléfono</h2><p>Abre esta página en Chrome de Android e inicia sesión como administrador. Activa los avisos en cada teléfono donde quieras recibirlos, incluso cuando la tienda esté cerrada.</p>
     {!supported?<p>Necesitas un navegador compatible y la tienda abierta mediante HTTPS.</p>:<div className="actions">
       <button type="button" className="button violet" disabled={busy} onClick={()=>void action('enable')}>{enabled?'Volver a activar':'Activar notificaciones'}</button>
       {enabled&&<><button type="button" className="button outline" disabled={busy} onClick={()=>void action('test')}>Probar notificación</button><button type="button" className="button outline" disabled={busy} onClick={()=>void action('disable')}>Desactivar en este teléfono</button></>}
-    </div>}{message&&<p role="status">{message}</p>}<p>Los avisos muestran productos, cantidades, número y total del pedido. Tócalos para abrir la venta; no muestran claves ni comprobantes privados.</p></section>;
+    </div>}{message&&<p role="status">{message}</p>}<p>Las compras muestran productos, cantidades, número y total del pedido. Los recordatorios muestran el plan que vence y el número del pedido. Tócalos para abrir la venta; no muestran claves ni comprobantes privados.</p></section>;
 }

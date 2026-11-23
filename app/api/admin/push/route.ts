@@ -37,7 +37,7 @@ export const POST = pushMutation(async(req:Request)=>{
   if(body.test === true) {
     const saved=await db.adminPushSubscription.findFirst({where:{endpointHash,userId:user.id}});
     if(!saved) return fail('Activa las notificaciones primero.',404);
-    try {await sendPush(pushSubscriptionSchema.parse(JSON.parse(decryptPrivate(saved.cipher))),{title:'Goats: notificaciones activadas',body:'Recibirás un aviso cuando se confirme una compra.',url:'/administracion/ventas',tag:'goats-push-test'}); return reply({ok:true});}
+    try {await sendPush(pushSubscriptionSchema.parse(JSON.parse(decryptPrivate(saved.cipher))),{title:'Goats: notificaciones activadas',body:'Recibirás avisos de compras y vencimientos.',url:'/administracion/ventas',tag:'goats-push-test'}); return reply({ok:true});}
     catch(error){
       const diagnostic=pushSendFailure(error);
       const status=typeof error==='object' && error!==null && 'statusCode' in error ? Number(error.statusCode) : 0;

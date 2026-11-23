@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { readJsonResponse } from "@/lib/json-response";
 const empty = { brand: "STREAMING LT", email: "", password: "", profile: "", pin: "" };
 type Access = { id: string; version: number; platform: string; productIds: string[]; delivery: typeof empty };
-export default function StreamingInventoryEditor({ productId, onStockChange, onPendingChange }: { productId: string; onStockChange: (stock: number) => void; onPendingChange: (pending: boolean) => void }) {
+export default function StreamingInventoryEditor({ productId, onStockChange, onBusyChange }: { productId: string; onStockChange: (stock: number) => void; onBusyChange: (pending: boolean) => void }) {
   const [rows, setRows] = useState<Access[]>([]), [values, setValues] = useState(empty), [platform, setPlatform] = useState(""), [editing, setEditing] = useState<Access | null>(null);
   const [fullAccount, setFullAccount] = useState(false);
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [message, setMessage] = useState(""), [available, setAvailable] = useState(0), [sold, setSold] = useState(0), [legacy, setLegacy] = useState(false);
@@ -15,9 +15,8 @@ export default function StreamingInventoryEditor({ productId, onStockChange, onP
     feedback.current?.scrollIntoView({ block: "nearest" });
     if (failed) feedback.current?.focus({ preventScroll: true });
   }, [message, failed]);
-  const pending = busy || Boolean(editing) || Boolean(values.email || values.password || values.pin || (values.profile && values.profile !== fullAccountProfile) || values.brand !== empty.brand);
-  useEffect(() => { onPendingChange(pending); }, [pending, onPendingChange]);
-  useEffect(() => () => onPendingChange(false), [onPendingChange]);
+  useEffect(() => { onBusyChange(busy); }, [busy, onBusyChange]);
+  useEffect(() => () => onBusyChange(false), [onBusyChange]);
   const endpoint = `/api/admin/products/${productId}/inventory`;
   async function load() {
     const response = await fetch(endpoint, { cache: "no-store", signal: AbortSignal.timeout(15000) });

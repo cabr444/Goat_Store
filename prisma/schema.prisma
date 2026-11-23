@@ -182,6 +182,7 @@ model ExpiryReminder {
   dueAt DateTime
   createdAt DateTime @default(now())
   readAt DateTime?
+  pushDeliveries ExpiryPushDelivery[]
   emailedAt DateTime?
   emailClaimedAt DateTime?
   attempts Int @default(0)
@@ -208,6 +209,7 @@ model AdminPushSubscription {
   cipher String
   createdAt DateTime @default(now())
   deliveries AdminPushDelivery[]
+  expiryDeliveries ExpiryPushDelivery[]
   @@index([userId])
 }
 
@@ -222,4 +224,18 @@ model AdminPushDelivery {
   attempts Int @default(0)
   @@unique([orderId, subscriptionId])
   @@index([sentAt, claimedAt])
+}
+
+model ExpiryPushDelivery {
+  id String @id @default(cuid())
+  reminderId String
+  reminder ExpiryReminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription AdminPushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  sentAt DateTime?
+  claimedAt DateTime?
+  attempts Int @default(0)
+  @@unique([reminderId, subscriptionId])
+  @@index([sentAt, claimedAt])
+  @@index([subscriptionId])
 }
